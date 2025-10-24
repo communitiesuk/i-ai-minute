@@ -129,9 +129,13 @@ export type TranscriptionCreateRequest = {
    */
   recording_id: string
   /**
-   * Template
+   * Template Name
    */
-  template: string
+  template_name: string
+  /**
+   * Template Id
+   */
+  template_id?: string | null
   /**
    * Agenda
    */
@@ -181,6 +185,64 @@ export type Transcription = {
   legacy_minute_versions?: Array<{
     [key: string]: unknown
   }> | null
+}
+
+/**
+ * TemplateType
+ */
+export type TemplateType = 'document' | 'form'
+
+/**
+ * TemplateResponse
+ */
+export type TemplateResponse = {
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Updated Datetime
+   */
+  updated_datetime: string
+  /**
+   * Name
+   */
+  name: string
+  /**
+   * Content
+   */
+  content: string
+  /**
+   * Description
+   */
+  description: string
+  type: TemplateType
+  /**
+   * Questions
+   */
+  questions: Array<Question> | null
+}
+
+/**
+ * Question
+ */
+export type Question = {
+  /**
+   * Position
+   */
+  position: number
+  /**
+   * Title
+   */
+  title: string
+  /**
+   * Description
+   */
+  description: string
+  /**
+   * Id
+   */
+  id: string
 }
 
 /**
@@ -250,6 +312,46 @@ export type RecordingCreateRequest = {
 }
 
 /**
+ * PatchUserTemplateRequest
+ */
+export type PatchUserTemplateRequest = {
+  /**
+   * Name
+   */
+  name?: string | null
+  /**
+   * Content
+   */
+  content?: string | null
+  /**
+   * Description
+   */
+  description?: string | null
+  /**
+   * Questions
+   */
+  questions?: Array<CreateQuestion | Question> | null
+}
+
+/**
+ * CreateQuestion
+ */
+export type CreateQuestion = {
+  /**
+   * Position
+   */
+  position: number
+  /**
+   * Title
+   */
+  title: string
+  /**
+   * Description
+   */
+  description: string
+}
+
+/**
  * PaginatedTranscriptionsResponse
  * Paginated response for transcriptions.
  */
@@ -284,7 +386,12 @@ export type MinutesCreateRequest = {
    * Template Name
    * Name of the template to use for the minutes
    */
-  template_name?: string
+  template_name: string
+  /**
+   * Template Id
+   * Optional id of user template
+   */
+  template_id: string | null
   /**
    * Agenda
    * The agenda for the meeting
@@ -450,6 +557,10 @@ export type Minute = {
    */
   template_name?: string
   /**
+   * User Template Id
+   */
+  user_template_id?: string | null
+  /**
    * Agenda
    */
   agenda?: string | null
@@ -503,6 +614,29 @@ export type DataRetentionUpdateResponse = {
    * Data Retention Days
    */
   data_retention_days: number | null
+}
+
+/**
+ * CreateUserTemplateRequest
+ */
+export type CreateUserTemplateRequest = {
+  /**
+   * Name
+   */
+  name: string
+  /**
+   * Content
+   */
+  content: string
+  /**
+   * Description
+   */
+  description: string
+  type: TemplateType
+  /**
+   * Questions
+   */
+  questions?: Array<CreateQuestion> | null
 }
 
 /**
@@ -1192,6 +1326,214 @@ export type GetTemplatesTemplatesGetResponses = {
 
 export type GetTemplatesTemplatesGetResponse =
   GetTemplatesTemplatesGetResponses[keyof GetTemplatesTemplatesGetResponses]
+
+export type GetUserTemplatesUserTemplatesGetData = {
+  body?: never
+  headers?: {
+    /**
+     * X-Amzn-Oidc-Accesstoken
+     */
+    'x-amzn-oidc-accesstoken'?: string | null
+  }
+  path?: never
+  query?: never
+  url: '/user-templates'
+}
+
+export type GetUserTemplatesUserTemplatesGetErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError
+}
+
+export type GetUserTemplatesUserTemplatesGetError =
+  GetUserTemplatesUserTemplatesGetErrors[keyof GetUserTemplatesUserTemplatesGetErrors]
+
+export type GetUserTemplatesUserTemplatesGetResponses = {
+  /**
+   * Response Get User Templates User Templates Get
+   * Successful Response
+   */
+  200: Array<TemplateResponse>
+}
+
+export type GetUserTemplatesUserTemplatesGetResponse =
+  GetUserTemplatesUserTemplatesGetResponses[keyof GetUserTemplatesUserTemplatesGetResponses]
+
+export type CreateUserTemplateUserTemplatesPostData = {
+  body: CreateUserTemplateRequest
+  headers?: {
+    /**
+     * X-Amzn-Oidc-Accesstoken
+     */
+    'x-amzn-oidc-accesstoken'?: string | null
+  }
+  path?: never
+  query?: never
+  url: '/user-templates'
+}
+
+export type CreateUserTemplateUserTemplatesPostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError
+}
+
+export type CreateUserTemplateUserTemplatesPostError =
+  CreateUserTemplateUserTemplatesPostErrors[keyof CreateUserTemplateUserTemplatesPostErrors]
+
+export type CreateUserTemplateUserTemplatesPostResponses = {
+  /**
+   * Successful Response
+   */
+  200: unknown
+}
+
+export type DeleteUserTemplateUserTemplatesTemplateIdDeleteData = {
+  body?: never
+  headers?: {
+    /**
+     * X-Amzn-Oidc-Accesstoken
+     */
+    'x-amzn-oidc-accesstoken'?: string | null
+  }
+  path: {
+    /**
+     * Template Id
+     */
+    template_id: string
+  }
+  query?: never
+  url: '/user-templates/{template_id}'
+}
+
+export type DeleteUserTemplateUserTemplatesTemplateIdDeleteErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError
+}
+
+export type DeleteUserTemplateUserTemplatesTemplateIdDeleteError =
+  DeleteUserTemplateUserTemplatesTemplateIdDeleteErrors[keyof DeleteUserTemplateUserTemplatesTemplateIdDeleteErrors]
+
+export type DeleteUserTemplateUserTemplatesTemplateIdDeleteResponses = {
+  /**
+   * Successful Response
+   */
+  200: unknown
+}
+
+export type GetUserTemplateUserTemplatesTemplateIdGetData = {
+  body?: never
+  headers?: {
+    /**
+     * X-Amzn-Oidc-Accesstoken
+     */
+    'x-amzn-oidc-accesstoken'?: string | null
+  }
+  path: {
+    /**
+     * Template Id
+     */
+    template_id: string
+  }
+  query?: never
+  url: '/user-templates/{template_id}'
+}
+
+export type GetUserTemplateUserTemplatesTemplateIdGetErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError
+}
+
+export type GetUserTemplateUserTemplatesTemplateIdGetError =
+  GetUserTemplateUserTemplatesTemplateIdGetErrors[keyof GetUserTemplateUserTemplatesTemplateIdGetErrors]
+
+export type GetUserTemplateUserTemplatesTemplateIdGetResponses = {
+  /**
+   * Successful Response
+   */
+  200: TemplateResponse
+}
+
+export type GetUserTemplateUserTemplatesTemplateIdGetResponse =
+  GetUserTemplateUserTemplatesTemplateIdGetResponses[keyof GetUserTemplateUserTemplatesTemplateIdGetResponses]
+
+export type EditUserTemplateUserTemplatesTemplateIdPatchData = {
+  body: PatchUserTemplateRequest
+  headers?: {
+    /**
+     * X-Amzn-Oidc-Accesstoken
+     */
+    'x-amzn-oidc-accesstoken'?: string | null
+  }
+  path: {
+    /**
+     * Template Id
+     */
+    template_id: string
+  }
+  query?: never
+  url: '/user-templates/{template_id}'
+}
+
+export type EditUserTemplateUserTemplatesTemplateIdPatchErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError
+}
+
+export type EditUserTemplateUserTemplatesTemplateIdPatchError =
+  EditUserTemplateUserTemplatesTemplateIdPatchErrors[keyof EditUserTemplateUserTemplatesTemplateIdPatchErrors]
+
+export type EditUserTemplateUserTemplatesTemplateIdPatchResponses = {
+  /**
+   * Successful Response
+   */
+  200: unknown
+}
+
+export type DuplicateUserTemplateUserTemplatesTemplateIdDuplicatePostData = {
+  body?: never
+  headers?: {
+    /**
+     * X-Amzn-Oidc-Accesstoken
+     */
+    'x-amzn-oidc-accesstoken'?: string | null
+  }
+  path: {
+    /**
+     * Template Id
+     */
+    template_id: string
+  }
+  query?: never
+  url: '/user-templates/{template_id}/duplicate'
+}
+
+export type DuplicateUserTemplateUserTemplatesTemplateIdDuplicatePostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError
+}
+
+export type DuplicateUserTemplateUserTemplatesTemplateIdDuplicatePostError =
+  DuplicateUserTemplateUserTemplatesTemplateIdDuplicatePostErrors[keyof DuplicateUserTemplateUserTemplatesTemplateIdDuplicatePostErrors]
+
+export type DuplicateUserTemplateUserTemplatesTemplateIdDuplicatePostResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: unknown
+  }
 
 export type DeleteChatsTranscriptionsTranscriptionIdChatDeleteData = {
   body?: never

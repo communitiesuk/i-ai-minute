@@ -1,8 +1,10 @@
+from enum import Enum, auto
 from typing import TypeVar
 
 from google.genai.types import (
     GenerateContentConfig,
 )
+from pydantic import BaseModel
 from tenacity import (
     retry,
     stop_after_attempt,
@@ -15,7 +17,7 @@ from common.settings import get_settings
 from common.types import LLMHallucination
 
 settings = get_settings()
-T = TypeVar("T")
+T = TypeVar("T", bound=BaseModel)
 
 
 class ChatBot:
@@ -35,6 +37,7 @@ class ChatBot:
 
     def __init__(self, adapter: ModelAdapter) -> None:
         self.adapter = adapter
+        self.messages = []
 
     async def hallucination_check(self) -> list[LLMHallucination]:
         if settings.HALLUCINATION_CHECK:
@@ -45,19 +48,17 @@ class ChatBot:
 
     @retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(6))
     async def chat(self, messages: list[dict[str, str]]) -> str:
-        return await self.adapter.chat(messages=messages)
+        response = await self.adapter.chat(messages=self.messages + messages)
+        self.messages.extend(messages)
+        self.messages.append({"role": "assistant", "content": response})
+        return response
 
     @retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(6))
     async def structured_chat(self, messages: list[dict[str, str]], response_format: type[T]) -> T:
-        return await self.adapter.structured_chat(messages=messages, response_format=response_format)
-
-    @property
-    def messages(self) -> list[dict[str, str]]:
-        return self.adapter.messages
-
-    @messages.setter
-    def messages(self, messages: list[dict[str, str]]) -> None:
-        self.adapter.messages = messages
+        response = await self.adapter.structured_chat(messages=messages, response_format=response_format)
+        self.messages.extend(messages)
+        self.messages.append({"role": "assistant", "content": response.model_dump_json()})
+        return response
 
 
 def create_chatbot(model_type: str, model_name: str, temperature: float) -> ChatBot:
@@ -107,7 +108,15 @@ def create_chatbot(model_type: str, model_name: str, temperature: float) -> Chat
         raise ValueError(msg)
 
 
-def create_default_chatbot() -> ChatBot:
+class FastOrBestLLM(Enum):
+    FAST = auto()
+    BEST = auto()
+
+
+def create_default_chatbot(fast_or_best: FastOrBestLLM) -> ChatBot:
     """Helper function to create an OpenAI client. Let's replace when we have something like OmegaConf/Hydra.cc to
     instantiate chatbot"""
-    return create_chatbot(settings.LLM_PROVIDER, settings.LLM_MODEL_NAME, temperature=0.0)
+    if fast_or_best == FastOrBestLLM.BEST:
+        return create_chatbot(settings.BEST_LLM_PROVIDER, settings.BEST_LLM_MODEL_NAME, temperature=0.0)
+    else:
+        return create_chatbot(settings.FAST_LLM_PROVIDER, settings.FAST_LLM_MODEL_NAME, temperature=0.0)

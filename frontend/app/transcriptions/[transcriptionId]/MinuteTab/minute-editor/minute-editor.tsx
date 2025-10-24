@@ -1,19 +1,14 @@
 'use client'
 
-import { AiEditPopover } from '@/app/transcriptions/[transcriptionId]/MinuteTab/ai-edit-popover'
 import SimpleEditor from '@/app/transcriptions/[transcriptionId]/MinuteTab/components/editor/tiptap-editor'
 import { RatingButton } from '@/app/transcriptions/[transcriptionId]/MinuteTab/components/rating-dialog/rating-dialog'
+import { AiEditPopover } from '@/app/transcriptions/[transcriptionId]/MinuteTab/minute-editor/ai-edit-popover'
+import { MinuteVersionSelect } from '@/app/transcriptions/[transcriptionId]/MinuteTab/minute-editor/minute-version-select'
 import { NewMinuteDialog } from '@/app/transcriptions/[transcriptionId]/MinuteTab/NewMinuteDialog'
 import { Button } from '@/components/ui/button'
 import CopyButton from '@/components/ui/copy-button'
+import { citationRegex, citationRegexWithSpace } from '@/lib/citationRegex'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-} from '@/components/ui/select'
-import {
-  ContentSource,
   MinuteListItem,
   MinuteVersionResponse,
   Transcription,
@@ -29,6 +24,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Download,
   Edit,
+  Eye,
+  EyeOff,
   FilePenLine,
   FileQuestion,
   FileX2,
@@ -37,28 +34,11 @@ import {
   Undo,
 } from 'lucide-react'
 import posthog from 'posthog-js'
-import {
-  Dispatch,
-  SetStateAction,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 
 type MinuteEditorForm = {
   html: string
-}
-
-const mapContentSource = (source: ContentSource): string => {
-  if (source === 'ai_edit') {
-    return 'AI edited'
-  } else if (source === 'manual_edit') {
-    return 'Manually edited'
-  } else {
-    return 'First version generated'
-  }
 }
 
 export function MinuteEditor({
@@ -69,6 +49,7 @@ export function MinuteEditor({
   minute: MinuteListItem
 }) {
   const [version, setVersion] = useState(0)
+  const [hideCitations, setHideCitations] = useState(false)
   const { data: minuteVersions = [], isLoading } = useQuery({
     ...listMinuteVersionsMinutesMinuteIdVersionsGetOptions({
       path: { minute_id: minute.id! },
@@ -105,6 +86,12 @@ export function MinuteEditor({
     }
   }, [form, minuteVersion])
   const htmlContent = form.watch('html')
+  const contentToCopy = useMemo(() => {
+    return htmlContent?.replaceAll(citationRegexWithSpace, '') || ''
+  }, [htmlContent])
+  const hasCitations = useMemo(() => {
+    return !!htmlContent?.match(citationRegex)
+  }, [htmlContent])
   useEffect(() => {}, [htmlContent])
   const { mutate: saveEdit } = useMutation({
     ...createMinuteVersionMinutesMinuteIdVersionsPostMutation(),
@@ -273,9 +260,29 @@ export function MinuteEditor({
             Download
           </Button>
           <CopyButton
-            textToCopy={htmlContent}
+            textToCopy={contentToCopy}
             posthogEvent="editor_content_copied"
           />
+          {hasCitations && (
+            <Button
+              variant="outline"
+              onClick={() => setHideCitations((h) => !h)}
+              disabled={isEditable}
+            >
+              {isEditable ? (
+                'Citations shown when editing'
+              ) : hideCitations ? (
+                <>
+                  <Eye /> Show Citations
+                </>
+              ) : (
+                <>
+                  <EyeOff />
+                  Hide Citations
+                </>
+              )}
+            </Button>
+          )}
         </div>
         <div className="flex gap-2">
           <RatingButton
@@ -295,44 +302,12 @@ export function MinuteEditor({
               initialContent={minuteVersion.html_content || ''}
               isEditing={isEditable}
               onContentChange={onChange}
+              hideCitations={hideCitations && !isEditable}
             />
           )}
         />
       </form>
     </div>
-  )
-}
-
-const MinuteVersionSelect = ({
-  minuteVersions,
-  version,
-  setVersion,
-}: {
-  minuteVersions: MinuteVersionResponse[]
-  version: number
-  setVersion: Dispatch<SetStateAction<number>>
-}) => {
-  return (
-    <Select value={`${version}`} onValueChange={(v) => setVersion(Number(v))}>
-      <SelectTrigger className="inline-flex">Edits</SelectTrigger>
-      <SelectContent>
-        {minuteVersions.map((v, index) => {
-          const date = new Date(v.created_datetime!)
-          return (
-            <SelectItem key={v.id!} value={`${index}`}>
-              {mapContentSource(v.content_source)}
-              <div className="text-muted-foreground flex gap-1 text-xs">
-                {date.toLocaleDateString()}{' '}
-                {date.toLocaleTimeString(undefined, {
-                  hour: 'numeric',
-                  minute: 'numeric',
-                })}
-              </div>
-            </SelectItem>
-          )
-        })}
-      </SelectContent>
-    </Select>
   )
 }
 

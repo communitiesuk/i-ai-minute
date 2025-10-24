@@ -12,6 +12,9 @@ import { EditorState, Plugin, PluginKey } from 'prosemirror-state'
 import { Decoration, DecorationSet } from 'prosemirror-view'
 import { useCallback, useEffect } from 'react'
 
+import { CitationPopoverWrapper } from '@/components/ui/citation-popover-wrapper'
+import { useCitationPopover } from '@/hooks/use-citation-popover'
+import { citationRegex, citationRegexWithSpace } from '@/lib/citationRegex'
 import { Transcription } from '@/lib/client'
 import { cn } from '@/lib/utils'
 import posthog from 'posthog-js'
@@ -25,19 +28,19 @@ import {
   Strikethrough as StrikethroughIcon,
   List as UnorderedListIcon,
 } from './Icons'
-import { useCitationPopover } from '@/hooks/use-citation-popover'
-import { CitationPopoverWrapper } from '@/components/ui/citation-popover-wrapper'
 
 function SimpleEditor({
   initialContent,
   onContentChange,
   isEditing,
   currentTranscription,
+  hideCitations,
 }: {
   initialContent: string
   onContentChange: (newContent: string) => void
   isEditing: boolean
   currentTranscription: Transcription
+  hideCitations: boolean
 }) {
   const {
     citationPopover,
@@ -56,7 +59,7 @@ function SimpleEditor({
           props: {
             decorations(state) {
               const decorations: Decoration[] = []
-              const citationRegex = /\[(\d+)\]/g
+              const citationRegex = citationRegexWithSpace
 
               state.doc.descendants((node, pos) => {
                 if (node.isText) {
@@ -67,6 +70,11 @@ function SimpleEditor({
                     const to = from + match[0].length
                     decorations.push(
                       Decoration.inline(from, to, {
+                        style: 'display: var(--citation-display);',
+                      })
+                    )
+                    decorations.push(
+                      Decoration.inline(from + match[1].length, to, {
                         class: 'citation-link',
                         style:
                           'color: blue; cursor: pointer; text-decoration: underline;',
@@ -86,7 +94,7 @@ function SimpleEditor({
                 const domNode = event.target as HTMLElement
 
                 if (domNode.classList.contains('citation-link')) {
-                  const match = domNode.textContent?.match(/\[(\d+)\]/)
+                  const match = domNode.textContent?.match(citationRegex)
                   if (match) {
                     const index = parseInt(match[1], 10)
                     const rect = domNode.getBoundingClientRect()
@@ -266,7 +274,15 @@ function SimpleEditor({
         </div>
       )}
 
-      <EditorContent editor={editorObject} className={cn('editor-content')} />
+      <EditorContent
+        editor={editorObject}
+        className={cn('editor-content')}
+        style={
+          {
+            '--citation-display': hideCitations ? 'none' : 'unset',
+          } as React.CSSProperties
+        }
+      />
 
       {citationPopover && (
         <CitationPopoverWrapper

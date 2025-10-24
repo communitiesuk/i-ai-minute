@@ -1,10 +1,10 @@
 from typing import Protocol
 
 from common.database.postgres_models import DialogueEntry, Minute
-from common.llm.client import create_chatbot
+from common.llm.client import FastOrBestLLM, create_default_chatbot
 from common.prompts import get_section_for_agenda_prompt, string_to_system_message
 from common.settings import get_settings
-from common.templates.template_utils import add_citations_to_minute
+from common.templates.citations import add_citations_to_minute
 from common.types import AgendaUsage, MinuteAndHallucinations
 
 settings = get_settings()
@@ -30,8 +30,6 @@ class Template(Protocol):
     description: str
     category: str
     agenda_usage: AgendaUsage
-    provider = settings.LLM_PROVIDER
-    model = settings.LLM_MODEL_NAME
     temperature = 0.0
 
     @classmethod
@@ -95,7 +93,7 @@ class SimpleTemplate(Template, Protocol):
         cls,
         minute: Minute,
     ) -> MinuteAndHallucinations:
-        chatbot = create_chatbot(cls.provider, cls.model, temperature=cls.temperature)
+        chatbot = create_default_chatbot(FastOrBestLLM.BEST)
         minutes = await chatbot.chat(cls.prompt(minute.transcription.dialogue_entries, minute.agenda))
         hallucinations = await chatbot.hallucination_check()
         if cls.citations_required:
@@ -143,7 +141,7 @@ class SectionTemplate(Template, Protocol):
         ...
 
     @classmethod
-    async def sections(cls, transcript: list[DialogueEntry] | None = None, agenda: str | None = None) -> list[str]:
+    async def sections(cls, transcript: list[DialogueEntry] | None, agenda: str | None) -> list[str]:
         """
         Generates a list of sections based on the provided transcript and agenda.
 
@@ -171,7 +169,7 @@ class SectionTemplate(Template, Protocol):
         # Generate content for each section
         final_sections = []
         all_hallucinations = []
-        chatbot = create_chatbot(cls.provider, cls.model, temperature=cls.temperature)
+        chatbot = create_default_chatbot(FastOrBestLLM.BEST)
         for i, section in enumerate(sections):
             if i == 0:
                 # use system message exactly once
