@@ -16,8 +16,11 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def _create_boto3_s3_client():
     async_session = aioboto3.Session()
+    client_kwargs = {"region_name": settings.AWS_REGION}
+    if settings.USE_LOCALSTACK and settings.ENVIRONMENT == "local":
+        client_kwargs["endpoint_url"] = settings.LOCALSTACK_URL
     async with (
-        async_session.client("s3", region_name=settings.AWS_REGION) as s3,
+        async_session.client("s3", **client_kwargs) as s3,
     ):
         yield s3
 
@@ -41,7 +44,7 @@ class S3StorageService(StorageService):
     @classmethod
     async def generate_presigned_url_put_object(cls, key: str, expiry_seconds: int) -> str:
         async with _create_boto3_s3_client() as session:
-            return await session.generate_presigned_url(
+            url = await session.generate_presigned_url(
                 ClientMethod="put_object",
                 Params={
                     "Bucket": settings.DATA_S3_BUCKET,
@@ -50,6 +53,10 @@ class S3StorageService(StorageService):
                 ExpiresIn=expiry_seconds,
                 HttpMethod="PUT",
             )
+            # Replace docker hostname with localhost for browser access
+            if settings.USE_LOCALSTACK and settings.ENVIRONMENT == "local":
+                url = url.replace("http://localstack:4566", "http://localhost:4566")
+            return url
 
     @classmethod
     async def generate_presigned_url_get_object(cls, key: str, filename: str, expiry_seconds: int) -> str:
