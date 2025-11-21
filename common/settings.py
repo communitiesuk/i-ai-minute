@@ -56,6 +56,13 @@ class Settings(BaseSettings):
     AZURE_OPENAI_API_KEY: str | None = Field(description="Azure API key for openAI", default=None)
     AZURE_OPENAI_ENDPOINT: str | None = Field(description="Azure OpenAI service endpoint URL", default=None)
     AZURE_OPENAI_API_VERSION: str | None = Field(description="Azure OpenAI API version", default=None)
+    # if using Azure OpenAI via API Manager with custom auth
+    AZURE_OPENAI_SUBSCRIPTION_KEY: str | None = Field(
+        description="Subscription key for API Manager (sent as Ocp-Apim-Subscription-Key header)", default=None
+    )
+    AZURE_OPENAI_BEARER_TOKEN: str | None = Field(
+        description="Bearer token for API Manager authentication", default=None
+    )
 
     # if using Gemini
     GOOGLE_APPLICATION_CREDENTIALS: str | None = Field(

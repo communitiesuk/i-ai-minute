@@ -90,6 +90,8 @@ def create_chatbot(model_type: str, model_name: str, temperature: float) -> Chat
                 api_version=settings.AZURE_OPENAI_API_VERSION,
                 azure_deployment=settings.AZURE_DEPLOYMENT,
                 azure_endpoint=settings.AZURE_OPENAI_ENDPOINT,
+                subscription_key=settings.AZURE_OPENAI_SUBSCRIPTION_KEY,
+                bearer_token=settings.AZURE_OPENAI_BEARER_TOKEN,
                 temperature=temperature,
             )
         )

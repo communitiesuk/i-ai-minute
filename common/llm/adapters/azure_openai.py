@@ -1,6 +1,7 @@
 import logging
 from typing import TypeVar
 
+import httpx
 from openai import AsyncAzureOpenAI
 from openai.types.chat import ChatCompletion
 from openai.types.chat.chat_completion import Choice
@@ -22,14 +23,34 @@ class OpenAIModelAdapter(ModelAdapter):
         azure_endpoint: str,
         azure_deployment: str,
         api_version: str = "2024-08-01-preview",
+        subscription_key: str | None = None,
+        bearer_token: str | None = None,
         **kwargs,
     ) -> None:
         self._model = model
+        
+        # Build custom headers if subscription key or bearer token is provided
+        default_headers = {}
+        if subscription_key:
+            default_headers["Ocp-Apim-Subscription-Key"] = subscription_key
+            logger.info("Using custom Ocp-Apim-Subscription-Key header for API Manager")
+        if bearer_token:
+            default_headers["Authorization"] = f"Bearer {bearer_token}"
+            logger.info("Using Bearer token authentication for API Manager")
+        
+        # Create httpx client with custom headers if needed
+        http_client = None
+        if default_headers:
+            http_client = httpx.AsyncClient(headers=default_headers)
+            # Use a dummy API key since we're using custom auth
+            api_key = api_key or "dummy-key-not-used"
+        
         self.async_azure_client = AsyncAzureOpenAI(
             azure_endpoint=azure_endpoint,
             api_key=api_key,
             api_version=api_version,
             azure_deployment=azure_deployment,
+            http_client=http_client,
         )
         self._kwargs = kwargs
 
