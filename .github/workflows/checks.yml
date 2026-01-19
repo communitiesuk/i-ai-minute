@@ -11,13 +11,16 @@ on:
       - backend/**
       - Makefile
       - frontend/**
+      - .github/workflows/*.yml
+      - .github/workflows/*.yaml
+
     branches:
       - "main"
       - "feature/**"
       - "chore/**"
       - "bugfix/**"
       - "hotfix/**"
-      - "develop"
+      - "development/**"
       - "dependabot/**"
       - "security/**"
   workflow_dispatch:
