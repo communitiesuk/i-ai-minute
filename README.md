@@ -46,6 +46,12 @@ We use dev containers to emulate the cloud environment in which Minute is usuall
 
 ...will sync local file changes to the docker containers and restart them as appropriate. Note that `docker compose down` will revert the containers to their base state. See [this issue](https://github.com/docker/compose/issues/11102)
 
+#### Notes
+
+- Running locally still requries acces to an LLM service and a Transcription service
+  - There is currently no local implementation of these services
+- User authenitcation is turned off for local development, a 'dummy_user' is created for which every requested is authenticated
+
 ## Project structure
 
 #### `frontend/`
