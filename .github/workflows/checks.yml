@@ -48,7 +48,8 @@ jobs:
           poetry run ruff check .
       
       - name: Type Check
-        run: poetry run mypy .
+        run: |
+          poetry run mypy .
           
 
 
