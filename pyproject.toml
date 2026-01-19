@@ -82,7 +82,6 @@ playwright = "^1.45"
 pytest-playwright = "^0.5"
 diagrams = "^0.23.4"
 ipykernel = "^6.29.5"
-#needed for running llm related tests
 beautifulsoup4 = "^4.13.3"
 
 [build-system]
