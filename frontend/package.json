@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "next lint",
     "openapi-ts": "openapi-ts",
-    "prettier:fix": "prettier --write ."
+    "prettier:fix": "prettier --write .",
+    "test": "vitest run"
   },
   "dependencies": {
     "@hey-api/client-next": "^0.5.1",
@@ -72,6 +73,7 @@
     "prettier-plugin-tailwindcss": "^0.6.12",
     "tailwindcss": "^4",
     "tw-animate-css": "^1.3.4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.0.17"
   }
 }
