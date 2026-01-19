@@ -16,7 +16,7 @@ def convert_to_mp3(input_file_path: Path) -> Path:
     output_file = input_file_path.with_name(f"{input_file_path.stem}_converted.mp3")
     try:
         logger.info("Probing input file for audio streams")
-        probe = ffmpeg.probe(input_file_path)
+        probe = ffmpeg.probe(str(input_file_path), timeout=30)
         audio_streams = [stream for stream in probe["streams"] if stream["codec_type"] == "audio"]
 
         if not audio_streams:

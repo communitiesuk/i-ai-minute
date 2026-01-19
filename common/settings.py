@@ -73,6 +73,9 @@ class Settings(BaseSettings):
     AZURE_OPENAI_ENDPOINT: str | None = Field(description="Azure OpenAI service endpoint URL", default=None)
     AZURE_OPENAI_API_VERSION: str | None = Field(description="Azure OpenAI API version", default=None)
 
+    # if using direct OpenAI API
+    OPENAI_DIRECT_API_KEY: str | None = Field(description="Direct OpenAI API key", default=None)
+
     # if using Gemini
     GOOGLE_APPLICATION_CREDENTIALS: str | None = Field(
         description="Path to Google Cloud service account credentials JSON file", default=None
@@ -169,6 +172,35 @@ class Settings(BaseSettings):
     LOCAL_STORAGE_PATH: str = Field(
         default="/tmp",  # noqa: S108
         description="The folder where the data directory is mounted for the local storage service.",
+    )
+
+    WHISPLY_DEVICE: str = Field(
+        default="auto",
+        description="Device for Whisply transcription: auto, cpu, gpu, mps, or mlx",
+    )
+    WHISPLY_MODEL: str = Field(
+        default="large-v3-turbo",
+        description="Whisper model to use for Whisply transcription",
+    )
+    WHISPLY_LANGUAGE: str = Field(
+        default="en",
+        description="Language code for Whisply transcription (e.g., 'en', 'de'). Use 'auto' for auto-detection",
+    )
+    WHISPLY_ENABLE_DIARIZATION: bool = Field(
+        default=True,
+        description="Enable speaker diarization in Whisply",
+    )
+    WHISPLY_NUM_SPEAKERS: int | None = Field(
+        default=None,
+        description="Number of speakers for Whisply diarization (None for auto-detection)",
+    )
+    WHISPLY_HF_TOKEN: str | None = Field(
+        default=None,
+        description="HuggingFace token required for Whisply speaker diarization",
+    )
+    WHISPLY_TIMEOUT: int = Field(
+        default=3600,
+        description="Timeout in seconds for Whisply transcription",
     )
 
     # use a dotenv file for local development

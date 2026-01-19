@@ -11,7 +11,7 @@ from tenacity import (
     wait_random_exponential,
 )
 
-from common.llm.adapters import GeminiModelAdapter, ModelAdapter, OpenAIModelAdapter
+from common.llm.adapters import DirectOpenAIModelAdapter, GeminiModelAdapter, ModelAdapter, OpenAIModelAdapter
 from common.prompts import get_hallucination_detection_messages
 from common.settings import get_settings
 from common.types import LLMHallucination
@@ -83,16 +83,25 @@ def create_chatbot(model_type: str, model_name: str, temperature: float) -> Chat
         ValueError: If the specified model type is unsupported.
     """
     if model_type == "openai":
-        return ChatBot(
-            OpenAIModelAdapter(
-                model=model_name,
-                api_key=settings.AZURE_OPENAI_API_KEY,
-                api_version=settings.AZURE_OPENAI_API_VERSION,
-                azure_deployment=settings.AZURE_DEPLOYMENT,
-                azure_endpoint=settings.AZURE_OPENAI_ENDPOINT,
-                temperature=temperature,
+        if settings.OPENAI_DIRECT_API_KEY:
+            return ChatBot(
+                DirectOpenAIModelAdapter(
+                    model=model_name,
+                    api_key=settings.OPENAI_DIRECT_API_KEY,
+                    temperature=temperature,
+                )
             )
-        )
+        else:
+            return ChatBot(
+                OpenAIModelAdapter(
+                    model=model_name,
+                    api_key=settings.AZURE_OPENAI_API_KEY,
+                    api_version=settings.AZURE_OPENAI_API_VERSION,
+                    azure_deployment=settings.AZURE_DEPLOYMENT,
+                    azure_endpoint=settings.AZURE_OPENAI_ENDPOINT,
+                    temperature=temperature,
+                )
+            )
     elif model_type == "gemini":
         return ChatBot(
             GeminiModelAdapter(
