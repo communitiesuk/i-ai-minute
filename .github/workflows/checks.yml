@@ -46,6 +46,11 @@ jobs:
         run: |
           poetry run ruff format . --check
           poetry run ruff check .
+      
+      - name: Type Check
+        run: poetry run mypy .
+          
+
 
   run_tests:
     name: Run tests
