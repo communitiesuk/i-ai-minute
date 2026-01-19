@@ -23,6 +23,11 @@ on:
       - "development/**"
       - "dependabot/**"
       - "security/**"
+
+  pull_request: 
+    branches: 
+      - development
+      
   workflow_dispatch:
 
 jobs:
