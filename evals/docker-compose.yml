@@ -1,0 +1,12 @@
+services:
+  results-viewer:
+    build:
+      context: .
+      dockerfile: viewer/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - RUNS_ROOT=/data/runs
+      - PORT=8080
+    volumes:
+      - ./runs:/data/runs
