@@ -211,3 +211,19 @@ class UserTemplate(BaseTableMixin, table=True):
         passive_deletes="all",
         sa_relationship_kwargs={"order_by": TemplateQuestion.position},
     )
+
+
+class GuardrailResult(BaseTableMixin, table=True):
+    __tablename__ = "guardrail_result"
+    created_datetime: datetime = Field(sa_column=created_datetime_column(), default=None)
+    updated_datetime: datetime = Field(sa_column=updated_datetime_column(), default=None)
+    transcription_id: UUID | None = Field(default=None, foreign_key="transcription.id", ondelete="SET NULL")
+    transcription: "Transcription" = Relationship()
+    minute_version_id: UUID | None = Field(default=None, foreign_key="minute_version.id", ondelete="SET NULL")
+    minute_version: "MinuteVersion" = Relationship()
+    guardrail_type: str = Field(description="Type of guardrail check performed")
+    result: str = Field(description="Result of the guardrail check")
+    status: JobStatus = Field(
+        default=JobStatus.AWAITING_START, sa_column_kwargs={"server_default": JobStatus.AWAITING_START.name}
+    )
+    error: str | None = Field(default=None, description="Error message if the guardrail check failed")
