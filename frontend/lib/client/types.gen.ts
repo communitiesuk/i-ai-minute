@@ -429,6 +429,40 @@ export type MinuteVersionResponse = {
    */
   ai_edit_instructions: string | null
   content_source: ContentSource
+  /**
+   * Guardrail Results
+   */
+  guardrail_results: Array<GuardrailResultResponse>
+}
+
+/**
+ * GuardrailResultResponse
+ */
+export type GuardrailResultResponse = {
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Guardrail Type
+   */
+  guardrail_type: string
+  /**
+   * Result
+   */
+  result: string
+  /**
+   * Score
+   */
+  score?: number | null
+  /**
+   * Reasoning
+   */
+  reasoning?: string | null
+  /**
+   * Error
+   */
+  error?: string | null
 }
 
 /**

@@ -137,6 +137,15 @@ class MinutesPatchRequest(BaseModel):
     html_content: str | None = None
 
 
+class GuardrailResultResponse(BaseModel):
+    id: uuid.UUID
+    guardrail_type: str
+    result: str
+    score: float | None
+    reasoning: str | None
+    error: str | None
+
+
 class MinuteVersionResponse(BaseModel):
     id: uuid.UUID
     minute_id: uuid.UUID
@@ -146,6 +155,7 @@ class MinuteVersionResponse(BaseModel):
     error: str | None
     ai_edit_instructions: str | None
     content_source: ContentSource
+    guardrail_results: list[GuardrailResultResponse]
 
 
 class SpeakerPrediction(BaseModel):
