@@ -1,0 +1,67 @@
+# npm audit report
+
+@langchain/core  <0.3.80
+Severity: high
+LangChain serialization injection vulnerability enables secret extraction - https://github.com/advisories/GHSA-r399-636x-v7f6
+No fix available
+node_modules/@langchain/core
+  @i-dot-ai-npm/utilities  *
+  Depends on vulnerable versions of @langchain/core
+  Depends on vulnerable versions of @langchain/openai
+  Depends on vulnerable versions of langchain
+  node_modules/@i-dot-ai-npm/utilities
+  @langchain/openai  <=0.2.11
+  Depends on vulnerable versions of @langchain/core
+  node_modules/@langchain/openai
+  @langchain/textsplitters  <=0.0.3
+  Depends on vulnerable versions of @langchain/core
+  node_modules/@langchain/textsplitters
+    langchain  <=0.3.36 || 1.0.0-alpha.1 - 1.0.0-alpha.9
+    Depends on vulnerable versions of @langchain/core
+    Depends on vulnerable versions of @langchain/textsplitters
+    node_modules/langchain
+
+
+next  0.9.9 - 14.2.34
+Severity: high
+Next.js Affected by Cache Key Confusion for Image Optimization API Routes - https://github.com/advisories/GHSA-g5qg-72qw-gw5v
+Next.js Improper Middleware Redirect Handling Leads to SSRF - https://github.com/advisories/GHSA-4342-x723-ch2f
+Next.js Content Injection Vulnerability for Image Optimization - https://github.com/advisories/GHSA-xv57-4mr9-wg8v
+Next Vulnerable to Denial of Service with Server Components - https://github.com/advisories/GHSA-mwv6-3258-q52c
+Next has a Denial of Service with Server Components - Incomplete Fix Follow-Up - https://github.com/advisories/GHSA-5j59-xgg2-r9c4
+fix available via `npm audit fix`
+node_modules/next
+
+preact  10.26.5 - 10.26.9
+Severity: high
+Preact has JSON VNode Injection issue - https://github.com/advisories/GHSA-36hm-qxxp-pg3m
+fix available via `npm audit fix`
+node_modules/preact
+
+tar  <=7.5.2
+Severity: high
+node-tar is Vulnerable to Arbitrary File Overwrite and Symlink Poisoning via Insufficient Path Sanitization - https://github.com/advisories/GHSA-8qq5-rm4j-mr97
+fix available via `npm audit fix --force`
+Will install @hey-api/openapi-ts@0.90.4, which is a breaking change
+node_modules/giget/node_modules/tar
+node_modules/tar
+  giget  0.0.1 - 1.2.5
+  Depends on vulnerable versions of tar
+  node_modules/giget
+    c12  1.1.0 - 2.0.4
+    Depends on vulnerable versions of giget
+    node_modules/c12
+      @hey-api/openapi-ts  0.34.2 - 0.84.4
+      Depends on vulnerable versions of c12
+      node_modules/@hey-api/openapi-ts
+
+11 high severity vulnerabilities
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues possible (including breaking changes), run:
+  npm audit fix --force
+
+Some issues need review, and may require choosing
+a different dependency.
