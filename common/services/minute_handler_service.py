@@ -8,10 +8,11 @@ from sqlalchemy.orm import selectinload
 
 from common.convert_american_to_british_spelling import convert_american_to_british_spelling
 from common.database.postgres_database import SessionLocal
-from common.database.postgres_models import DialogueEntry, Hallucination, JobStatus, Minute, MinuteVersion, UserTemplate
+from common.database.postgres_models import DialogueEntry, GuardrailResult, Hallucination, JobStatus, Minute, MinuteVersion, UserTemplate
 from common.format_transcript import transcript_as_speaker_and_utterance
 from common.llm.client import FastOrBestLLM, create_default_chatbot
 from common.prompts import (
+    get_accuracy_check_messages,
     get_ai_edit_initial_messages,
     get_basic_minutes_prompt,
 )
@@ -19,6 +20,7 @@ from common.services.template_manager import TemplateManager
 from common.settings import get_settings
 from common.templates.user_template import generate_user_template
 from common.types import (
+    GuardrailScore,
     LLMHallucination,
     MeetingType,
     MinuteAndHallucinations,
@@ -45,6 +47,22 @@ class MinuteHandlerService:
             hallucination_type=llm_hallucination.hallucination_type,
             minute_version_id=minute_version_id,
         )
+
+    @staticmethod
+    def save_guardrail_result(
+        minute_version_id: UUID,
+        score: GuardrailScore,
+    ) -> None:
+        with SessionLocal() as session:
+            guardrail_result = GuardrailResult(
+                minute_version_id=minute_version_id,
+                guardrail_type="accuracy_check",
+                result="PASS" if score.score > 0.7 else "FAIL",  # Simple threshold for now
+                score=score.score,
+                reasoning=score.reasoning,
+            )
+            session.add(guardrail_result)
+            session.commit()
 
     @staticmethod
     def update_minute_version(
@@ -129,6 +147,18 @@ class MinuteHandlerService:
                 hallucinations=hallucinations,
                 status=JobStatus.COMPLETED,
             )
+
+            # Post-processing: Run Guardrail Check
+            try:
+                accuracy_score = await cls.calculate_accuracy_score(
+                    minute=html_content,
+                    transcript=minute_version.minute.transcription.dialogue_entries,
+                )
+                cls.save_guardrail_result(minute_version.id, accuracy_score)
+                logger.info("%s: Saved guardrail result: %s", minute_version.minute_id, accuracy_score)
+            except Exception:
+                logger.exception("%s: Failed to run guardrail check", minute_version.minute_id)
+                # We don't fail the whole job if guardrail fails, just log it
         except Exception as e:
             cls.update_minute_version(minute_version.id, status=JobStatus.FAILED, error=str(e))
             raise MinuteGenerationFailedError from e
@@ -253,3 +283,16 @@ class MinuteHandlerService:
         hallucinations = await chatbot.hallucination_check()
 
         return edited_minutes, hallucinations
+
+    @classmethod
+    async def calculate_accuracy_score(
+        cls,
+        minute: str,
+        transcript: list[DialogueEntry],
+    ) -> GuardrailScore:
+        chatbot = create_default_chatbot(FastOrBestLLM.FAST)
+        score = await chatbot.structured_chat(
+            messages=get_accuracy_check_messages(minute, transcript),
+            response_format=GuardrailScore,
+        )
+        return score

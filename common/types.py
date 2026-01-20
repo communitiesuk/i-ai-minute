@@ -199,6 +199,11 @@ class LLMHallucination(BaseModel):
     hallucination_reason: str | None = Field(description="Reason for hallucination", default=None)
 
 
+class GuardrailScore(BaseModel):
+    score: float = Field(description="Confidence score between 0.0 and 1.0")
+    reasoning: str = Field(description="Reasoning for the score")
+
+
 MinuteAndHallucinations = tuple[str, list[LLMHallucination] | None]
 
 
