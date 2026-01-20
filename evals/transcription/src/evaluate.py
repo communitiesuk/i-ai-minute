@@ -30,7 +30,7 @@ def run_evaluation(num_samples: float = 10, prepare_only: bool = False):
     azure_adapter = AzureSTTAdapter(
         speech_key=AZURE_SPEECH_KEY,
         speech_region=AZURE_SPEECH_REGION,
-        language="en-US",
+        language="en-GB",
     )
 
     whisper_adapter = WhisperAdapter(
