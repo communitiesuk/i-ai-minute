@@ -17,7 +17,7 @@ To get this functionality, you'll only need to fill in keys related to a transcr
 
 Note:
 
-- These values can be found on the Azure APIM Portal.
+- These APIM values can be found on the [Azure APIM Portal](https://portal.api.azc.test.communities.gov.uk/).
 - The `AZURE_APIM_ACCESS_TOKEN` is short lived and so must be regenerated every 2 hours.
 
 ### In `common/settings.py`:
