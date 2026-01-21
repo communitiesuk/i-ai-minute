@@ -132,7 +132,7 @@ services:
       retries: 24
       start_period: 30s
 
-  localstack: # LocalStack container
+  localstack:
     image: localstack/localstack:latest
     env_file:
       - .env
@@ -140,8 +140,6 @@ services:
       - 4566:4566
       - 4510-4559:4510-4559
     volumes:
-      # Here you mount your setup file so it will be executed
-      # when the container starts
       - ./localstack-setup.sh:/etc/localstack/init/ready.d/script.sh
     environment:
       - AWS_DEFAULT_REGION=eu-west-2
@@ -152,6 +150,9 @@ services:
       retries: 5
       start_period: 30s
 
-volumes:
-  local_postgres_data: {}
-  next_data: {}
+  ollama:
+    image: ghcr.io/ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ./ollama:/data
