@@ -52,6 +52,7 @@ python-multipart = "^0.0.20"
 i-dot-ai-utilities = "^0.4.4"
 azure-servicebus = "^7.14.2"
 openai-whisper = "^20250625"
+jiwer = "^4.0.0"
 
 [tool.poetry.group.backend.dependencies]
 pyjwt = "^2.9.0"
