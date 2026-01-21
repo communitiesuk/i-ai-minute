@@ -150,9 +150,11 @@ services:
       retries: 5
       start_period: 30s
 
-  ollama:
-    image: ghcr.io/ollama/ollama:latest
-    ports:
-      - "11434:11434"
-    volumes:
-      - ./ollama:/data
+
+
+
+
+volumes:
+  local_postgres_data: {}
+  next_data: {}
+
