@@ -1,4 +1,3 @@
-import json
 import logging
 import shutil
 import uuid
@@ -25,7 +24,7 @@ class WhisplyLocalAdapter(TranscriptionAdapter):
     adapter_type = AdapterType.SYNCHRONOUS
 
     @classmethod
-    async def start(cls, audio_file_path_or_recording: Path | Recording) -> TranscriptionJobMessageData:  # noqa: C901, PLR0915
+    async def start(cls, audio_file_path_or_recording: Path | Recording) -> TranscriptionJobMessageData:
         """
         Transcribe audio using local Whisply with speaker diarization
         """
@@ -112,8 +111,9 @@ class WhisplyLocalAdapter(TranscriptionAdapter):
     @classmethod
     def is_available(cls) -> bool:
         try:
-            from whisply.transcription import TranscriptionHandler
-            return True
+            import importlib.util
+
+            return importlib.util.find_spec("whisply.transcription") is not None
         except ImportError:
             logger.warning("Whisply library is not available on this system")
             return False
