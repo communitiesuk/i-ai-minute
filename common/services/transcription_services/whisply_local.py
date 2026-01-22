@@ -58,7 +58,7 @@ class WhisplyLocalAdapter(TranscriptionAdapter):
                 export_formats="json",
             )
 
-            # Set internal processing chunk size (20s often used in literrature)
+            # Set internal processing chunk size (20s was used by OpenAI to train Whisper, the underlying model)
             handler.sub_length = 20
 
             handler.model = models.set_supported_model(
