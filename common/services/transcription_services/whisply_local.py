@@ -34,22 +34,14 @@ class WhisplyLocalAdapter(TranscriptionAdapter):
 
         audio_file_path = audio_file_path_or_recording
 
-        # Create temp directory for this transcription
         project_temp_dir = Path.cwd() / ".whisply_temp"
         project_temp_dir.mkdir(exist_ok=True)
 
         output_dir = project_temp_dir / f"output_{uuid.uuid4().hex[:8]}"
         output_dir.mkdir(exist_ok=True)
 
-        logger.info(
-            "Starting transcription: %s (model=%s, device=%s)",
-            audio_file_path.name,
-            settings.WHISPLY_MODEL,
-            settings.WHISPLY_DEVICE,
-        )
-
         try:
-            if settings.WHISPLY_ENABLE_DIARIZATION and not settings.WHISPLY_HF_TOKEN:
+            if not settings.WHISPLY_HF_TOKEN:
                 msg = "HuggingFace token required for speaker diarization. Set WHISPLY_HF_TOKEN."
                 raise ValueError(msg)
 
@@ -57,50 +49,41 @@ class WhisplyLocalAdapter(TranscriptionAdapter):
                 base_dir=str(output_dir),
                 model=settings.WHISPLY_MODEL,
                 device=settings.WHISPLY_DEVICE,
-                file_language=settings.WHISPLY_LANGUAGE,
-                annotate=settings.WHISPLY_ENABLE_DIARIZATION,
-                num_speakers=settings.WHISPLY_NUM_SPEAKERS,
-                hf_token=settings.WHISPLY_HF_TOKEN if settings.WHISPLY_ENABLE_DIARIZATION else None,
+                file_language="en",
+                annotate=True,
+                hf_token=settings.WHISPLY_HF_TOKEN,
                 subtitle=False,
                 translate=False,
                 verbose=False,
                 export_formats="json",
             )
 
-            handler.sub_length = 5
+            # Set internal processing chunk size (20s often used in literrature)
+            handler.sub_length = 20
 
-            implementation = "whisperx" if settings.WHISPLY_ENABLE_DIARIZATION else "faster-whisper"
             handler.model = models.set_supported_model(
                 model=handler.model_provided,
-                implementation=implementation,
+                implementation="whisperx",
                 translation=handler.translate,
             )
 
-            if settings.WHISPLY_ENABLE_DIARIZATION:
-                whisply_output = handler.transcribe_with_whisperx(audio_file_path)
-            else:
-                whisply_output = handler.transcribe_with_faster_whisper(audio_file_path)
+            whisply_output = handler.transcribe_with_whisperx(audio_file_path)
 
             dialogue_entries = cls.convert_to_dialogue_entries(whisply_output)
 
             if not dialogue_entries:
-                logger.error("No dialogue entries produced from transcription")
                 msg = "Whisply transcription produced no dialogue entries"
                 raise RuntimeError(msg)
 
-            logger.info("Transcription complete: %d dialogue entries created", len(dialogue_entries))
             return TranscriptionJobMessageData(transcription_service=cls.name, transcript=dialogue_entries)
 
-        except Exception as e:
-            logger.error("Transcription failed: %s", e)
+        except Exception:
             raise
 
         finally:
-            # Cleanup temp directory
             try:
                 if output_dir.exists():
                     shutil.rmtree(output_dir)
-                    logger.debug("Cleaned up temp directory: %s", output_dir)
             except OSError as cleanup_error:
                 logger.warning("Failed to cleanup temp directory %s: %s", output_dir, cleanup_error)
 
@@ -115,7 +98,6 @@ class WhisplyLocalAdapter(TranscriptionAdapter):
 
             return importlib.util.find_spec("whisply.transcription") is not None
         except ImportError:
-            logger.warning("Whisply library is not available on this system")
             return False
 
     @classmethod
@@ -126,7 +108,6 @@ class WhisplyLocalAdapter(TranscriptionAdapter):
         """
         dialogue_entries = []
 
-        # Navigate to the transcription data
         transcription = whisply_data.get("transcription", {})
         transcriptions = transcription.get("transcriptions", {})
 
@@ -134,16 +115,9 @@ class WhisplyLocalAdapter(TranscriptionAdapter):
             logger.warning("No transcriptions data found in Whisply output")
             return dialogue_entries
 
-        # Get first language (usually 'en')
-        lang_key = next(iter(transcriptions.keys()), None)
-        if not lang_key:
-            logger.warning("No language key found in transcriptions")
-            return dialogue_entries
-
-        lang_data = transcriptions[lang_key]
+        lang_data = transcriptions["en"]
         chunks = lang_data.get("chunks", [])
 
-        # Group consecutive words by speaker to create dialogue entries
         current_speaker = None
         current_text = []
         current_start = None
@@ -161,7 +135,6 @@ class WhisplyLocalAdapter(TranscriptionAdapter):
                 if not word:
                     continue
 
-                # If speaker changes, save current entry and start new one
                 if current_speaker and speaker != current_speaker:
                     if current_text:
                         dialogue_entries.append(
@@ -175,14 +148,12 @@ class WhisplyLocalAdapter(TranscriptionAdapter):
                     current_text = []
                     current_start = None
 
-                # Add word to current entry
                 if current_start is None:
                     current_start = start
                 current_end = end
                 current_speaker = speaker
                 current_text.append(word)
 
-        # Add final entry
         if current_text and current_speaker:
             dialogue_entries.append(
                 DialogueEntry(
