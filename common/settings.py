@@ -94,21 +94,21 @@ class Settings(BaseSettings):
     FAST_LLM_PROVIDER: str = Field(
         description="Fast LLM provider to use. Currently 'openai' or 'gemini' are supported. Note that this should be "
         "used for low complexity LLM tasks, like AI edits",
-        default="gemini",
+        default="ollama",
     )
     FAST_LLM_MODEL_NAME: str = Field(
         description="Fast LLM model name to use. Note that this should be used for low complexity LLM tasks",
-        default="gemini-2.5-flash-lite",
+        default="llama3.2",
     )
     BEST_LLM_PROVIDER: str = Field(
         description="Best LLM provider to use. Currently 'openai' or 'gemini' are supported. Note that this should be "
         "used for higher complexity LLM tasks, like initial minute generation.",
-        default="gemini",
+        default="ollama",
     )
     BEST_LLM_MODEL_NAME: str = Field(
         description="Best LLM model name to use. Note that this should be used for higher complexity LLM tasks, like "
         "initial minute generation.",
-        default="gemini-2.5-flash",
+        default="llama3.2",
     )
 
     STORAGE_SERVICE_NAME: str = Field(
@@ -170,6 +170,12 @@ class Settings(BaseSettings):
         default="/tmp",  # noqa: S108
         description="The folder where the data directory is mounted for the local storage service.",
     )
+
+    # if using Ollama
+    OLLAMA_BASE_URL: str = Field(description="Ollama base URL", default="http://ollama:11434/v1")
+    
+    # if using Whisper
+    WHISPER_URL: str = Field(description="Whisper service URL", default="http://whisper:8000/v1")
 
     # use a dotenv file for local development
     if dotenv_detected:

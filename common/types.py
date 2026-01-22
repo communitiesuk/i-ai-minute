@@ -155,7 +155,7 @@ class MinuteVersionResponse(BaseModel):
     error: str | None
     ai_edit_instructions: str | None
     content_source: ContentSource
-    guardrail_results: list[GuardrailResultResponse]
+    guardrail_results: list[GuardrailResultResponse] = []
 
 
 class SpeakerPrediction(BaseModel):

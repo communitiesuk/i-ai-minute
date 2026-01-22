@@ -1,9 +1,12 @@
 import logging
 from uuid import UUID
 
+from pathlib import Path
+import tempfile
 from sqlalchemy.orm import selectinload
 from sqlmodel import col, select
-
+from openai import OpenAI  # We use the OpenAI client to talk to Faster-Whisper
+import json
 from common.audio.speakers import process_speakers_and_dialogue_entries
 from common.database.postgres_database import SessionLocal
 from common.database.postgres_models import Chat, JobStatus, Minute, Transcription
@@ -11,6 +14,7 @@ from common.generate_meeting_title import generate_meeting_title
 from common.llm.client import FastOrBestLLM, create_default_chatbot
 from common.prompts import get_chat_with_transcript_system_message
 from common.services.exceptions import InteractionFailedError, TranscriptionFailedError
+from common.services.storage_services import get_storage_service
 from common.services.transcription_services.transcription_manager import TranscriptionServiceManager
 from common.settings import get_settings
 from common.templates.citations import combine_consecutive_citations
@@ -160,7 +164,71 @@ class TranscriptionHandlerService:
             else:
                 # it's a new transcription job
                 cls.update_transcription(transcription.id, JobStatus.IN_PROGRESS)
-                transcription_job = await transcription_manager.perform_transcription_steps(transcription=transcription)
+
+                # === START LOCAL BYPASS ===
+                try:
+                    recording = transcription.recordings[0]
+                    print(f"🎙️ BYPASSING AZURE -> Sending {recording.s3_file_key} to Local Whisper...")
+                    
+                    storage_service = get_storage_service(settings.STORAGE_SERVICE_NAME)
+                    
+                    with tempfile.TemporaryDirectory() as tempdir:
+                        file_path = Path(tempdir) / Path(recording.s3_file_key).name
+                        await storage_service.download(recording.s3_file_key, file_path)
+    
+                        # 1. Connect to the local 'whisper' container
+                        client = OpenAI(
+                            base_url="http://whisper:8000/v1", # Connects to the docker service
+                            api_key="dummy" # Required by library
+                        )
+    
+                        # 2. Send the file
+                        with open(file_path, "rb") as audio_file:
+                            resp = client.audio.transcriptions.create(
+                                model="small",
+                                file=audio_file,
+                                response_format="verbose_json"
+                            )
+                        
+                    # 3. Format the result to match what the App expects
+                    # The App expects a list of dictionaries with 'text', 'start_time', 'end_time', 'speaker'
+                    dialogue_entries = []
+                    for segment in resp.segments:
+                        dialogue_entries.append({
+                            "speaker": "Speaker", # Local model doesn't label speakers by default
+                            "text": segment.text,
+                            "start_time": segment.start,
+                            "end_time": segment.end
+                        })
+    
+                    # 4. Save directly to DB (Skipping the Azure Manager)
+                    # You likely have a method like 'save_transcription_result' or you update the object directly
+                    # Based on your logs, we need to update the transcription object status
+                    
+                    # (You'll need to adapt this part to however your code saves results normally)
+                    # For example:
+                    cls.update_transcription(
+                        transcription.id, 
+                        JobStatus.COMPLETED, 
+                        transcript=dialogue_entries
+                    )
+                    
+                    print("✅ Local Transcription Successful!")
+                    
+                    # Construct return object
+                    transcription_job = TranscriptionJobMessageData(
+                        transcription_service="local_whisper",
+                        transcript=dialogue_entries
+                    )
+
+                except Exception as e:
+                    print(f"❌ Local Whisper Failed: {e}")
+                    cls.update_transcription(transcription.id, JobStatus.FAILED, error=str(e))
+                    raise TranscriptionFailedError from e
+                    
+                # === END LOCAL BYPASS ===
+
+                # transcription_job = await transcription_manager.perform_transcription_steps(transcription=transcription)
 
             if transcription_job.transcript:
                 dialogue_entries = await cls.identify_speakers(transcription_job.transcript)

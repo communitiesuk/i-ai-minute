@@ -8,7 +8,7 @@ from sqlalchemy.orm import selectinload
 
 from common.convert_american_to_british_spelling import convert_american_to_british_spelling
 from common.database.postgres_database import SessionLocal
-from common.database.postgres_models import DialogueEntry, GuardrailResult, Hallucination, JobStatus, Minute, MinuteVersion, UserTemplate
+from common.database.postgres_models import DialogueEntry, GuardrailResult, Guardrailtype, GuardrailStatus, Hallucination, JobStatus, Minute, MinuteVersion, UserTemplate
 from common.format_transcript import transcript_as_speaker_and_utterance
 from common.llm.client import FastOrBestLLM, create_default_chatbot
 from common.prompts import (
@@ -290,7 +290,9 @@ class MinuteHandlerService:
         minute: str,
         transcript: list[DialogueEntry],
     ) -> GuardrailScore:
+        # Use FAST model (Gemini Flash / Llama 3) for speed
         chatbot = create_default_chatbot(FastOrBestLLM.FAST)
+        
         score = await chatbot.structured_chat(
             messages=get_accuracy_check_messages(minute, transcript),
             response_format=GuardrailScore,

@@ -160,7 +160,10 @@ async def get_minute_version(minute_version_id: uuid.UUID, session: SQLSessionDe
     query = (
         select(MinuteVersion)
         .where(MinuteVersion.id == minute_version_id)
-        .options(selectinload(MinuteVersion.minute).selectinload(Minute.transcription))
+        .options(
+            selectinload(MinuteVersion.minute).selectinload(Minute.transcription),
+            selectinload(MinuteVersion.guardrail_results),
+        )
     )
     minute_version = (await session.exec(query)).first()
     if (
