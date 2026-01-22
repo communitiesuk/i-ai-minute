@@ -67,7 +67,7 @@ azure-storage-blob = "^12.26.0"
 azure-identity = "^1.23.1"
 
 [tool.poetry.group.local-dev.dependencies]
-whisply = "^0.3.2"
+whisply = "^0.13.1"
 
 [tool.poetry.group.dev.dependencies]
 bumpversion = "^0.6.0"
