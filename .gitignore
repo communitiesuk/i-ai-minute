@@ -112,3 +112,4 @@ config/google-credentials.json
 /playwright/.cache/
 
 evals
+.whisply_temp/

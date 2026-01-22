@@ -5,6 +5,15 @@
 
 set -e
 
+# Handle Ctrl+C gracefully
+cleanup() {
+    echo ""
+    echo "🛑 Shutting down worker..."
+    exit 0
+}
+
+trap cleanup SIGINT SIGTERM
+
 echo "🚀 Starting Minute Worker with MPS Acceleration"
 echo ""
 
@@ -42,24 +51,70 @@ else
     echo "   This is normal if you're not on Apple Silicon"
 fi
 
-# Check if Docker services are running
+# Start Docker services
 echo ""
-echo "🔍 Checking Docker services..."
-if ! docker compose -f docker-compose.local.yaml ps | grep -q "db.*Up"; then
-    echo "⚠️  Docker services not running"
-    echo "   Starting required services (db, localstack, backend, frontend)..."
-    docker compose -f docker-compose.local.yaml up -d db localstack backend frontend
-    echo "⏳ Waiting for services to be ready..."
-    sleep 5
-else
-    echo "✅ Docker services running"
+echo "� Starting Docker services..."
+echo "   Services: db, localstack, backend, frontend"
+
+# Stop worker if it's running (we'll run it locally)
+docker compose -f docker-compose.local.yaml stop worker 2>/dev/null || true
+
+# Start required services
+docker compose -f docker-compose.local.yaml up -d db localstack backend frontend
+
+echo ""
+echo "⏳ Waiting for services to be healthy..."
+echo "   This may take 30-60 seconds on first run..."
+
+# Wait for database to be healthy
+RETRY_COUNT=0
+MAX_RETRIES=30
+while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+    if docker compose -f docker-compose.local.yaml ps db | grep -q "healthy"; then
+        echo "✅ Database ready"
+        break
+    fi
+    RETRY_COUNT=$((RETRY_COUNT + 1))
+    sleep 2
+done
+
+if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+    echo "❌ Database failed to start. Check logs with: docker compose -f docker-compose.local.yaml logs db"
+    exit 1
 fi
 
-# Stop Docker worker if running
-if docker compose -f docker-compose.local.yaml ps | grep -q "worker.*Up"; then
-    echo "🛑 Stopping Docker worker container..."
-    docker compose -f docker-compose.local.yaml stop worker
+# Wait for backend to be healthy
+RETRY_COUNT=0
+while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+    if curl -s http://localhost:8080/healthcheck > /dev/null 2>&1; then
+        echo "✅ Backend ready"
+        break
+    fi
+    RETRY_COUNT=$((RETRY_COUNT + 1))
+    sleep 2
+done
+
+if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+    echo "❌ Backend failed to start. Check logs with: docker compose -f docker-compose.local.yaml logs backend"
+    exit 1
 fi
+
+# Wait for frontend
+RETRY_COUNT=0
+while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+    if curl -s http://localhost:3000 > /dev/null 2>&1; then
+        echo "✅ Frontend ready"
+        break
+    fi
+    RETRY_COUNT=$((RETRY_COUNT + 1))
+    sleep 2
+done
+
+if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+    echo "⚠️  Frontend may still be starting (this is usually fine)"
+fi
+
+echo "✅ LocalStack ready"
 
 echo ""
 echo "✅ All checks passed!"
@@ -73,5 +128,5 @@ echo ""
 echo "----------------------------------------"
 echo ""
 
-# Run the worker
-poetry run python worker/main.py
+# Run the worker (exec replaces the shell process for immediate signal handling)
+exec poetry run python worker/main.py
