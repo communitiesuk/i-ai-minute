@@ -20,9 +20,9 @@ brew install ffmpeg ollama poetry
 1. **HuggingFace Token**: https://huggingface.co/settings/tokens (starts with `hf_`)
    - Accept terms at: https://huggingface.co/pyannote/segmentation-3.0
    - Accept terms at: https://huggingface.co/pyannote/speaker-diarization-3.1
-2. **Ollama Model**: Download a quantized LLama3.1 8b model
+2. **Ollama Model**: Download a quantized LLama3.2 3b model
    ```bash
-   ollama pull llama3.1:8b-instruct-q4_K_M
+   ollama pull llama3.2:3b-instruct-q4_K_M
    ```
 
 ## Quick Start
@@ -32,13 +32,13 @@ brew install ffmpeg ollama poetry
 poetry install --with worker,local-dev
 
 # Download Ollama model
-ollama pull llama3.1:8b-instruct-q4_K_M
+ollama pull llama3.2:3b-instruct-q4_K_M
 
 # Configure environment
 cp .env.local .env
-
-# Edit .env and add: WHISPLY_HF_TOKEN=hf_your_token
-
+```
+Before moving on to the next step, edit the .env file and add: WHISPLY_HF_TOKEN=hf_your_token
+```bash
 # Run worker locally
 ./run-worker-local.sh
 ```

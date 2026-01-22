@@ -179,30 +179,11 @@ class Settings(BaseSettings):
         default="large-v3-turbo",
         description="Whisper model to use for Whisply transcription",
     )
-    WHISPLY_LANGUAGE: str = Field(
-        default="en",
-        description="Language code for Whisply transcription (e.g., 'en', 'de'). Use 'auto' for auto-detection",
-    )
-    WHISPLY_ENABLE_DIARIZATION: bool = Field(
-        default=True,
-        description="Enable speaker diarization in Whisply",
-    )
-    WHISPLY_NUM_SPEAKERS: int | None = Field(
-        default=None,
-        description="Number of speakers for Whisply diarization (None for auto-detection)",
-    )
     WHISPLY_HF_TOKEN: str | None = Field(
         default=None,
         description="HuggingFace token required for Whisply speaker diarization",
     )
-    WHISPLY_TIMEOUT: int = Field(
-        default=3600,
-        description="Timeout in seconds for Whisply transcription",
-    )
-    OLLAMA_BASE_URL: str = Field(
-        default="http://localhost:11434/v1",
-        description="Ollama base URL",
-    )
+    OLLAMA_BASE_URL: str = Field(default="http://localhost:11434/v1")
 
     # use a dotenv file for local development
     if dotenv_detected:

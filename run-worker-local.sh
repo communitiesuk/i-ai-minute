@@ -56,8 +56,8 @@ fi
 echo "✓"
 
 echo -n "[4/6] Ollama models... "
-FAST_MODEL=$(grep "FAST_LLM_MODEL_NAME" .env 2>/dev/null | cut -d'=' -f2 || echo "llama3.1:8b-instruct-q4_K_M")
-BEST_MODEL=$(grep "BEST_LLM_MODEL_NAME" .env 2>/dev/null | cut -d'=' -f2 || echo "llama3.1:8b-instruct-q4_K_M")
+FAST_MODEL=$(grep "FAST_LLM_MODEL_NAME" .env 2>/dev/null | cut -d'=' -f2 || echo "llama3.2:3b-instruct-q4_K_M")
+BEST_MODEL=$(grep "BEST_LLM_MODEL_NAME" .env 2>/dev/null | cut -d'=' -f2 || echo "llama3.2:3b-instruct-q4_K_M")
 for MODEL in "$FAST_MODEL" "$BEST_MODEL"; do
     if [ -n "$MODEL" ] && ! ollama list | grep -q "$MODEL"; then
         echo "✗"
