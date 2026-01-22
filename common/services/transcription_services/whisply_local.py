@@ -1,10 +1,12 @@
 import json
 import logging
-import os
 import shutil
-import subprocess
+import uuid
 from pathlib import Path
 from typing import Any
+
+from whisply import models
+from whisply.transcription import TranscriptionHandler
 
 from common.database.postgres_models import DialogueEntry, Recording
 from common.services.transcription_services.adapter import AdapterType, TranscriptionAdapter
@@ -37,8 +39,6 @@ class WhisplyLocalAdapter(TranscriptionAdapter):
         project_temp_dir = Path.cwd() / ".whisply_temp"
         project_temp_dir.mkdir(exist_ok=True)
 
-        import uuid
-
         output_dir = project_temp_dir / f"output_{uuid.uuid4().hex[:8]}"
         output_dir.mkdir(exist_ok=True)
 
@@ -50,69 +50,37 @@ class WhisplyLocalAdapter(TranscriptionAdapter):
         )
 
         try:
-            cmd = [
-                "whisply",
-                "run",
-                "--files",
-                str(audio_file_path),
-                "--output_dir",
-                str(output_dir),
-                "--device",
-                settings.WHISPLY_DEVICE,
-                "--model",
-                settings.WHISPLY_MODEL,
-                "--lang",
-                settings.WHISPLY_LANGUAGE,
-                "--export",
-                "json",
-            ]
+            if settings.WHISPLY_ENABLE_DIARIZATION and not settings.WHISPLY_HF_TOKEN:
+                msg = "HuggingFace token required for speaker diarization. Set WHISPLY_HF_TOKEN."
+                raise ValueError(msg)
+
+            handler = TranscriptionHandler(
+                base_dir=str(output_dir),
+                model=settings.WHISPLY_MODEL,
+                device=settings.WHISPLY_DEVICE,
+                file_language=settings.WHISPLY_LANGUAGE,
+                annotate=settings.WHISPLY_ENABLE_DIARIZATION,
+                num_speakers=settings.WHISPLY_NUM_SPEAKERS,
+                hf_token=settings.WHISPLY_HF_TOKEN if settings.WHISPLY_ENABLE_DIARIZATION else None,
+                subtitle=False,
+                translate=False,
+                verbose=False,
+                export_formats="json",
+            )
+
+            handler.sub_length = 5
+
+            implementation = "whisperx" if settings.WHISPLY_ENABLE_DIARIZATION else "faster-whisper"
+            handler.model = models.set_supported_model(
+                model=handler.model_provided,
+                implementation=implementation,
+                translation=handler.translate,
+            )
 
             if settings.WHISPLY_ENABLE_DIARIZATION:
-                cmd.extend(["--annotate"])
-                if settings.WHISPLY_NUM_SPEAKERS:
-                    cmd.extend(["--num_speakers", str(settings.WHISPLY_NUM_SPEAKERS)])
-                if settings.WHISPLY_HF_TOKEN:
-                    cmd.extend(["--hf_token", settings.WHISPLY_HF_TOKEN])
-
-            try:
-                # Suppress Whisply's verbose logging
-                whisply_env = {
-                    **os.environ,
-                    "PYTHONWARNINGS": "ignore",
-                    "WHISPLY_LOG_LEVEL": "ERROR",
-                    "SPEECHBRAIN_LOG_LEVEL": "ERROR",
-                    "TRANSFORMERS_VERBOSITY": "error",
-                }
-                subprocess.run(  # noqa: S603, ASYNC221
-                    cmd,
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,  # Suppress stderr too
-                    text=True,
-                    check=True,
-                    timeout=settings.WHISPLY_TIMEOUT,
-                    env=whisply_env,
-                )
-
-            except subprocess.CalledProcessError as e:
-                logger.error("Whisply failed with exit code %d", e.returncode)
-                msg = f"Whisply transcription failed with exit code {e.returncode}"
-                raise RuntimeError(msg) from e
-            except subprocess.TimeoutExpired as e:
-                logger.error("Whisply timed out after %d seconds", settings.WHISPLY_TIMEOUT)
-                msg = f"Whisply transcription timed out after {settings.WHISPLY_TIMEOUT} seconds"
-                raise RuntimeError(msg) from e
-
-            # Find and parse JSON output
-            json_files = list(output_dir.rglob("*.json"))
-
-            if not json_files:
-                logger.error("No JSON output found in %s", output_dir)
-                msg = "No JSON output file found from Whisply"
-                raise RuntimeError(msg)
-
-            json_file = json_files[0]
-            with json_file.open() as f:
-                whisply_output = json.load(f)
+                whisply_output = handler.transcribe_with_whisperx(audio_file_path)
+            else:
+                whisply_output = handler.transcribe_with_faster_whisper(audio_file_path)
 
             dialogue_entries = cls.convert_to_dialogue_entries(whisply_output)
 
@@ -144,41 +112,35 @@ class WhisplyLocalAdapter(TranscriptionAdapter):
     @classmethod
     def is_available(cls) -> bool:
         try:
-            result = subprocess.run(  # noqa: S603
-                ["whisply", "--help"],  # noqa: S607
-                capture_output=True,
-                text=True,
-                timeout=5,
-                check=False,
-            )
-            return result.returncode == 0
-        except (subprocess.SubprocessError, FileNotFoundError):
-            logger.warning("Whisply is not available on this system")
+            from whisply.transcription import TranscriptionHandler
+            return True
+        except ImportError:
+            logger.warning("Whisply library is not available on this system")
             return False
 
     @classmethod
     def convert_to_dialogue_entries(cls, whisply_data: dict[str, Any]) -> list[DialogueEntry]:
         """
         Convert Whisply JSON output to DialogueEntry format.
-        Whisply output structure: transcription -> language -> chunks (with word-level speaker info)
+        Whisply output structure: transcription -> transcriptions -> language -> chunks (with word-level speaker info)
         """
         dialogue_entries = []
 
         # Navigate to the transcription data
         transcription = whisply_data.get("transcription", {})
+        transcriptions = transcription.get("transcriptions", {})
 
-        # Get the language key (usually 'en')
-        if not transcription:
-            logger.warning("No transcription data found in Whisply output")
+        if not transcriptions:
+            logger.warning("No transcriptions data found in Whisply output")
             return dialogue_entries
 
         # Get first language (usually 'en')
-        lang_key = next(iter(transcription.keys()), None)
+        lang_key = next(iter(transcriptions.keys()), None)
         if not lang_key:
-            logger.warning("No language key found in transcription")
+            logger.warning("No language key found in transcriptions")
             return dialogue_entries
 
-        lang_data = transcription[lang_key]
+        lang_data = transcriptions[lang_key]
         chunks = lang_data.get("chunks", [])
 
         # Group consecutive words by speaker to create dialogue entries
