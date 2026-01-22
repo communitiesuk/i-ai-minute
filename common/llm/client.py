@@ -11,7 +11,7 @@ from tenacity import (
     wait_random_exponential,
 )
 
-from common.llm.adapters import GeminiModelAdapter, ModelAdapter
+from common.llm.adapters import GeminiModelAdapter, ModelAdapter, OpenAIModelAdapter
 from common.prompts import get_hallucination_detection_messages
 from common.settings import get_settings
 from common.types import LLMHallucination
@@ -66,14 +66,13 @@ def create_chatbot(model_type: str, model_name: str, temperature: float) -> Chat
     Creates and returns a chatbot instance based on the specified model type and name.
 
     This function initializes a ChatBot instance by selecting the appropriate model adapter
-    based on the provided model type. It supports "ollama" and "gemini" model types.
-    Additional settings required for model initialization are sourced from application
-    settings or passed as keyword arguments. If an unsupported model type is specified,
-    a ValueError is raised.
+    based on the provided model type. It supports "openai", "ollama" and "gemini" model types. Additional
+    settings required for model initialization are sourced from application settings or passed
+    as keyword arguments. If an unsupported model type is specified, a ValueError is raised.
 
     Args:
-        model_type: A string specifying the type of the model. Supported values are "ollama"
-            and "gemini".
+        model_type: A string specifying the type of the model. Supported values are "openai",
+            "ollama" and "gemini".
         model_name: A string indicating the name of the model to be used.
         **kwargs: Additional keyword arguments to be passed to the model api call, if required.
 
@@ -83,7 +82,18 @@ def create_chatbot(model_type: str, model_name: str, temperature: float) -> Chat
     Raises:
         ValueError: If the specified model type is unsupported.
     """
-    if model_type == "ollama":
+    if model_type == "openai":
+        return ChatBot(
+            OpenAIModelAdapter(
+                model=model_name,
+                api_key=settings.AZURE_OPENAI_API_KEY,
+                api_version=settings.AZURE_OPENAI_API_VERSION,
+                azure_deployment=settings.AZURE_DEPLOYMENT,
+                azure_endpoint=settings.AZURE_OPENAI_ENDPOINT,
+                temperature=temperature,
+            )
+        )
+    elif model_type == "ollama":
         from common.llm.adapters.ollama import OllamaModelAdapter
 
         return ChatBot(
