@@ -75,6 +75,7 @@ echo "✓"
 wait_for_service() {
     local service_name=$1
     local check_command=$2
+    local log_service=$3
     local max_retries=30
     local retry_count=0
     
@@ -85,27 +86,21 @@ wait_for_service() {
         retry_count=$((retry_count + 1))
         sleep 2
     done
-    return 1
+    
+    echo "✗"
+    echo "ERROR: $service_name failed. Check: docker compose logs $log_service"
+    exit 1
 }
 
 echo -n "[6/6] Waiting for services... "
-wait_for_service "Database" "docker compose ps db | grep -q 'healthy'" || {
-    echo "✗"
-    echo "ERROR: Database failed. Check: docker compose logs db"
-    exit 1
-}
-wait_for_service "Backend" "curl -s http://localhost:8080/healthcheck" || {
-    echo "✗"
-    echo "ERROR: Backend failed. Check: docker compose logs backend"
-    exit 1
-}
-wait_for_service "Frontend" "curl -s http://localhost:3000" > /dev/null 2>&1 || true
+wait_for_service "Database" "docker compose ps db | grep -q 'healthy'" "db"
+wait_for_service "Backend" "curl -s http://localhost:8080/healthcheck" "backend"
+wait_for_service "Frontend" "curl -s http://localhost:3000" "frontend"
 echo "✓"
 
 echo ""
-echo "Ready:"
+echo "Rest of the App is Ready:"
 echo "  Application: http://localhost:3000"
-echo "  Ray Dashboard: http://localhost:8265"
 echo ""
 echo "Starting worker (Ctrl+C to stop)..."
 echo ""
