@@ -1,5 +1,5 @@
 # Put action within a raw block so that the curly bracket expressions aren't picked up by the cookiecutter
-#
+##
 name: Checks
 
 env:
@@ -11,15 +11,23 @@ on:
       - backend/**
       - Makefile
       - frontend/**
+      - .github/workflows/*.yml
+      - .github/workflows/*.yaml
+
     branches:
       - "main"
       - "feature/**"
       - "chore/**"
       - "bugfix/**"
       - "hotfix/**"
-      - "develop"
+      - "development/**"
       - "dependabot/**"
       - "security/**"
+
+  pull_request: 
+    branches: 
+      - development
+      
   workflow_dispatch:
 
 jobs:
@@ -46,6 +54,12 @@ jobs:
         run: |
           poetry run ruff format . --check
           poetry run ruff check .
+      
+      - name: Type Check
+        run: |
+          poetry run mypy .
+          
+
 
   run_tests:
     name: Run tests
