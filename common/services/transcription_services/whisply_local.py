@@ -23,7 +23,7 @@ class WhisplyLocalAdapter(TranscriptionAdapter):
     adapter_type = AdapterType.SYNCHRONOUS
 
     @classmethod
-    async def start(cls, audio_file_path_or_recording: Path | Recording) -> TranscriptionJobMessageData:  # noqa: C901, PLR0912, PLR0915
+    async def start(cls, audio_file_path_or_recording: Path | Recording) -> TranscriptionJobMessageData:  # noqa: C901, PLR0915
         """
         Transcribe audio using local Whisply with speaker diarization
         """
@@ -75,22 +75,27 @@ class WhisplyLocalAdapter(TranscriptionAdapter):
                     cmd.extend(["--hf_token", settings.WHISPLY_HF_TOKEN])
 
             try:
-                # Suppress Whisply's verbose logging by redirecting to devnull
-                result = subprocess.run(  # noqa: S603, ASYNC221
+                # Suppress Whisply's verbose logging
+                whisply_env = {
+                    **os.environ,
+                    "PYTHONWARNINGS": "ignore",
+                    "WHISPLY_LOG_LEVEL": "ERROR",
+                    "SPEECHBRAIN_LOG_LEVEL": "ERROR",
+                    "TRANSFORMERS_VERBOSITY": "error",
+                }
+                subprocess.run(  # noqa: S603, ASYNC221
                     cmd,
                     stdout=subprocess.DEVNULL,
-                    stderr=subprocess.PIPE,
+                    stderr=subprocess.DEVNULL,  # Suppress stderr too
                     text=True,
                     check=True,
                     timeout=settings.WHISPLY_TIMEOUT,
-                    env={**os.environ, "PYTHONWARNINGS": "ignore"},
+                    env=whisply_env,
                 )
-                if result.stderr and "error" in result.stderr.lower():
-                    logger.warning("Whisply warnings: %s", result.stderr[:200])
 
             except subprocess.CalledProcessError as e:
-                logger.error("Whisply failed with exit code %d: %s", e.returncode, e.stderr)
-                msg = f"Whisply transcription failed: {e.stderr}"
+                logger.error("Whisply failed with exit code %d", e.returncode)
+                msg = f"Whisply transcription failed with exit code {e.returncode}"
                 raise RuntimeError(msg) from e
             except subprocess.TimeoutExpired as e:
                 logger.error("Whisply timed out after %d seconds", settings.WHISPLY_TIMEOUT)

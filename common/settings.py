@@ -202,6 +202,10 @@ class Settings(BaseSettings):
         default=3600,
         description="Timeout in seconds for Whisply transcription",
     )
+    OLLAMA_BASE_URL: str = Field(
+        default="http://localhost:11434/v1",
+        description="Ollama base URL",
+    )
 
     # use a dotenv file for local development
     if dotenv_detected:
