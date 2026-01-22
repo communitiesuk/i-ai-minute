@@ -73,9 +73,6 @@ class Settings(BaseSettings):
     AZURE_OPENAI_ENDPOINT: str | None = Field(description="Azure OpenAI service endpoint URL", default=None)
     AZURE_OPENAI_API_VERSION: str | None = Field(description="Azure OpenAI API version", default=None)
 
-    # if using direct OpenAI API
-    OPENAI_DIRECT_API_KEY: str | None = Field(description="Direct OpenAI API key", default=None)
-
     # if using Gemini
     GOOGLE_APPLICATION_CREDENTIALS: str | None = Field(
         description="Path to Google Cloud service account credentials JSON file", default=None

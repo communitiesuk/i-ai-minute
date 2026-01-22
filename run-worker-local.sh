@@ -68,8 +68,8 @@ done
 echo "✓"
 
 echo -n "[5/6] Starting Docker services... "
-docker compose -f docker-compose.local.yaml stop worker 2>/dev/null || true
-docker compose -f docker-compose.local.yaml up -d db localstack backend frontend > /dev/null 2>&1
+docker compose stop worker 2>/dev/null || true
+docker compose up -d db localstack backend frontend > /dev/null 2>&1
 echo "✓"
 
 wait_for_service() {
@@ -89,14 +89,14 @@ wait_for_service() {
 }
 
 echo -n "[6/6] Waiting for services... "
-wait_for_service "Database" "docker compose -f docker-compose.local.yaml ps db | grep -q 'healthy'" || {
+wait_for_service "Database" "docker compose ps db | grep -q 'healthy'" || {
     echo "✗"
-    echo "ERROR: Database failed. Check: docker compose -f docker-compose.local.yaml logs db"
+    echo "ERROR: Database failed. Check: docker compose logs db"
     exit 1
 }
 wait_for_service "Backend" "curl -s http://localhost:8080/healthcheck" || {
     echo "✗"
-    echo "ERROR: Backend failed. Check: docker compose -f docker-compose.local.yaml logs backend"
+    echo "ERROR: Backend failed. Check: docker compose logs backend"
     exit 1
 }
 wait_for_service "Frontend" "curl -s http://localhost:3000" > /dev/null 2>&1 || true
