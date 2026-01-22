@@ -9,7 +9,6 @@ __pycache__/
 .ipynb_checkpoints
 # *.ipynb
 .env
-.env.cloud
 Brewfile.lock.json
 *.pdf
 .mypy_cache
@@ -111,5 +110,4 @@ config/google-credentials.json
 /playwright-report/
 /playwright/.cache/
 
-evals
 .whisply_temp/
