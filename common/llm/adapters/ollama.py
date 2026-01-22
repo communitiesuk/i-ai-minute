@@ -47,9 +47,7 @@ class OllamaModelAdapter(ModelAdapter):
 
             content = response.choices[0].message.content
             json_data = json.loads(content)
-            parsed = response_format.model_validate(json_data)
-
-            return parsed
+            return response_format.model_validate(json_data)
         except Exception as e:
             logger.error("Ollama structured_chat failed: %s: %s", type(e).__name__, str(e))
             raise
@@ -62,8 +60,7 @@ class OllamaModelAdapter(ModelAdapter):
                 temperature=0.0,
             )
 
-            content = response.choices[0].message.content
-            return content
+            return response.choices[0].message.content
         except Exception as e:
             logger.error("Ollama chat failed: %s: %s", type(e).__name__, str(e))
             raise
