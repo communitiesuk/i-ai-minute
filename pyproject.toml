@@ -66,6 +66,9 @@ ray = {extras = ["default"], version = "^2.53.0"}
 azure-storage-blob = "^12.26.0"
 azure-identity = "^1.23.1"
 
+[tool.poetry.group.local-dev.dependencies]
+whisply = "^0.3.2"
+
 [tool.poetry.group.dev.dependencies]
 bumpversion = "^0.6.0"
 pre-commit = "^3.8.0"
