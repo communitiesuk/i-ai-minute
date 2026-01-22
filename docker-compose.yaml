@@ -150,6 +150,35 @@ services:
       retries: 5
       start_period: 30s
 
+  ollama:
+    image: ollama/ollama:latest
+    container_name: minute-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    entrypoint: /bin/sh -c "ollama serve & sleep 5 && ollama pull llama3.2 && wait"
+    deploy:
+      resources:
+        limits:
+          memory: 8G # Prevent it eating all RAM
+
+  # 2. The Transcriber (For Audio -> Text)
+  whisper:
+    image: fedirz/faster-whisper-server:latest-cpu
+    container_name: minute-whisper
+    ports:
+      - "8000:8000"
+    environment:
+      # Use a smaller model for speed. 
+      # Options: tiny, base, small, medium, large-v3
+      - WHISPER_MODEL=small 
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+
+
 
 
 
@@ -157,4 +186,5 @@ services:
 volumes:
   local_postgres_data: {}
   next_data: {}
+  ollama_data: {}
 
