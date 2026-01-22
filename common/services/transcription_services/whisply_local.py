@@ -1,7 +1,8 @@
 import json
 import logging
+import os
+import shutil
 import subprocess
-import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -22,7 +23,7 @@ class WhisplyLocalAdapter(TranscriptionAdapter):
     adapter_type = AdapterType.SYNCHRONOUS
 
     @classmethod
-    async def start(cls, audio_file_path_or_recording: Path | Recording) -> TranscriptionJobMessageData:
+    async def start(cls, audio_file_path_or_recording: Path | Recording) -> TranscriptionJobMessageData:  # noqa: C901, PLR0912, PLR0915
         """
         Transcribe audio using local Whisply with speaker diarization
         """
@@ -32,17 +33,23 @@ class WhisplyLocalAdapter(TranscriptionAdapter):
 
         audio_file_path = audio_file_path_or_recording
 
-        # Use a persistent directory for debugging
+        # Create temp directory for this transcription
         project_temp_dir = Path.cwd() / ".whisply_temp"
         project_temp_dir.mkdir(exist_ok=True)
-        
-        # Create unique output directory that persists
+
         import uuid
+
         output_dir = project_temp_dir / f"output_{uuid.uuid4().hex[:8]}"
         output_dir.mkdir(exist_ok=True)
-        
-        try:
 
+        logger.info(
+            "Starting transcription: %s (model=%s, device=%s)",
+            audio_file_path.name,
+            settings.WHISPLY_MODEL,
+            settings.WHISPLY_DEVICE,
+        )
+
+        try:
             cmd = [
                 "whisply",
                 "run",
@@ -67,19 +74,19 @@ class WhisplyLocalAdapter(TranscriptionAdapter):
                 if settings.WHISPLY_HF_TOKEN:
                     cmd.extend(["--hf_token", settings.WHISPLY_HF_TOKEN])
 
-            logger.info("Running Whisply transcription: %s", " ".join(cmd))
-
             try:
-                result = subprocess.run(
+                # Suppress Whisply's verbose logging by redirecting to devnull
+                result = subprocess.run(  # noqa: S603, ASYNC221
                     cmd,
-                    capture_output=True,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.PIPE,
                     text=True,
                     check=True,
                     timeout=settings.WHISPLY_TIMEOUT,
+                    env={**os.environ, "PYTHONWARNINGS": "ignore"},
                 )
-                logger.info("Whisply output: %s", result.stdout)
-                if result.stderr:
-                    logger.warning("Whisply stderr: %s", result.stderr)
+                if result.stderr and "error" in result.stderr.lower():
+                    logger.warning("Whisply warnings: %s", result.stderr[:200])
 
             except subprocess.CalledProcessError as e:
                 logger.error("Whisply failed with exit code %d: %s", e.returncode, e.stderr)
@@ -90,39 +97,40 @@ class WhisplyLocalAdapter(TranscriptionAdapter):
                 msg = f"Whisply transcription timed out after {settings.WHISPLY_TIMEOUT} seconds"
                 raise RuntimeError(msg) from e
 
-            # Find JSON output files
+            # Find and parse JSON output
             json_files = list(output_dir.rglob("*.json"))
-            logger.info(f"Found {len(json_files)} JSON files in {output_dir}")
-            
+
             if not json_files:
-                logger.error(f"No JSON output file found. Directory contents: {list(output_dir.rglob('*'))}")
+                logger.error("No JSON output found in %s", output_dir)
                 msg = "No JSON output file found from Whisply"
                 raise RuntimeError(msg)
 
             json_file = json_files[0]
-            logger.info(f"Reading JSON from: {json_file}")
-            
-            with open(json_file) as f:
+            with json_file.open() as f:
                 whisply_output = json.load(f)
-            
-            logger.info(f"Whisply output keys: {whisply_output.keys() if isinstance(whisply_output, dict) else 'not a dict'}")
 
             dialogue_entries = cls.convert_to_dialogue_entries(whisply_output)
-            logger.info(f"Converted to {len(dialogue_entries)} dialogue entries")
-            
+
             if not dialogue_entries:
-                logger.error("Whisply produced no dialogue entries from output")
-                logger.error(f"Whisply output sample: {str(whisply_output)[:500]}")
+                logger.error("No dialogue entries produced from transcription")
                 msg = "Whisply transcription produced no dialogue entries"
                 raise RuntimeError(msg)
 
-            logger.info(f"Transcription successful. Output saved in: {output_dir}")
+            logger.info("Transcription complete: %d dialogue entries created", len(dialogue_entries))
             return TranscriptionJobMessageData(transcription_service=cls.name, transcript=dialogue_entries)
-        
+
         except Exception as e:
-            logger.error(f"Transcription failed: {e}", exc_info=True)
-            logger.error(f"Output directory contents: {list(output_dir.rglob('*')) if output_dir.exists() else 'directory does not exist'}")
+            logger.error("Transcription failed: %s", e)
             raise
+
+        finally:
+            # Cleanup temp directory
+            try:
+                if output_dir.exists():
+                    shutil.rmtree(output_dir)
+                    logger.debug("Cleaned up temp directory: %s", output_dir)
+            except OSError as cleanup_error:
+                logger.warning("Failed to cleanup temp directory %s: %s", output_dir, cleanup_error)
 
     @classmethod
     async def check(cls, data: TranscriptionJobMessageData) -> TranscriptionJobMessageData:
@@ -131,11 +139,12 @@ class WhisplyLocalAdapter(TranscriptionAdapter):
     @classmethod
     def is_available(cls) -> bool:
         try:
-            result = subprocess.run(
-                ["whisply", "--help"],
+            result = subprocess.run(  # noqa: S603
+                ["whisply", "--help"],  # noqa: S607
                 capture_output=True,
                 text=True,
                 timeout=5,
+                check=False,
             )
             return result.returncode == 0
         except (subprocess.SubprocessError, FileNotFoundError):
@@ -152,41 +161,39 @@ class WhisplyLocalAdapter(TranscriptionAdapter):
 
         # Navigate to the transcription data
         transcription = whisply_data.get("transcription", {})
-        
+
         # Get the language key (usually 'en')
         if not transcription:
             logger.warning("No transcription data found in Whisply output")
             return dialogue_entries
-        
+
         # Get first language (usually 'en')
         lang_key = next(iter(transcription.keys()), None)
         if not lang_key:
             logger.warning("No language key found in transcription")
             return dialogue_entries
-        
+
         lang_data = transcription[lang_key]
         chunks = lang_data.get("chunks", [])
-        
-        logger.info(f"Processing {len(chunks)} chunks from Whisply output")
-        
+
         # Group consecutive words by speaker to create dialogue entries
         current_speaker = None
         current_text = []
         current_start = None
         current_end = None
-        
+
         for chunk in chunks:
             words = chunk.get("words", [])
-            
+
             for word_data in words:
                 speaker = word_data.get("speaker", "SPEAKER_00")
                 word = word_data.get("word", "").strip()
                 start = float(word_data.get("start", 0.0))
                 end = float(word_data.get("end", 0.0))
-                
+
                 if not word:
                     continue
-                
+
                 # If speaker changes, save current entry and start new one
                 if current_speaker and speaker != current_speaker:
                     if current_text:
@@ -200,14 +207,14 @@ class WhisplyLocalAdapter(TranscriptionAdapter):
                         )
                     current_text = []
                     current_start = None
-                
+
                 # Add word to current entry
                 if current_start is None:
                     current_start = start
                 current_end = end
                 current_speaker = speaker
                 current_text.append(word)
-        
+
         # Add final entry
         if current_text and current_speaker:
             dialogue_entries.append(
@@ -218,6 +225,5 @@ class WhisplyLocalAdapter(TranscriptionAdapter):
                     end_time=current_end,
                 )
             )
-        
-        logger.info(f"Created {len(dialogue_entries)} dialogue entries")
+
         return dialogue_entries
