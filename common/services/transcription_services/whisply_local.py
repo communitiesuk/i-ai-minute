@@ -40,11 +40,11 @@ class WhisplyLocalAdapter(TranscriptionAdapter):
         output_dir = project_temp_dir / f"output_{uuid.uuid4().hex[:8]}"
         output_dir.mkdir(exist_ok=True)
 
-        try:
-            if not settings.WHISPLY_HF_TOKEN:
-                msg = "HuggingFace token required for speaker diarization. Set WHISPLY_HF_TOKEN."
-                raise ValueError(msg)
+        if not settings.WHISPLY_HF_TOKEN:
+            msg = "HuggingFace token required for speaker diarization. Set WHISPLY_HF_TOKEN."
+            raise ValueError(msg)   
 
+        try:
             handler = TranscriptionHandler(
                 base_dir=str(output_dir),
                 model=settings.WHISPLY_MODEL,
