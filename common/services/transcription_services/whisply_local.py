@@ -20,6 +20,7 @@ class WhisplyLocalAdapter(TranscriptionAdapter):
     """Adapter for local Whisply transcription with speaker diarization."""
 
     max_audio_length = 14400
+    sub_length = 20
     name = "whisply_local"
     adapter_type = AdapterType.SYNCHRONOUS
 
@@ -58,8 +59,7 @@ class WhisplyLocalAdapter(TranscriptionAdapter):
                 export_formats="json",
             )
 
-            # Set internal processing chunk size (20s was used by OpenAI to train Whisper, the underlying model)
-            handler.sub_length = 20
+            handler.sub_length = cls.sub_length
 
             handler.model = models.set_supported_model(
                 model=handler.model_provided,
