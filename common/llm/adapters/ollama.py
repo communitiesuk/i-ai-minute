@@ -28,28 +28,28 @@ class OllamaModelAdapter(ModelAdapter):
         self._kwargs = kwargs
 
     async def structured_chat(self, messages: list[dict[str, str]], response_format: type[T]) -> T:
+        schema = response_format.model_json_schema()
+        json_instruction = f"\n\nRespond with valid JSON matching this schema:\n{schema}"
+
+        modified_messages = messages.copy()
+        if modified_messages:
+            last_msg = modified_messages[-1].copy()
+            last_msg["content"] = last_msg["content"] + json_instruction
+            modified_messages[-1] = last_msg
+
+        response = await self.async_client.chat.completions.create(
+            model=self._model,
+            messages=modified_messages,
+            response_format={"type": "json_object"},
+            temperature=self._kwargs.get("temperature", 0.0),
+        )
+
+        content = response.choices[0].message.content
         try:
-            schema = response_format.model_json_schema()
-            json_instruction = f"\n\nRespond with valid JSON matching this schema:\n{schema}"
-
-            modified_messages = messages.copy()
-            if modified_messages:
-                last_msg = modified_messages[-1].copy()
-                last_msg["content"] = last_msg["content"] + json_instruction
-                modified_messages[-1] = last_msg
-
-            response = await self.async_client.chat.completions.create(
-                model=self._model,
-                messages=modified_messages,
-                response_format={"type": "json_object"},
-                temperature=self._kwargs.get("temperature", 0.0),
-            )
-
-            content = response.choices[0].message.content
             json_data = json.loads(content)
             return response_format.model_validate(json_data)
         except Exception as e:
-            logger.error("Ollama structured_chat failed: %s: %s", type(e).__name__, str(e))
+            logger.error("Ollama JSON parsing/validation failed: %s: %s", type(e).__name__, str(e))
             raise
 
     async def chat(self, messages: list[dict[str, str]]) -> str:
