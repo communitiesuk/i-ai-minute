@@ -90,7 +90,7 @@ This approach uses multiple judge models and aggregates their decisions to impro
 
 ## More Information
 
-Signoff is required for:
+Things to consider:
 
 * Adding optimisation runs that significantly increase LLM usage/cost
-* Switching judge models/providers (cost, data handling, security)
+* Switching judge models/providers requires consideration (cost, data handling, security)

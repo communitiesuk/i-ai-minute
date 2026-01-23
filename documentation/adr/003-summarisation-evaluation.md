@@ -87,7 +87,5 @@ This approach maintains a curated set of challenging cases (e.g., negation, spea
 
 ## More Information
 
-Signoff is required for:
-
 * Using new judge model providers (cost, data handling, and security review)
-* Introducing any human labeling program (process, privacy, and governance)
+* Introducing any human labeling program for sensitive data(process, privacy, and governance)

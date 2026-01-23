@@ -140,11 +140,10 @@ This enables tracking regressions and distinguishing:
 * Pipeline preprocessing changes
 * Dataset changes
 
-Signoff is required for:
+Signoff, correct consent, data agreement will be required for:
 
 * Use of real user audio (privacy, retention, consent)
 * Sending audio to third-party vendors (security and compliance review)
-* Human transcription/labeling programs
 
 Qs raised:
 * How much should we consider quality improvements of transcript after it's generated (LLMs fixing homophones, spelling errors, etc.)

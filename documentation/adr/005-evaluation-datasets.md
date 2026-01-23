@@ -149,8 +149,8 @@ Evaluation runs should always log the dataset version. When the dataset changes,
 * Track whether score changes are due to model changes or dataset changes.
 * Maintain stable “frozen” regression subsets to preserve comparability over time.
 
-Signoff is required for:
+Signoff or data agreement will be required for:
 
 * Using any production or user data (privacy, retention, governance)
 * Any data export outside approved storage systems
-* Human labeling programs (process, QA, and compliance)
+* Human labeling programs operating on sensitive data (process, QA, and compliance)
