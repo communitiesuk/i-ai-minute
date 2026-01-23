@@ -171,6 +171,20 @@ class Settings(BaseSettings):
         description="The folder where the data directory is mounted for the local storage service.",
     )
 
+    WHISPLY_DEVICE: str = Field(
+        default="auto",
+        description="Device for Whisply transcription: auto, cpu, gpu, mps, or mlx",
+    )
+    WHISPLY_MODEL: str = Field(
+        default="large-v3-turbo",
+        description="Whisper model to use for Whisply transcription",
+    )
+    WHISPLY_HF_TOKEN: str | None = Field(
+        default=None,
+        description="HuggingFace token required for Whisply speaker diarization",
+    )
+    OLLAMA_BASE_URL: str = Field(default="http://localhost:11434/v1")
+
     # use a dotenv file for local development
     if dotenv_detected:
         model_config = SettingsConfigDict(env_file=DOT_ENV_PATH, extra="ignore")
