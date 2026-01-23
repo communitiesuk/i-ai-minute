@@ -235,7 +235,7 @@ class GuardrailResult(BaseTableMixin, table=True):
     created_datetime: datetime = Field(sa_column=created_datetime_column(), default=None)
     updated_datetime: datetime = Field(sa_column=updated_datetime_column(), default=None)
     minute_version_id: UUID | None = Field(default=None, foreign_key="minute_version.id", ondelete="CASCADE")
-    minute_version: "MinuteVersion" = Relationship()
+    minute_version: "MinuteVersion" = Relationship(back_populates="guardrail_results")
     guardrail_type: str = Field(description="Type of guardrail check performed")
     result: str = Field(description="Result of the guardrail check")
     score: float | None = Field(default=None, description="Confidence Score assigned by the guardrail check")

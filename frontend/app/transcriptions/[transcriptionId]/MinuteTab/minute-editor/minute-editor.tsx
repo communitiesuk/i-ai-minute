@@ -264,6 +264,8 @@ export function MinuteEditor({
             textToCopy={contentToCopy}
             posthogEvent="editor_content_copied"
           />
+     
+
           {hasCitations && (
             <Button
               variant="outline"
@@ -293,6 +295,7 @@ export function MinuteEditor({
           />
         </div>
       </div>
+  
       <GuardrailResponseComponent guardrailResults={minuteVersion.guardrail_results} />
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <Controller
