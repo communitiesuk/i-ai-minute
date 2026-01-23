@@ -4,7 +4,8 @@ import pytest
 
 from common.database.postgres_models import GuardrailResult, JobStatus
 from common.services.minute_handler_service import MinuteHandlerService
-from common.types import GuardrailScore
+from common.types import GuardrailScore, MeetingType
+from uuid import uuid4
 
 
 @pytest.mark.asyncio
@@ -57,3 +58,74 @@ def test_save_guardrail_result(mock_session_local):
     assert saved_obj.result == "PASS"
     
     mock_session.commit.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_process_minute_generation_runs_guardrails():
+    # Setup mocks
+    mock_minute_version = MagicMock()
+    mock_minute_version.id = uuid4()
+    mock_minute_version.minute.transcription.dialogue_entries = []
+
+    with patch("common.services.minute_handler_service.MinuteHandlerService.get_minute_version", new_callable=AsyncMock) as mock_get_mv, \
+         patch("common.services.minute_handler_service.MinuteHandlerService.predict_meeting") as mock_predict, \
+         patch("common.services.minute_handler_service.MinuteHandlerService.generate_minutes", new_callable=AsyncMock) as mock_gen_minutes, \
+         patch("common.services.minute_handler_service.MinuteHandlerService.calculate_accuracy_score", new_callable=AsyncMock) as mock_calc_score, \
+         patch("common.services.minute_handler_service.MinuteHandlerService.save_guardrail_result") as mock_save_result, \
+         patch("common.services.minute_handler_service.MinuteHandlerService.update_minute_version") as mock_update_mv:
+        
+        mock_get_mv.return_value = mock_minute_version
+        mock_predict.return_value = MeetingType.standard
+        mock_gen_minutes.return_value = ("<html>Minutes</html>", [])
+        
+        mock_score = GuardrailScore(score=0.9, reasoning="Good")
+        mock_calc_score.return_value = mock_score
+
+        # Execute
+        await MinuteHandlerService.process_minute_generation_message(mock_minute_version.id)
+
+        # Verify
+        mock_calc_score.assert_called_once()
+        mock_save_result.assert_called_once_with(mock_minute_version.id, mock_score)
+        mock_update_mv.assert_called_with(
+            mock_minute_version.id, 
+            html_content="<html>Minutes</html>", 
+            hallucinations=[], 
+            status=JobStatus.COMPLETED
+        )
+
+
+@pytest.mark.asyncio
+async def test_process_minute_generation_handles_guardrail_failure():
+    # Setup mocks
+    mock_minute_version = MagicMock()
+    mock_minute_version.id = uuid4()
+    mock_minute_version.minute.transcription.dialogue_entries = []
+    
+    with patch("common.services.minute_handler_service.MinuteHandlerService.get_minute_version", new_callable=AsyncMock) as mock_get_mv, \
+         patch("common.services.minute_handler_service.MinuteHandlerService.predict_meeting") as mock_predict, \
+         patch("common.services.minute_handler_service.MinuteHandlerService.generate_minutes", new_callable=AsyncMock) as mock_gen_minutes, \
+         patch("common.services.minute_handler_service.MinuteHandlerService.calculate_accuracy_score", new_callable=AsyncMock) as mock_calc_score, \
+         patch("common.services.minute_handler_service.MinuteHandlerService.save_guardrail_result") as mock_save_result, \
+         patch("common.services.minute_handler_service.MinuteHandlerService.update_minute_version") as mock_update_mv:
+        
+        mock_get_mv.return_value = mock_minute_version
+        mock_predict.return_value = MeetingType.standard
+        mock_gen_minutes.return_value = ("<html>Minutes</html>", [])
+        
+        # Guardrail check raises exception
+        mock_calc_score.side_effect = Exception("Guardrail failed")
+
+        # Execute
+        await MinuteHandlerService.process_minute_generation_message(mock_minute_version.id)
+
+        # Verify
+        mock_calc_score.assert_called_once()
+        mock_save_result.assert_not_called()
+        # Should still complete effectively
+        mock_update_mv.assert_called_with(
+            mock_minute_version.id, 
+            html_content="<html>Minutes</html>", 
+            hallucinations=[], 
+            status=JobStatus.COMPLETED
+        )
