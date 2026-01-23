@@ -138,7 +138,7 @@ Exports should support:
 * Evaluation datasets for LLM-as-judge prompt iteration
 * Training/validation splits for DSPy optimisation and held-out testing
 
-Signoff is required for:
+Signoff, correct consent, data agreement will be required for:
 
 * Any use of production/user transcripts in labeling workflows
 * Human reviewer access controls and data retention policies (if any)

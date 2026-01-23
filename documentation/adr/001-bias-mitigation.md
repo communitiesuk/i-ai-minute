@@ -77,5 +77,4 @@ This approach involves comprehensively evaluating different LLM and transcriptio
 
 ## More Information
 
-Signoff is required for:
 * Evaluating alternative LLM providers would require approval to use a large variety of LLM providers for comprehensive evaluation

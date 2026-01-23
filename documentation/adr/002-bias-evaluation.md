@@ -49,7 +49,6 @@ This approach generates synthetic transcript data that exemplifies linguistic di
 
 ## More Information
 
-Signoff is required for:
+Related activities:
 * External anonymization techniques
-* LLM services for synthetic data generation
-* (Potentially) Cloud-based advanced NLP tools to enhance named entity recognition pipelines
+* Exploring LLM services for synthetic data generation, potentially using external services that may require approval
