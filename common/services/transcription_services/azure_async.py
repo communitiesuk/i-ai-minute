@@ -3,9 +3,10 @@ import datetime
 import json
 import logging
 import uuid
+from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import aioboto3
 import httpx
@@ -25,7 +26,9 @@ storage_service = get_storage_service(settings.STORAGE_SERVICE_NAME)
 
 
 @contextmanager
-def get_client():
+def get_client() -> Generator[ContainerClient, None, None]:
+    assert settings.AZURE_BLOB_CONNECTION_STRING, "AZURE_BLOB_CONNECTION_STRING must be set"
+    assert settings.AZURE_TRANSCRIPTION_CONTAINER_NAME, "AZURE_TRANSCRIPTION_CONTAINER_NAME must be set"
     with ContainerClient.from_connection_string(
         settings.AZURE_BLOB_CONNECTION_STRING, settings.AZURE_TRANSCRIPTION_CONTAINER_NAME
     ) as container_client:
@@ -204,10 +207,10 @@ class AzureBatchTranscriptionAdapter(TranscriptionAdapter):
 
     @classmethod
     def get_azure_container_sas(
-        cls, container_client: ContainerClient, container_permissions: ContainerSasPermissions, expiry_time: int = 1
+        cls, container_client: ContainerClient, container_permissions: ContainerSasPermissions, expiry_days: int = 1
     ) -> str:
         start_time = datetime.datetime.now(datetime.UTC)
-        expiry_time = start_time + datetime.timedelta(days=expiry_time)
+        expiry_time = start_time + datetime.timedelta(days=expiry_days)
         return generate_container_sas(
             account_name=container_client.account_name,
             container_name=container_client.container_name,

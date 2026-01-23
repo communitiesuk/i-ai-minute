@@ -108,6 +108,8 @@ types-six = "^1.17.0.20251009"
 types-tensorflow = "^2.18.0.20260121"
 types-tqdm = "^4.67.0.20250809"
 types-ujson = "^5.10.0.20250822"
+types-aioboto3 = "^15.5.0"
+types-botocore = "^1.0.2"
 
 [build-system]
 requires = ["poetry-core"]

@@ -7,7 +7,7 @@ from .adapter import TranscriptionAdapter
 package_path = __path__
 package_name = __name__
 
-adapters = {}
+adapters: dict[str, type[TranscriptionAdapter]] = {}
 # Walk through all modules in the package and subpackages
 for _, modname, _ in pkgutil.walk_packages(package_path, package_name + "."):
     # Import the module
