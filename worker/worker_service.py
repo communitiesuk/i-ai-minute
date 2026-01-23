@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from typing import Any
 
 import ray
 
@@ -15,7 +16,7 @@ settings = get_settings()
 
 
 class WorkerService:
-    def __init__(self, transcription_queue_service: QueueService, llm_queue_service: QueueService):
+    def __init__(self, transcription_queue_service: QueueService[Any], llm_queue_service: QueueService[Any]):
         self.transcription_queue_service = transcription_queue_service
         self.llm_queue_service = llm_queue_service
         self.actors = []
@@ -52,7 +53,7 @@ class WorkerService:
                 break
             logger.info("Waiting for %d jobs", len(pending))
 
-    async def _check_and_restart_tasks(self, futures):
+    async def _check_and_restart_tasks(self, futures: list[asyncio.Future[None]]) -> None:
         failed, pending = await asyncio.wait(futures, timeout=1)
         for task in failed:
             # Manually restart failed jobs

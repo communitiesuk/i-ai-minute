@@ -1,8 +1,9 @@
 import logging
+from collections.abc import Generator
 from contextlib import contextmanager
 from typing import Any
 
-from azure.servicebus import ServiceBusClient, ServiceBusMessage
+from azure.servicebus import ServiceBusClient, ServiceBusMessage, ServiceBusReceivedMessage
 
 from common.services.queue_services.base import QueueService
 from common.settings import get_settings
@@ -13,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 @contextmanager
-def get_sb_client():
+def get_sb_client() -> Generator[ServiceBusClient, None, None]:
     with ServiceBusClient.from_connection_string(settings.AZURE_SB_CONNECTION_STRING) as sb_client:
         yield sb_client
 
@@ -30,11 +31,11 @@ class AzureServiceBusQueueService(QueueService):
         self.polling_interval = polling_interval
         self.queue_name = queue_name
 
-    def __reduce__(self):
+    def __reduce__(self) -> tuple[type["AzureServiceBusQueueService"], tuple[str]]:
         """Required so that Ray can deserialize the queue service by instantiated a new one."""
         return AzureServiceBusQueueService, (self.queue_name,)
 
-    def receive_message(self, max_messages: int = 10) -> list[tuple[WorkerMessage, Any]]:
+    def receive_message(self, max_messages: int = 10) -> list[tuple[WorkerMessage, ServiceBusReceivedMessage]]:
         out = []
         with (
             get_sb_client() as client,
@@ -51,32 +52,32 @@ class AzureServiceBusQueueService(QueueService):
                     logger.exception("failed to process message")
         return out
 
-    def publish_message(self, message: WorkerMessage):
+    def publish_message(self, message: WorkerMessage) -> None:
         with get_sb_client() as client, client.get_queue_sender(self.queue_name) as sender:
             sender.send_messages([ServiceBusMessage(message.model_dump_json())])
 
-    def complete_message(self, receipt_handle: Any):
+    def complete_message(self, receipt_handle: ServiceBusReceivedMessage) -> None:
         with (
             get_sb_client() as client,
             client.get_queue_receiver(self.queue_name) as receiver,
         ):
             receiver.complete_message(receipt_handle)
 
-    def deadletter_message(self, message: WorkerMessage, receipt_handle: Any):  # noqa: ARG002
+    def deadletter_message(self, message: WorkerMessage, receipt_handle: ServiceBusReceivedMessage) -> None:  # noqa: ARG002
         with (
             get_sb_client() as client,
             client.get_queue_receiver(self.queue_name) as receiver,
         ):
             receiver.dead_letter_message(receipt_handle)
 
-    def abandon_message(self, receipt_handle: Any):
+    def abandon_message(self, receipt_handle: ServiceBusReceivedMessage) -> None:
         with (
             get_sb_client() as client,
             client.get_queue_receiver(self.queue_name) as receiver,
         ):
             receiver.abandon_message(receipt_handle)
 
-    def purge_messages(self):
+    def purge_messages(self) -> None:
         with (
             get_sb_client() as client,
             client.get_queue_receiver(self.queue_name) as receiver,
