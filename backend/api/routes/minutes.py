@@ -57,7 +57,7 @@ async def list_minutes_for_transcription(
 @minutes_router.post("/transcription/{transcription_id}/minutes")
 async def create_minute(
     transcription_id: uuid.UUID, request: MinutesCreateRequest, session: SQLSessionDep, user: UserDep
-):
+)-> None:
     transcription = await session.get(Transcription, transcription_id)
     if not transcription or transcription.user_id != user.id:
         raise HTTPException(404, "Not found")
@@ -174,7 +174,7 @@ async def get_minute_version(minute_version_id: uuid.UUID, session: SQLSessionDe
 
 
 @minutes_router.delete("/minute_versions/{minute_version_id}")
-async def delete_minute_version(minute_version_id: uuid.UUID, session: SQLSessionDep, user: UserDep):
+async def delete_minute_version(minute_version_id: uuid.UUID, session: SQLSessionDep, user: UserDep)->None:
     query = (
         select(MinuteVersion)
         .where(MinuteVersion.id == minute_version_id)

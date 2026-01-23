@@ -58,8 +58,8 @@ class OpenAIModelAdapter(ModelAdapter):
             logger.warning(
                 "max output tokens reached: ID: %s prompt_tokens: %s completion_tokens %s",
                 response.id,
-                response.usage.prompt_tokens,
-                response.usage.completion_tokens,
+                response.usage.prompt_tokens if response.usage else None,
+                response.usage.completion_tokens if response.usage else None,
             )
             return True
         return False

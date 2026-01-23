@@ -32,7 +32,7 @@ def combine_consecutive_citations(minute: str) -> str:
         numbers = [int(n.group()) for n in citation_pattern.finditer(citation_cluster)]
         numbers.sort()
         # Extract individual numbers from the cluster
-        groups = []
+        groups: list[list[int]] = []        
         for number in numbers:
             if len(groups) == 0 or abs(groups[-1][-1] - number) > MAX_CITATION_DISTANCE:
                 groups.append([number])

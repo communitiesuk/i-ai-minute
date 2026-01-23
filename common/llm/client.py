@@ -37,7 +37,7 @@ class ChatBot:
 
     def __init__(self, adapter: ModelAdapter) -> None:
         self.adapter = adapter
-        self.messages = []
+        self.messages:list[dict[str, str]] = []
 
     async def hallucination_check(self) -> list[LLMHallucination]:
         if settings.HALLUCINATION_CHECK:

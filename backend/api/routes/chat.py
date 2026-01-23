@@ -101,7 +101,7 @@ async def get_chat(
 
 
 @chat_router.delete("/transcriptions/{transcription_id}/chat/{chat_id}", status_code=204)
-async def delete_chat(transcription_id: uuid.UUID, chat_id: uuid.UUID, session: SQLSessionDep, current_user: UserDep):
+async def delete_chat(transcription_id: uuid.UUID, chat_id: uuid.UUID, session: SQLSessionDep, current_user: UserDep)-> None:
     """Delete a specific transcription by ID."""
     # First check if the transcription exists and belongs to the user
     transcription = await session.get(Transcription, transcription_id)
@@ -114,7 +114,7 @@ async def delete_chat(transcription_id: uuid.UUID, chat_id: uuid.UUID, session: 
 
 
 @chat_router.delete("/transcriptions/{transcription_id}/chat", status_code=204)
-async def delete_chats(transcription_id: uuid.UUID, session: SQLSessionDep, current_user: UserDep):
+async def delete_chats(transcription_id: uuid.UUID, session: SQLSessionDep, current_user: UserDep)-> None:
     # First check if the transcription exists and belongs to the user
     transcription = await session.get(Transcription, transcription_id)
     if not transcription or transcription.user_id != current_user.id:
