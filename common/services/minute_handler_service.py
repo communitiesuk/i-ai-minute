@@ -141,13 +141,6 @@ class MinuteHandlerService:
             meeting_type = cls.predict_meeting(minute_version.minute.transcription.dialogue_entries)
             logger.info("%s: Predicted minute version %s", minute_version.minute_id, meeting_type)
             html_content, hallucinations = await cls.generate_minutes(meeting_type, minute_version.minute)
-            cls.update_minute_version(
-                minute_version.id,
-                html_content=html_content,
-                hallucinations=hallucinations,
-                status=JobStatus.COMPLETED,
-            )
-
             # Post-processing: Run Guardrail Check
             try:
                 accuracy_score = await cls.calculate_accuracy_score(
@@ -159,6 +152,13 @@ class MinuteHandlerService:
             except Exception:
                 logger.exception("%s: Failed to run guardrail check", minute_version.minute_id)
                 # We don't fail the whole job if guardrail fails, just log it
+
+            cls.update_minute_version(
+                minute_version.id,
+                html_content=html_content,
+                hallucinations=hallucinations,
+                status=JobStatus.COMPLETED,
+            )
         except Exception as e:
             cls.update_minute_version(minute_version.id, status=JobStatus.FAILED, error=str(e))
             raise MinuteGenerationFailedError from e
