@@ -8,6 +8,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped
 from sqlalchemy.sql.functions import now
 from sqlmodel import Field, Relationship, SQLModel, col, func
+from typing import Any
 
 
 class DialogueEntry(TypedDict):
@@ -18,19 +19,20 @@ class DialogueEntry(TypedDict):
 
 
 # Create factory functions for columns to avoid reusing column objects
-def created_datetime_column():
+def created_datetime_column() -> Column[Any]:
     return Column(TIMESTAMP(timezone=True), nullable=False, server_default=now(), default=None)
 
 
-def updated_datetime_column():
+def updated_datetime_column() -> Column[Any]:
     return Column(TIMESTAMP(timezone=True), nullable=False, server_default=now(), default=None)
 
 
 class BaseTableMixin(SQLModel):
     # Note, we can't add created/updated_datetime Columns here, as each table needs its own instance of these Columns
-    model_config = {  # noqa: RUF012
-        "from_attributes": True,
-    }
+
+    model_config = SQLModel.model_config.copy(update={ ""
+    "from_attributes": True, }
+    )
 
     id: UUID = Field(
         default_factory=uuid4, primary_key=True, sa_column_kwargs={"server_default": func.gen_random_uuid()}
@@ -51,6 +53,7 @@ class ContentSource(StrEnum):
 
 
 class MinuteVersion(BaseTableMixin, table=True):
+    
     __tablename__ = "minute_version"
     created_datetime: datetime = Field(sa_column=created_datetime_column(), default=None)
     updated_datetime: datetime = Field(sa_column=updated_datetime_column(), default=None)

@@ -2,6 +2,8 @@ import logging
 import re
 
 from breame.spelling import american_spelling_exists, get_british_spelling
+from re import Match 
+
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +16,7 @@ def convert_american_to_british_spelling(  # noqa: C901
 
     try:
 
-        def replace_word(match):
+        def replace_word(match:Match[str])->str:
             # The first group contains any leading punctuation/spaces
             # The second group contains the word
             # The third group contains any trailing punctuation/spaces
