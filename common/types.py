@@ -137,6 +137,15 @@ class MinutesPatchRequest(BaseModel):
     html_content: str | None = None
 
 
+class GuardrailResultResponse(BaseModel):
+    id: uuid.UUID
+    guardrail_type: str
+    result: str
+    score: float | None
+    reasoning: str | None
+    error: str | None
+
+
 class MinuteVersionResponse(BaseModel):
     id: uuid.UUID
     minute_id: uuid.UUID
@@ -146,6 +155,7 @@ class MinuteVersionResponse(BaseModel):
     error: str | None
     ai_edit_instructions: str | None
     content_source: ContentSource
+    guardrail_results: list[GuardrailResultResponse] = []
 
 
 class SpeakerPrediction(BaseModel):
@@ -197,6 +207,11 @@ class LLMHallucination(BaseModel):
     hallucination_type: HallucinationType = Field(description="Type of hallucination")
     hallucination_text: str | None = Field(description="Text of hallucination", default=None)
     hallucination_reason: str | None = Field(description="Reason for hallucination", default=None)
+
+
+class GuardrailScore(BaseModel):
+    score: float = Field(description="Confidence score between 0.0 and 1.0")
+    reasoning: str = Field(description="Reasoning for the score")
 
 
 MinuteAndHallucinations = tuple[str, list[LLMHallucination] | None]
