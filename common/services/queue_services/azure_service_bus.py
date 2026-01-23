@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 @contextmanager
 def get_sb_client() -> Generator[ServiceBusClient, None, None]:
+    assert settings.AZURE_SB_CONNECTION_STRING, "AZURE_SB_CONNECTION_STRING must be set"
     with ServiceBusClient.from_connection_string(settings.AZURE_SB_CONNECTION_STRING) as sb_client:
         yield sb_client
 
