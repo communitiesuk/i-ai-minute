@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 
 
 class SignalHandler:
-    def __init__(self)-> None:
+    def __init__(self) -> None:
         self.signal_received = False
         signal.signal(signal.SIGTERM, self._handle_signal)
         signal.signal(signal.SIGINT, self._handle_signal)

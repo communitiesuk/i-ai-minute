@@ -1,8 +1,8 @@
 import logging
-from typing import TypeVar
+from typing import Any, TypeVar, cast
 
 from openai import AsyncAzureOpenAI
-from openai.types.chat import ChatCompletion
+from openai.types.chat import ChatCompletion, ChatCompletionMessageParam
 from openai.types.chat.chat_completion import Choice
 
 from common.settings import get_settings
@@ -22,7 +22,7 @@ class OpenAIModelAdapter(ModelAdapter):
         azure_endpoint: str,
         azure_deployment: str,
         api_version: str = "2024-08-01-preview",
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         self._model = model
         self.async_azure_client = AsyncAzureOpenAI(
@@ -35,22 +35,31 @@ class OpenAIModelAdapter(ModelAdapter):
 
     async def structured_chat(self, messages: list[dict[str, str]], response_format: type[T]) -> T:
         response = await self.async_azure_client.beta.chat.completions.parse(
-            model=self._model, messages=messages, response_format=response_format, **self._kwargs
+            model=self._model,
+            messages=cast(list[ChatCompletionMessageParam], messages),
+            response_format=response_format,
+            **self._kwargs,
         )
-        choice = self.handle_response(response)
-
-        return choice.message.parsed
+        parsed = response.choices[0].message.parsed
+        if parsed is None:
+            msg = "OpenAI response.parsed is None"
+            raise ValueError(msg)
+        return cast(T, parsed)
 
     async def chat(self, messages: list[dict[str, str]]) -> str:
         response = await self.async_azure_client.chat.completions.create(
             model=self._model,
-            messages=messages,
+            messages=cast(list[ChatCompletionMessageParam], messages),
             temperature=0.0,
             max_tokens=16384,
         )
         choice = response.choices[0]
         self.choice_incomplete(choice, response)
-        return choice.message.content
+        message_content = choice.message.content
+        if message_content is None:
+            msg = "OpenAI response.content is None"
+            raise ValueError(msg)
+        return message_content
 
     @staticmethod
     def choice_incomplete(choice: Choice, response: ChatCompletion) -> bool:

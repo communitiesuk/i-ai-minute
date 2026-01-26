@@ -3,4 +3,4 @@ from .aws import AWSTranscribeAdapter
 from .azure import AzureSpeechAdapter
 from .azure_async import AzureBatchTranscriptionAdapter
 
-__all__ = ["TranscriptionAdapter", "AWSTranscribeAdapter", "AzureSpeechAdapter", "AzureBatchTranscriptionAdapter"]
+__all__ = ["AWSTranscribeAdapter", "AzureBatchTranscriptionAdapter", "AzureSpeechAdapter", "TranscriptionAdapter"]

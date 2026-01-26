@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum, auto
-from typing import TypedDict, TYPE_CHECKING, Any
+from typing import Any, TypedDict, TYPE_CHECKING, Any
 from uuid import UUID, uuid4
 
 from sqlalchemy import TIMESTAMP, Column
@@ -9,7 +9,6 @@ from sqlalchemy.orm import Mapped
 from sqlalchemy.sql.functions import now
 from sqlmodel import Field, Relationship, SQLModel, col, func
 
-from typing import Any
 
 
 class DialogueEntry(TypedDict):
@@ -31,9 +30,8 @@ def updated_datetime_column() -> Column[Any]:
 class BaseTableMixin(SQLModel):
     # Note, we can't add created/updated_datetime Columns here, as each table needs its own instance of these Columns
 
-    model_config = SQLModel.model_config.copy(update={ ""
-    "from_attributes": True, }
-    )
+    model_config = SQLModel.model_config.copy()
+    model_config["from_attributes"] = True
 
     id: UUID = Field(
         default_factory=uuid4, primary_key=True, sa_column_kwargs={"server_default": func.gen_random_uuid()}
@@ -58,7 +56,6 @@ class ContentSource(StrEnum):
 
 
 class MinuteVersion(BaseTableMixin, table=True):
-    
     __tablename__ = "minute_version"
     created_datetime: datetime = Field(sa_column=created_datetime_column(), default=None)
     updated_datetime: datetime = Field(sa_column=updated_datetime_column(), default=None)
@@ -214,7 +211,7 @@ class UserTemplate(BaseTableMixin, table=True):
 
     minutes: list[Minute] = Relationship(back_populates="user_template")
 
-    questions: Mapped[list[TemplateQuestion]] = Relationship(
+    questions: Mapped[Mapped[list[TemplateQuestion]]] = Relationship(
         back_populates="user_template",
         passive_deletes="all",
         sa_relationship_kwargs={"order_by": TemplateQuestion.position},

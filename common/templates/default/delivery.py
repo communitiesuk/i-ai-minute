@@ -76,7 +76,9 @@ The sections should be in the order they appear in the transcript. Typically you
     ) -> MinuteAndHallucinations:
         chatbot = create_default_chatbot(FastOrBestLLM.BEST)
         transcript = minute.transcription.dialogue_entries
-        assert transcript, f"Minute {minute.id} has no dialogue entries"
+        if not transcript:
+            msg = f"Minute {minute.id} has no dialogue entries"
+            raise ValueError(msg)
         initial_messages = cls.get_system_message_for_delivery(transcript)
         # meeting sections
         initial_messages.append(cls.get_messages_for_sections())

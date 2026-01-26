@@ -5,7 +5,6 @@ from uuid import UUID
 
 import mistune
 from sqlalchemy.orm import selectinload
-from sqlmodel import select
 
 from common.convert_american_to_british_spelling import convert_american_to_british_spelling
 from common.database.postgres_database import SessionLocal
@@ -179,10 +178,7 @@ class MinuteHandlerService:
     @classmethod
     async def generate_minute_from_user_template(cls, minute: Minute) -> MinuteAndHallucinations:
         with SessionLocal() as session:
-            questions_rel = getattr(UserTemplate, "questions")
-            template = session.get(
-                UserTemplate, minute.user_template_id, options=[selectinload(questions_rel)]
-            )
+            template = session.get(UserTemplate, minute.user_template_id, options=[selectinload(UserTemplate.questions)])
         if not template:
             msg = f"No template with id {minute.user_template_id}"
             raise RuntimeError(msg)

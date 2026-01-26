@@ -31,7 +31,7 @@ class AWSTranscribeAdapter(TranscriptionAdapter):
         if not isinstance(audio_file_path_or_recording, Recording):
             msg = "AWSTranscribeAdapter only accepts Recording objects"
             raise TypeError(msg)
-        
+
         transcribe = boto3.client("transcribe", region_name=settings.AWS_REGION)
         file_name = uuid.uuid4()
         job_name = f"minute-{settings.ENVIRONMENT}-transcription-job-{file_name}"

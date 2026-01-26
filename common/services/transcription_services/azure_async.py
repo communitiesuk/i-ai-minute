@@ -6,7 +6,7 @@ import uuid
 from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 
 import aioboto3
 import httpx
@@ -27,8 +27,12 @@ storage_service = get_storage_service(settings.STORAGE_SERVICE_NAME)
 
 @contextmanager
 def get_client() -> Generator[ContainerClient, None, None]:
-    assert settings.AZURE_BLOB_CONNECTION_STRING, "AZURE_BLOB_CONNECTION_STRING must be set"
-    assert settings.AZURE_TRANSCRIPTION_CONTAINER_NAME, "AZURE_TRANSCRIPTION_CONTAINER_NAME must be set"
+    if not settings.AZURE_BLOB_CONNECTION_STRING:
+        msg = "AZURE_BLOB_CONNECTION_STRING must be set"
+        raise ValueError(msg)
+    if not settings.AZURE_TRANSCRIPTION_CONTAINER_NAME:
+        msg = "AZURE_TRANSCRIPTION_CONTAINER_NAME must be set"
+        raise ValueError(msg)
     with ContainerClient.from_connection_string(
         settings.AZURE_BLOB_CONNECTION_STRING, settings.AZURE_TRANSCRIPTION_CONTAINER_NAME
     ) as container_client:
@@ -67,7 +71,7 @@ class AzureBatchTranscriptionAdapter(TranscriptionAdapter):
         if not isinstance(audio_file_path_or_recording, Recording):
             msg = "AzureBatchTranscriptionAdapter only accepts Recording objects"
             raise TypeError(msg)
-        
+
         file_name = uuid.uuid4()
         job_name = f"minute-{settings.ENVIRONMENT}-transcription-job-{file_name}"
         presigned_url = await storage_service.generate_presigned_url_get_object(

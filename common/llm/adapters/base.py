@@ -1,15 +1,13 @@
-from typing import Any, Protocol, TypeVar
+from typing import Protocol, TypeVar
 
 from pydantic import BaseModel
 
 from common.settings import get_settings
-from openai.types.chat import  ChatCompletionMessageParam
-
 
 settings = get_settings()
 T = TypeVar("T", bound=BaseModel)
 
 
 class ModelAdapter(Protocol):
-    async def chat(self, messages: list[dict[str, str]]) -> Any: ...
+    async def chat(self, messages: list[dict[str, str]]) -> str: ...
     async def structured_chat(self, messages: list[dict[str, str]], response_format: type[T]) -> T: ...
