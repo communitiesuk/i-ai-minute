@@ -1,10 +1,8 @@
-from typing import Any, Protocol, TypeVar
+from typing import Protocol, TypeVar
 
 from pydantic import BaseModel
 
 from common.settings import get_settings
-from openai.types.chat import  ChatCompletionMessageParam
-
 
 settings = get_settings()
 T = TypeVar("T", bound=BaseModel)

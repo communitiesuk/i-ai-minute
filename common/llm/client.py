@@ -37,7 +37,7 @@ class ChatBot:
 
     def __init__(self, adapter: ModelAdapter) -> None:
         self.adapter = adapter
-        self.messages:list[dict[str, str]] = []
+        self.messages: list[dict[str, str]] = []
 
     async def hallucination_check(self) -> list[LLMHallucination]:
         if settings.HALLUCINATION_CHECK:
@@ -84,7 +84,6 @@ def create_chatbot(model_type: str, model_name: str, temperature: float) -> Chat
         ValueError: If the specified model type is unsupported.
     """
     if model_type == "openai":
-
         if not settings.AZURE_OPENAI_API_KEY:
             msg = "AZURE_OPENAI_API_KEY is required for openai model"
             raise ValueError(msg)
@@ -97,7 +96,7 @@ def create_chatbot(model_type: str, model_name: str, temperature: float) -> Chat
         if not settings.AZURE_OPENAI_ENDPOINT:
             msg = "AZURE_OPENAI_ENDPOINT is required for openai model"
             raise ValueError(msg)
-        
+
         return ChatBot(
             OpenAIModelAdapter(
                 model=model_name,

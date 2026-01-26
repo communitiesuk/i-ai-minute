@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum, auto
-from typing import TypedDict
+from typing import Any, TypedDict
 from uuid import UUID, uuid4
 
 from sqlalchemy import TIMESTAMP, Column
@@ -8,7 +8,6 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped
 from sqlalchemy.sql.functions import now
 from sqlmodel import Field, Relationship, SQLModel, col, func
-from typing import Any
 
 
 class DialogueEntry(TypedDict):
@@ -52,7 +51,6 @@ class ContentSource(StrEnum):
 
 
 class MinuteVersion(BaseTableMixin, table=True):
-    
     __tablename__ = "minute_version"
     created_datetime: datetime = Field(sa_column=created_datetime_column(), default=None)
     updated_datetime: datetime = Field(sa_column=updated_datetime_column(), default=None)
@@ -208,7 +206,7 @@ class UserTemplate(BaseTableMixin, table=True):
 
     minutes: list[Minute] = Relationship(back_populates="user_template")
 
-    questions: list[TemplateQuestion] = Relationship(
+    questions: Mapped[list[TemplateQuestion]] = Relationship(
         back_populates="user_template",
         passive_deletes="all",
         sa_relationship_kwargs={"order_by": TemplateQuestion.position},

@@ -95,7 +95,9 @@ class SimpleTemplate(Template, Protocol):
     ) -> MinuteAndHallucinations:
         chatbot = create_default_chatbot(FastOrBestLLM.BEST)
         transcript = minute.transcription.dialogue_entries
-        assert transcript, f"Minute {minute.id} has no dialogue entries"
+        if not transcript:
+            msg = f"Minute {minute.id} has no dialogue entries"
+            raise ValueError(msg)
         minutes = await chatbot.chat(cls.prompt(transcript, minute.agenda))
         hallucinations = await chatbot.hallucination_check()
         if cls.citations_required:
@@ -165,7 +167,9 @@ class SectionTemplate(Template, Protocol):
         minute: Minute,
     ) -> MinuteAndHallucinations:
         transcript = minute.transcription.dialogue_entries
-        assert transcript, f"Minute {minute.id} has no dialogue entries"
+        if not transcript:
+            msg = f"Minute {minute.id} has no dialogue entries"
+            raise ValueError(msg)
         sections = await cls.sections(transcript, minute.agenda)
         # Generate content for each section
         final_sections = []

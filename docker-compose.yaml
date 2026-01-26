@@ -1,4 +1,4 @@
-Xservices:
+services:
   backend:
     build:
       context: .

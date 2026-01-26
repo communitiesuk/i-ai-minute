@@ -35,10 +35,10 @@ class OpenAIModelAdapter(ModelAdapter):
 
     async def structured_chat(self, messages: list[dict[str, str]], response_format: type[T]) -> T:
         response = await self.async_azure_client.beta.chat.completions.parse(
-            model=self._model, 
-            messages=cast(list[ChatCompletionMessageParam], messages), 
-            response_format=response_format, 
-            **self._kwargs
+            model=self._model,
+            messages=cast(list[ChatCompletionMessageParam], messages),
+            response_format=response_format,
+            **self._kwargs,
         )
         parsed = response.choices[0].message.parsed
         if parsed is None:

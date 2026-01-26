@@ -1,9 +1,7 @@
 import logging
-from collections.abc import Generator
-from typing import Any, cast
+from typing import cast
 
 import boto3
-from azure.servicebus import ServiceBusClient
 from mypy_boto3_sqs.client import SQSClient
 
 from common.services.queue_services.base import QueueService
