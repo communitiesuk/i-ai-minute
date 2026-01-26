@@ -1,6 +1,6 @@
 import logging
 from collections.abc import Generator
-from typing import Any
+from typing import Any, cast
 
 import boto3
 from azure.servicebus import ServiceBusClient
@@ -16,15 +16,18 @@ logger = logging.getLogger(__name__)
 
 def get_sqs_client() -> SQSClient:
     if settings.USE_LOCALSTACK and settings.ENVIRONMENT == "local":
-        return boto3.client(
-            "sqs",
-            aws_access_key_id="YOUR_ACCESS_KEY_ID",
-            aws_secret_access_key="YOUR_SECRET_ACCESS_KEY",  # noqa: S106
-            region_name="eu-west-2",
-            endpoint_url=settings.LOCALSTACK_URL,
+        return cast(
+            SQSClient,
+            boto3.client(
+                "sqs",
+                aws_access_key_id="YOUR_ACCESS_KEY_ID",
+                aws_secret_access_key="YOUR_SECRET_ACCESS_KEY",  # noqa: S106
+                region_name="eu-west-2",
+                endpoint_url=settings.LOCALSTACK_URL,
+            ),
         )
 
-    return boto3.client("sqs")
+    return cast(SQSClient, boto3.client("sqs"))
 
 
 class SQSQueueService(QueueService):

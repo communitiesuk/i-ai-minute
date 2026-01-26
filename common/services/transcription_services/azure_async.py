@@ -64,6 +64,10 @@ class AzureBatchTranscriptionAdapter(TranscriptionAdapter):
         """
         Async version of transcribe audio using Azure Speech-to-Text API
         """
+        if not isinstance(audio_file_path_or_recording, Recording):
+            msg = "AzureBatchTranscriptionAdapter only accepts Recording objects"
+            raise TypeError(msg)
+        
         file_name = uuid.uuid4()
         job_name = f"minute-{settings.ENVIRONMENT}-transcription-job-{file_name}"
         presigned_url = await storage_service.generate_presigned_url_get_object(
