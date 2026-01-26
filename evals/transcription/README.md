@@ -23,7 +23,7 @@ sudo apt-get install ffmpeg
 
 1. Install dependencies:
 ```bash
-uv sync
+poetry install
 ```
 
 2. Configure environment variables:
@@ -42,13 +42,13 @@ cp .env.example .env
 Run the evaluation:
 ```bash
 # Evaluate on 10 full meetings
-uv run python src/evaluate.py --num-samples 10
+poetry run python src/evaluate.py --num-samples 10
 
 # Quick test: evaluate on 10% of first meeting duration (~9 minutes)
-uv run python src/evaluate.py --num-samples 0.1
+poetry run python src/evaluate.py --num-samples 0.1
 
 # Cache dataset only without running transcription
-uv run python src/evaluate.py --prepare-only
+poetry run python src/evaluate.py --prepare-only
 ```
 
 Results are saved to `results/evaluation_results_YYYYMMDD_HHMMSS.json` with timestamped filenames to prevent overwriting.
