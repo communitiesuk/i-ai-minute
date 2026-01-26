@@ -30,9 +30,8 @@ def updated_datetime_column() -> Column[Any]:
 class BaseTableMixin(SQLModel):
     # Note, we can't add created/updated_datetime Columns here, as each table needs its own instance of these Columns
 
-    model_config = SQLModel.model_config.copy(update={ ""
-    "from_attributes": True, }
-    )
+    model_config = SQLModel.model_config.copy()
+    model_config["from_attributes"] = True
 
     id: UUID = Field(
         default_factory=uuid4, primary_key=True, sa_column_kwargs={"server_default": func.gen_random_uuid()}

@@ -2,7 +2,7 @@ import logging
 import subprocess
 from pathlib import Path
 
-import ffmpeg
+import ffmpeg  # type: ignore[import-untyped]
 
 logger = logging.getLogger(__name__)
 
