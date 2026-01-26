@@ -1,3 +1,7 @@
+# mypy: ignore-errors
+# TODO: Decide on a structure for evals folder and add mypy support properly
+
+
 from __future__ import annotations
 
 import json

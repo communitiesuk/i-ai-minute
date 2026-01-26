@@ -38,7 +38,7 @@ class ModelConfig(BaseModel):
 class JudgeConfig(ModelConfig):
     pass_threshold: int = 4
     criteria: list[Literal["faithfulness", "coverage", "conciseness", "coherence"]] = Field(
-        default_factory=lambda: ["faithfulness", "coverage", "conciseness", "coherence"]
+        default_factory=lambda: ["faithfulness", "coverage", "conciseness", "coherence"] # type: ignore[arg-type]
     )
 
 
