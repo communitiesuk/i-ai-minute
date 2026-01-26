@@ -211,7 +211,7 @@ class UserTemplate(BaseTableMixin, table=True):
 
     minutes: list[Minute] = Relationship(back_populates="user_template")
 
-    questions: Mapped[Mapped[list[TemplateQuestion]]] = Relationship(
+    questions: Mapped[list[TemplateQuestion]] = Relationship(
         back_populates="user_template",
         passive_deletes="all",
         sa_relationship_kwargs={"order_by": TemplateQuestion.position},
