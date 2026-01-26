@@ -1,7 +1,7 @@
 import logging
 import re
 
-from breame.spelling import american_spelling_exists, get_british_spelling
+from breame.spelling import american_spelling_exists, get_british_spelling  # type: ignore[import-untyped]
 from re import Match 
 
 
@@ -28,7 +28,7 @@ def convert_american_to_british_spelling(  # noqa: C901
 
             if american_spelling_exists(word.lower()):
                 try:
-                    british = get_british_spelling(word.lower())
+                    british = str(get_british_spelling(word.lower()))
                     # Preserve capitalization
                     if word.isupper():
                         british = british.upper()

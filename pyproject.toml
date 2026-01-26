@@ -154,4 +154,5 @@ disallow_incomplete_defs = true
 strict_optional = true
 check_untyped_defs = true
 no_implicit_optional = true
-exclude = ["alembic/*", "tests/*"]
+# terraform: non production diagram scripts using untyped diagrams
+exclude = ["alembic/*", "tests/*", "terraform/*"]
