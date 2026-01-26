@@ -14,7 +14,7 @@ from tenacity import (
 from common.llm.adapters import GeminiModelAdapter, ModelAdapter, OpenAIModelAdapter
 from common.prompts import get_hallucination_detection_messages
 from common.settings import get_settings
-from common.types import LLMHallucination
+from common.types import LLMHallucination, LLMHallucinationList
 
 settings = get_settings()
 T = TypeVar("T", bound=BaseModel)
@@ -41,9 +41,10 @@ class ChatBot:
 
     async def hallucination_check(self) -> list[LLMHallucination]:
         if settings.HALLUCINATION_CHECK:
-            return await self.structured_chat(
-                messages=get_hallucination_detection_messages(), response_format=list[LLMHallucination]
+            result = await self.structured_chat(
+                messages=get_hallucination_detection_messages(), response_format=LLMHallucinationList
             )
+            return result.hallucinations
         return []
 
     @retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(6))
@@ -83,6 +84,20 @@ def create_chatbot(model_type: str, model_name: str, temperature: float) -> Chat
         ValueError: If the specified model type is unsupported.
     """
     if model_type == "openai":
+
+        if not settings.AZURE_OPENAI_API_KEY:
+            msg = "AZURE_OPENAI_API_KEY is required for openai model"
+            raise ValueError(msg)
+        if not settings.AZURE_OPENAI_API_VERSION:
+            msg = "AZURE_OPENAI_API_VERSION is required for openai model"
+            raise ValueError(msg)
+        if not settings.AZURE_DEPLOYMENT:
+            msg = "AZURE_DEPLOYMENT is required for openai model"
+            raise ValueError(msg)
+        if not settings.AZURE_OPENAI_ENDPOINT:
+            msg = "AZURE_OPENAI_ENDPOINT is required for openai model"
+            raise ValueError(msg)
+        
         return ChatBot(
             OpenAIModelAdapter(
                 model=model_name,
