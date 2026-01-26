@@ -46,7 +46,7 @@ async def cleanup_old_records() -> None:
     async with AsyncSession(async_engine) as session:
         statement = (
             select(Transcription)
-            .join(User, User.id == Transcription.user_id)
+            .join(User)
             .where(
                 col(User.data_retention_days).is_not(null()),
                 Transcription.created_datetime < func.now() - (User.data_retention_days or 30) * timedelta(days=1),

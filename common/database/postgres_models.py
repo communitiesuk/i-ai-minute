@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum, auto
-from typing import TypedDict
+from typing import TypedDict, TYPE_CHECKING, Any
 from uuid import UUID, uuid4
 
 from sqlalchemy import TIMESTAMP, Column
@@ -38,6 +38,10 @@ class BaseTableMixin(SQLModel):
     id: UUID = Field(
         default_factory=uuid4, primary_key=True, sa_column_kwargs={"server_default": func.gen_random_uuid()}
     )
+
+    if TYPE_CHECKING:
+        created_datetime: Any
+        status: Any
 
 
 class JobStatus(StrEnum):
