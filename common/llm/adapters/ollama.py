@@ -1,16 +1,38 @@
 import json
 import logging
-from typing import TypeVar
+from typing import Any
 
 from openai import AsyncOpenAI
+from openai.types.chat import (
+    ChatCompletionAssistantMessageParam,
+    ChatCompletionDeveloperMessageParam,
+    ChatCompletionMessageParam,
+    ChatCompletionSystemMessageParam,
+    ChatCompletionUserMessageParam,
+)
 
 from common.settings import get_settings
 
-from .base import ModelAdapter
+from .base import ModelAdapter, T
 
 settings = get_settings()
-T = TypeVar("T")
 logger = logging.getLogger(__name__)
+
+
+def _convert_to_openai_message(msg: dict[str, str]) -> ChatCompletionMessageParam:
+    role = msg["role"]
+    content = msg["content"]
+    
+    if role == "system":
+        return ChatCompletionSystemMessageParam(role="system", content=content)
+    elif role == "user":
+        return ChatCompletionUserMessageParam(role="user", content=content)
+    elif role == "assistant":
+        return ChatCompletionAssistantMessageParam(role="assistant", content=content)
+    elif role == "developer":
+        return ChatCompletionDeveloperMessageParam(role="developer", content=content)
+    else:
+        raise ValueError(f"Invalid role: {role}")
 
 
 class OllamaModelAdapter(ModelAdapter):
@@ -18,7 +40,7 @@ class OllamaModelAdapter(ModelAdapter):
         self,
         model: str,
         base_url: str,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         self._model = model
         self.async_client = AsyncOpenAI(
@@ -37,14 +59,18 @@ class OllamaModelAdapter(ModelAdapter):
             last_msg["content"] = last_msg["content"] + json_instruction
             modified_messages[-1] = last_msg
 
+        openai_messages = [_convert_to_openai_message(msg) for msg in modified_messages]
+
         response = await self.async_client.chat.completions.create(
             model=self._model,
-            messages=modified_messages,
+            messages=openai_messages,
             response_format={"type": "json_object"},
             temperature=self._kwargs.get("temperature", 0.0),
         )
 
         content = response.choices[0].message.content
+        if content is None:
+            raise ValueError("Received empty response from Ollama")
         try:
             json_data = json.loads(content)
             return response_format.model_validate(json_data)
@@ -54,13 +80,18 @@ class OllamaModelAdapter(ModelAdapter):
 
     async def chat(self, messages: list[dict[str, str]]) -> str:
         try:
+            openai_messages = [_convert_to_openai_message(msg) for msg in messages]
+
             response = await self.async_client.chat.completions.create(
                 model=self._model,
-                messages=messages,
+                messages=openai_messages,
                 temperature=0.0,
             )
 
-            return response.choices[0].message.content
+            content = response.choices[0].message.content
+            if content is None:
+                raise ValueError("Received empty response from Ollama")
+            return content
         except Exception as e:
             logger.error("Ollama chat failed: %s: %s", type(e).__name__, str(e))
             raise
