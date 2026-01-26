@@ -2,7 +2,7 @@ import logging
 from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore[import-untyped]
 from sqlmodel import and_, col, func, null, select, update
 from sqlmodel.ext.asyncio.session import AsyncSession
 

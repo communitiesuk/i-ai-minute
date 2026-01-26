@@ -90,6 +90,8 @@ async def get_chat(
         raise HTTPException(status_code=404, detail="Transcription not found")
 
     chat = await session.get(Chat, chat_id)
+    if not chat:
+        raise HTTPException(status_code=404, detail="Chat not found")
     return ChatGetResponse(
         id=chat.id,
         created_datetime=chat.created_datetime,
