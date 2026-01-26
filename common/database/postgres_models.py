@@ -8,6 +8,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped
 from sqlalchemy.sql.functions import now
 from sqlmodel import Field, Relationship, SQLModel, col, func
+
 from typing import Any
 
 
@@ -190,7 +191,7 @@ class TemplateQuestion(BaseTableMixin, table=True):
     title: str
     description: str
 
-    user_template_id: UUID = Field(foreign_key="user_template.id", ondelete="CASCADE")
+    user_template_id: UUID = Field(default=None,foreign_key="user_template.id", ondelete="CASCADE", nullable=False)
     user_template: "UserTemplate" = Relationship(back_populates="questions")
 
 
@@ -209,7 +210,7 @@ class UserTemplate(BaseTableMixin, table=True):
 
     minutes: list[Minute] = Relationship(back_populates="user_template")
 
-    questions: list[TemplateQuestion] = Relationship(
+    questions: Mapped[list[TemplateQuestion]] = Relationship(
         back_populates="user_template",
         passive_deletes="all",
         sa_relationship_kwargs={"order_by": TemplateQuestion.position},

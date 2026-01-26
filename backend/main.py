@@ -10,13 +10,16 @@ from fastapi.security import OAuth2PasswordBearer
 from backend.api.routes import router as api_router
 from backend.cleanup_job import init_cleanup_scheduler
 from common.settings import get_settings
+from typing import AsyncGenerator
+from typing import Any
+
 
 settings = get_settings()
 log = logging.getLogger("uvicorn")
 
 
 @asynccontextmanager
-async def lifespan(app_: FastAPI):  # noqa: ARG001
+async def lifespan(app_: FastAPI)->AsyncGenerator[None, None]:  # noqa: ARG001
     log.info("Starting up...")
 
     await init_cleanup_scheduler()
@@ -29,7 +32,7 @@ async def lifespan(app_: FastAPI):  # noqa: ARG001
 # init sentry, if used
 if settings.SENTRY_DSN:
     if settings.ENVIRONMENT == "prod":
-        sentry_init_opts = {"traces_sample_rate": 1.0, "profile_session_sample_rate": 0.2}
+        sentry_init_opts : dict[str, Any]= {"traces_sample_rate": 1.0, "profile_session_sample_rate": 0.2}
     else:
         sentry_init_opts = {
             "send_default_pii": True,
