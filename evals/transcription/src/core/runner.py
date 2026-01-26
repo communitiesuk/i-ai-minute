@@ -70,11 +70,6 @@ def run_engine(adapter, indices, label, *, dataset, wav_write_fn, duration_fn):
 
 
 def run_engines_parallel(adapters_config, indices, *, dataset, wav_write_fn, duration_fn):
-    """
-    Run multiple adapters in parallel with a shared progress bar.
-    
-    adapters_config: list of dicts with keys: adapter, label
-    """
     total_tasks = len(indices) * len(adapters_config)
     pbar = tqdm(total=total_tasks, desc="Processing all engines", unit="task")
     pbar_lock = Lock()
