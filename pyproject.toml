@@ -110,6 +110,8 @@ types-tqdm = "^4.67.0.20250809"
 types-ujson = "^5.10.0.20250822"
 types-aioboto3 = "^15.5.0"
 types-botocore = "^1.0.2"
+types-boto3 = "^1.42.34"
+mypy-boto3-sqs = "^1.42.3"
 
 [build-system]
 requires = ["poetry-core"]
