@@ -190,7 +190,7 @@ class TemplateQuestion(BaseTableMixin, table=True):
     title: str
     description: str
 
-    user_template_id: UUID = Field(default=None, foreign_key="user_template.id", ondelete="CASCADE", nullable=False)
+    user_template_id: UUID = Field(foreign_key="user_template.id", ondelete="CASCADE")
     user_template: "UserTemplate" = Relationship(back_populates="questions")
 
 
