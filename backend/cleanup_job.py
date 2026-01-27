@@ -1,4 +1,5 @@
 import logging
+import math
 from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo
 
@@ -49,7 +50,7 @@ async def cleanup_old_records() -> None:
             .join(User)
             .where(
                 col(User.data_retention_days).is_not(null()),
-                Transcription.created_datetime < func.now() - (User.data_retention_days or 30) * timedelta(days=1),
+                Transcription.created_datetime < func.now() - func.coalesce(User.data_retention_days, math.inf) * timedelta(days=1),
             )
         )
         transcriptions = (await session.exec(statement)).all()

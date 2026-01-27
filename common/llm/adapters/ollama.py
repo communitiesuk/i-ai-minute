@@ -32,8 +32,8 @@ def _convert_to_openai_message(msg: dict[str, str]) -> ChatCompletionMessagePara
     elif role == "developer":
         return ChatCompletionDeveloperMessageParam(role="developer", content=content)
     else:
-        msg = f"Invalid role: {role}"
-        raise ValueError(msg)
+        error_msg = f"Invalid role: {role}"
+        raise ValueError(error_msg)
 
 
 class OllamaModelAdapter(ModelAdapter):
