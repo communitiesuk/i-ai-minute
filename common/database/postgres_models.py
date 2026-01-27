@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum, auto
-from typing import TYPE_CHECKING, Any, TypedDict
+from typing import TypedDict
 from uuid import UUID, uuid4
 
 from sqlalchemy import TIMESTAMP, Column
@@ -18,11 +18,11 @@ class DialogueEntry(TypedDict):
 
 
 # Create factory functions for columns to avoid reusing column objects
-def created_datetime_column() -> Column[Any]:
+def created_datetime_column() -> Column[datetime]:
     return Column(TIMESTAMP(timezone=True), nullable=False, server_default=now(), default=None)
 
 
-def updated_datetime_column() -> Column[Any]:
+def updated_datetime_column() -> Column[datetime]:
     return Column(TIMESTAMP(timezone=True), nullable=False, server_default=now(), default=None)
 
 
@@ -36,9 +36,8 @@ class BaseTableMixin(SQLModel):
         default_factory=uuid4, primary_key=True, sa_column_kwargs={"server_default": func.gen_random_uuid()}
     )
 
-    if TYPE_CHECKING:
-        created_datetime: Any
-        status: Any
+    created_datetime: datetime
+    status: "JobStatus"
 
 
 class JobStatus(StrEnum):
