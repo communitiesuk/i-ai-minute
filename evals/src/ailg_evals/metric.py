@@ -1,6 +1,3 @@
-# mypy: ignore-errors
-# TODO: Decide on a structure for evals folder and add mypy support properly
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -10,6 +7,7 @@ import dspy
 from .config import AppConfig
 from .schemas import DialogExample, MetricResult
 from .signatures import JudgeRatingSignature
+
 
 
 @dataclass(frozen=True)
