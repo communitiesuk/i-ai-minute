@@ -126,7 +126,6 @@ exclude = ["data/*"]
 line-length = 120
 target-version = 'py312'
 fix = true
-exclude = ["out/*"]
 
 [tool.ruff.lint]
 select = [
@@ -134,7 +133,7 @@ select = [
     "ARG", "ASYNC", "BLE", "COM", "DJ", "DTZ", "EM", "EXE", "FURB",
     "ICN", "INT", "ISC", "LOG", "NPY", "PD", "PGH", "PIE", "PL",
     "PT", "PTH", "PYI", "RET", "RSE", "RUF", "SIM", "SLF", "SLOT", 
-    "TD", "TID", "UP", "YTT"
+    "TCH", "TD", "TID", "UP", "YTT"
 ]
 ignore = ["COM812", "DJ001", "RET505", "RET508", "PLR0913", "S318","ISC001"]
 
