@@ -5,6 +5,8 @@ from google import genai
 from google.genai import types
 from google.genai.types import (
     Content,
+    ContentListUnion,
+    ContentUnion,
     GenerateContentConfig,
     HttpOptions,
     ModelContent,
@@ -57,8 +59,8 @@ class GeminiModelAdapter(ModelAdapter):
             ),
         ]
 
-    def _convert_openai_messages_to_gemini(self, messages: list[dict[str, str]]) -> tuple[list[Content], Content]:
-        gemini_messages: list[Content] = []
+    def _convert_openai_messages_to_gemini(self, messages: list[dict[str, str]]) -> tuple[ContentListUnion, Content]:
+        gemini_messages: list[ContentUnion] = []
         system_instructions = []
         for message in messages:
             if message["role"] == "user":
