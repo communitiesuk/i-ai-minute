@@ -24,24 +24,8 @@ class WordData(TypedDict):
     end: float
 
 
-class ChunkData(TypedDict):
-    words: list[WordData]
-
-
-class LanguageData(TypedDict):
-    chunks: list[ChunkData]
-
-
-class TranscriptionsData(TypedDict):
-    en: LanguageData
-
-
-class TranscriptionData(TypedDict):
-    transcriptions: TranscriptionsData
-
-
 class WhisplyOutput(TypedDict):
-    transcription: TranscriptionData
+    transcription: dict[str, dict[str, dict[str, list[dict[str, list[WordData]]]]]]
 
 
 class WhisplyLocalAdapter(TranscriptionAdapter):
