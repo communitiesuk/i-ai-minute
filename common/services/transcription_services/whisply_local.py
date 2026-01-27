@@ -5,8 +5,8 @@ from pathlib import Path
 from typing import TypedDict
 
 # local-only dependency, not required in prod, hence the ignores
-from whisply import models  # type: ignore[import-not-found]
-from whisply.transcription import TranscriptionHandler  # type: ignore[import-not-found]
+from whisply import models  # type: ignore[import-untyped]
+from whisply.transcription import TranscriptionHandler  # type: ignore[import-untyped]
 
 from common.database.postgres_models import DialogueEntry, Recording
 from common.services.transcription_services.adapter import AdapterType, TranscriptionAdapter
