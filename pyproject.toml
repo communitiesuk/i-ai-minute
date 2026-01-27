@@ -132,7 +132,7 @@ select = [
     "A", "B", "C", "E", "F", "G", "I", "N", "Q", "S", "T", "W",
     "ARG", "ASYNC", "BLE", "COM", "DJ", "DTZ", "EM", "EXE", "FURB",
     "ICN", "INT", "ISC", "LOG", "NPY", "PD", "PGH", "PIE", "PL",
-    "PT", "PTH", "PYI", "RET", "RSE", "RUF", "SIM", "SLF", "SLOT", 
+    "PT", "PTH", "PYI", "RET", "RSE", "RUF", "SIM", "SLF", "SLOT",
     "TCH", "TD", "TID", "UP", "YTT"
 ]
 exclude = ["out/*"]
@@ -156,4 +156,5 @@ strict_optional = true
 check_untyped_defs = true
 no_implicit_optional = true
 # terraform: non production diagram scripts using untyped diagrams
-exclude = ["alembic/*", "tests/*", "terraform/*"]
+# TODO: Decide on a structure for evals and viewer folder and add mypy support properly
+exclude = ["alembic/*", "tests/*", "terraform/*", "viewer/*", "evals/*"]

@@ -32,7 +32,8 @@ def _convert_to_openai_message(msg: dict[str, str]) -> ChatCompletionMessagePara
     elif role == "developer":
         return ChatCompletionDeveloperMessageParam(role="developer", content=content)
     else:
-        raise ValueError(f"Invalid role: {role}")
+        msg = f"Invalid role: {role}"
+        raise ValueError(msg)
 
 
 class OllamaModelAdapter(ModelAdapter):
@@ -70,7 +71,8 @@ class OllamaModelAdapter(ModelAdapter):
 
         content = response.choices[0].message.content
         if content is None:
-            raise ValueError("Received empty response from Ollama")
+            msg = "Received empty response from Ollama"
+            raise ValueError(msg)
         try:
             json_data = json.loads(content)
             return response_format.model_validate(json_data)
@@ -90,7 +92,8 @@ class OllamaModelAdapter(ModelAdapter):
 
             content = response.choices[0].message.content
             if content is None:
-                raise ValueError("Received empty response from Ollama")
+                msg = "Received empty response from Ollama"
+                raise ValueError(msg)
             return content
         except Exception as e:
             logger.error("Ollama chat failed: %s: %s", type(e).__name__, str(e))
