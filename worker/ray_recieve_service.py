@@ -1,10 +1,10 @@
 import asyncio
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import ray
 from azure.servicebus import ServiceBusReceivedMessage
-from ray.actor import ActorHandle
+from ray.actor import ActorClass, ActorHandle
 
 from common.services.exceptions import InteractionFailedError, TranscriptionFailedError
 from common.services.minute_handler_service import MinuteGenerationFailedError, MinuteHandlerService
@@ -13,9 +13,6 @@ from common.services.transcription_handler_service import TranscriptionHandlerSe
 from common.settings import get_settings
 from common.types import EditMessageData, TaskType, TranscriptionJobMessageData, WorkerMessage
 from worker.healthcheck import HEARTBEAT_DIR
-
-if TYPE_CHECKING:
-    from ray.remote_function import RemoteFunction
 
 logger = logging.getLogger(__name__)
 ray_logger = logging.getLogger("ray")
@@ -37,7 +34,7 @@ class _HasBeenStopped:
         self.stopped = True
 
 
-HasBeenStopped: RemoteFunction = ray.remote(_HasBeenStopped)  # type: ignore[assignment]
+HasBeenStopped: ActorClass = ray.remote(_HasBeenStopped)
 
 
 # restart indefinitely, try each task only once
@@ -84,7 +81,7 @@ class _RayTranscriptionService:
             self.heartbeat_path.touch()
 
 
-RayTranscriptionService: RemoteFunction = ray.remote(max_restarts=-1, max_task_retries=0)(_RayTranscriptionService)  # type: ignore[assignment]
+RayTranscriptionService: ActorClass = ray.remote(max_restarts=-1, max_task_retries=0)(_RayTranscriptionService)
 
 
 class _RayLlmService:
@@ -168,4 +165,4 @@ class _RayLlmService:
             self.queue_service.complete_message(receipt_handle=receipt_handle)
 
 
-RayLlmService: RemoteFunction = ray.remote(max_restarts=-1, max_task_retries=0)(_RayLlmService)  # type: ignore[assignment]
+RayLlmService: ActorClass = ray.remote(max_restarts=-1, max_task_retries=0)(_RayLlmService)
