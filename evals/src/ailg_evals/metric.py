@@ -12,7 +12,6 @@ from .schemas import DialogExample, MetricResult
 from .signatures import JudgeRatingSignature
 
 
-
 @dataclass(frozen=True)
 class DialogSummaryMetric:
     name: str

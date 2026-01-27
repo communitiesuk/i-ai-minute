@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import TypedDict
 
 # local-only dependency, not required in prod, hence the ignores
-from whisply import models  # type: ignore[import-not-found]  
+from whisply import models  # type: ignore[import-not-found]
 from whisply.transcription import TranscriptionHandler  # type: ignore[import-not-found]
 
 from common.database.postgres_models import DialogueEntry, Recording
@@ -71,7 +71,7 @@ class WhisplyLocalAdapter(TranscriptionAdapter):
 
         if not settings.WHISPLY_HF_TOKEN:
             msg = "HuggingFace token required for speaker diarization. Set WHISPLY_HF_TOKEN."
-            raise ValueError(msg)   
+            raise ValueError(msg)
 
         try:
             handler = TranscriptionHandler(

@@ -59,7 +59,7 @@ async def cleanup_old_records() -> None:
         await session.commit()
 
 
-async def delete_orphan_records()-> None:
+async def delete_orphan_records() -> None:
     logger.info("Starting recording clean up")
     async with AsyncSession(async_engine) as session:
         orphan_recording_query = select(Recording).where(col(Recording.transcription_id).is_(None))
@@ -81,13 +81,13 @@ async def delete_orphan_records()-> None:
     logger.info("Data retention cleanup process completed")
 
 
-async def cleanup_jobs()->None:
+async def cleanup_jobs() -> None:
     await cleanup_old_records()
     await delete_orphan_records()
     await cleanup_failed_records()
 
 
-async def init_cleanup_scheduler()-> None:
+async def init_cleanup_scheduler() -> None:
     """Initialize the scheduler to run cleanup daily."""
     next_run_time = datetime.now(tz=UTC).replace(hour=23, minute=0, second=0, microsecond=0)
     scheduler = AsyncIOScheduler()

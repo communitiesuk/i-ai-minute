@@ -178,7 +178,9 @@ class MinuteHandlerService:
     @classmethod
     async def generate_minute_from_user_template(cls, minute: Minute) -> MinuteAndHallucinations:
         with SessionLocal() as session:
-            template = session.get(UserTemplate, minute.user_template_id, options=[selectinload(UserTemplate.questions)])
+            template = session.get(
+                UserTemplate, minute.user_template_id, options=[selectinload(UserTemplate.questions)]
+            )
         if not template:
             msg = f"No template with id {minute.user_template_id}"
             raise RuntimeError(msg)

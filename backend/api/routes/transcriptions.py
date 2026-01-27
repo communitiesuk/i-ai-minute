@@ -195,7 +195,7 @@ async def save_transcription(
     transcription_data: TranscriptionPatchRequest,
     session: SQLSessionDep,
     current_user: UserDep,
-)-> Transcription:
+) -> Transcription:
     """Save or update a transcription."""
     logger.info("saving transcription for user %s", current_user.id)
     # Use the transcription service to handle the save operation
@@ -214,7 +214,7 @@ async def save_transcription(
 
 
 @transcriptions_router.delete("/transcriptions/{transcription_id}", status_code=204)
-async def delete_transcription(transcription_id: uuid.UUID, session: SQLSessionDep, current_user: UserDep)-> None:
+async def delete_transcription(transcription_id: uuid.UUID, session: SQLSessionDep, current_user: UserDep) -> None:
     """Delete a specific transcription by ID."""
     # First check if the transcription exists and belongs to the user
     transcription = await session.get(Transcription, transcription_id)

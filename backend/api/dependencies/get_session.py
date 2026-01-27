@@ -1,8 +1,8 @@
+from collections.abc import AsyncGenerator
 from typing import Annotated
 
 from fastapi import Depends
 from sqlmodel.ext.asyncio.session import AsyncSession
-from collections.abc import AsyncGenerator
 
 from common.database.postgres_database import async_engine
 

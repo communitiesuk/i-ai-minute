@@ -6,13 +6,13 @@ from __future__ import annotations
 
 import json
 import os
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 from flask import Flask, abort, redirect, render_template, request, url_for
-
 
 DIMENSIONS = ["faithfulness", "coverage", "conciseness", "coherence"]
 
@@ -296,10 +296,7 @@ def create_app() -> Flask:
         }
 
         ann = _get_annotation(row)
-        ann_by_dim = {
-            d: ann.get(d, {}) if isinstance(ann.get(d), dict) else {}
-            for d in DIMENSIONS
-        }
+        ann_by_dim = {d: ann.get(d, {}) if isinstance(ann.get(d), dict) else {} for d in DIMENSIONS}
 
         return render_template(
             "row.html",
@@ -337,9 +334,7 @@ def create_app() -> Flask:
             if payload:
                 dim_updates[dim] = payload
 
-        _update_annotation_in_file(
-            rp, run_id=run_id, example_id=example_id, dim_updates=dim_updates
-        )
+        _update_annotation_in_file(rp, run_id=run_id, example_id=example_id, dim_updates=dim_updates)
         return redirect(url_for("row_view", run_id=run_id, example_id=example_id))
 
     return flask_app

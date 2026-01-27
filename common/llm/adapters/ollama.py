@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 def _convert_to_openai_message(msg: dict[str, str]) -> ChatCompletionMessageParam:
     role = msg["role"]
     content = msg["content"]
-    
+
     if role == "system":
         return ChatCompletionSystemMessageParam(role="system", content=content)
     elif role == "user":

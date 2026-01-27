@@ -22,8 +22,8 @@ from .jsonl import write_jsonl
 from .metric import DialogSummaryMetric, build_metrics
 from .prompts import render_template
 from .schemas import (
-    DialogSummary,
     DialogExample,
+    DialogSummary,
     EvalRecord,
     GenerationConfig,
     MetricResult,
@@ -124,7 +124,7 @@ def _summarize_one(
 
 def _evaluate_metrics(
     *,
-    metrics: Iterable[DialogSummaryMetric], 
+    metrics: Iterable[DialogSummaryMetric],
     example: DialogExample,
     prediction: dspy.Prediction,
 ) -> dict[str, MetricResult]:
@@ -134,7 +134,9 @@ def _evaluate_metrics(
     return out
 
 
-def _maybe_flush_records(results_path: Path, records: list[dict[str, Any]], *, flush_every: int) -> None:
+def _maybe_flush_records(
+    results_path: Path, records: list[dict[str, Any]], *, flush_every: int
+) -> None:
     if len(records) >= flush_every:
         write_jsonl(results_path, records)
         records.clear()
@@ -231,7 +233,10 @@ def run_eval(
     if records:
         write_jsonl(results_path, records)
 
-    metrics_summary = {name: {"mean": float(sum(vals) / len(vals)) if vals else 0.0} for name, vals in metric_scores.items()}
+    metrics_summary = {
+        name: {"mean": float(sum(vals) / len(vals)) if vals else 0.0}
+        for name, vals in metric_scores.items()
+    }
     summary = {
         "run_id": run_id,
         "split": split,

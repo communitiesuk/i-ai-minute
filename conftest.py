@@ -1,7 +1,8 @@
 import asyncio
-import pytest
-from typing import Generator
 from asyncio import AbstractEventLoop
+from collections.abc import Generator
+
+import pytest
 
 
 @pytest.fixture(scope="session", autouse=True)

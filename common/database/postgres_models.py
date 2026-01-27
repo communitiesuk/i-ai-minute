@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum, auto
-from typing import Any, TypedDict, TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypedDict
 from uuid import UUID, uuid4
 
 from sqlalchemy import TIMESTAMP, Column
@@ -8,7 +8,6 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped
 from sqlalchemy.sql.functions import now
 from sqlmodel import Field, Relationship, SQLModel, col, func
-
 
 
 class DialogueEntry(TypedDict):
@@ -192,7 +191,7 @@ class TemplateQuestion(BaseTableMixin, table=True):
     title: str
     description: str
 
-    user_template_id: UUID = Field(default=None,foreign_key="user_template.id", ondelete="CASCADE", nullable=False)
+    user_template_id: UUID = Field(default=None, foreign_key="user_template.id", ondelete="CASCADE", nullable=False)
     user_template: "UserTemplate" = Relationship(back_populates="questions")
 
 

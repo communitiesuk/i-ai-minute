@@ -4,4 +4,10 @@ from .azure import AzureSpeechAdapter
 from .azure_async import AzureBatchTranscriptionAdapter
 from .whisply_local import WhisplyLocalAdapter
 
-__all__ = ["AWSTranscribeAdapter", "AzureBatchTranscriptionAdapter", "AzureSpeechAdapter", "TranscriptionAdapter", "WhisplyLocalAdapter"]
+__all__ = [
+    "AWSTranscribeAdapter",
+    "AzureBatchTranscriptionAdapter",
+    "AzureSpeechAdapter",
+    "TranscriptionAdapter",
+    "WhisplyLocalAdapter",
+]
