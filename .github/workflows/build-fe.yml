@@ -28,6 +28,7 @@ env:
 
 jobs:
   set-vars:
+    if: false # TODO: Re-enable when AWS secrets, SENTRY_DSN, and POSTHOG_API_KEY are configured
     runs-on: ubuntu-latest
     outputs:
       app-name: ${{ steps.export.outputs.app-name }}

@@ -26,6 +26,7 @@ on:
 
 jobs:
   set-vars:
+    if: false # TODO: Re-enable when AWS secrets are configured
     runs-on: ubuntu-latest
     outputs:
       app-name: ${{ steps.export.outputs.app-name }}
