@@ -36,9 +36,6 @@ class BaseTableMixin(SQLModel):
         default_factory=uuid4, primary_key=True, sa_column_kwargs={"server_default": func.gen_random_uuid()}
     )
 
-    created_datetime: datetime
-    status: "JobStatus"
-
 
 class JobStatus(StrEnum):
     AWAITING_START = auto()
