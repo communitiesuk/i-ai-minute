@@ -32,7 +32,7 @@ We need to determine optimal storage strategies that address these distinct requ
 
 Inputs: S3 Bucket (versioned test datasets), because it handles large files efficiently, supports fine-grained access control for sensitive data, provides encryption and audit logging, and enables versioning to track dataset evolution.
 
-Outputs: S3 Bucket (or similar object storage), because it provides persistent and reliable storage, is easy to set up and integrate, and works well with custom dashboards for analysis.
+Outputs: S3 Bucket (or similar object storage), because it provides persistent and reliable storage, is easy to set up and integrate, and works well with custom dashboards or jupyter notebooks for analysis.
 
 ## Pros and Cons of the Options
 
