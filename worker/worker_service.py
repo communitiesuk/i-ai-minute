@@ -1,11 +1,10 @@
 import asyncio
 import logging
-from typing import Any
 
 import ray
 
 from common.logger import setup_logger
-from common.services.queue_services import get_queue_service
+from common.services.queue_services import ReceiptHandle, get_queue_service
 from common.services.queue_services.base import QueueService
 from common.settings import get_settings
 from worker.ray_recieve_service import HasBeenStopped, RayLlmService, RayTranscriptionService
@@ -16,7 +15,11 @@ settings = get_settings()
 
 
 class WorkerService:
-    def __init__(self, transcription_queue_service: QueueService[Any], llm_queue_service: QueueService[Any]):
+    def __init__(
+        self,
+        transcription_queue_service: QueueService[ReceiptHandle],
+        llm_queue_service: QueueService[ReceiptHandle],
+    ):
         self.transcription_queue_service = transcription_queue_service
         self.llm_queue_service = llm_queue_service
         self.actors = []
