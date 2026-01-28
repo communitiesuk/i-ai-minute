@@ -28,7 +28,7 @@ env:
 
 jobs:
   set-vars:
-    if: false # TODO: Re-enable when AWS secrets, SENTRY_DSN, and POSTHOG_API_KEY are configured
+    if: false # TODO: Re-enable when AWS secrets, SENTRY_DSN, and POSTHOG_API_KEY are configured (also re-enable build.yml frontend job)
     runs-on: ubuntu-latest
     outputs:
       app-name: ${{ steps.export.outputs.app-name }}
@@ -135,8 +135,8 @@ jobs:
           tags: ${{ env.ECR_REPO_URL }}:${{ github.sha }}
 
   stop-runner:
+    if: false # TODO: Re-enable when set-vars is re-enabled
     uses: i-dot-ai/i-dot-ai-core-github-actions/.github/workflows/stop-runner.yml@main
-    if: needs.start-runner.outputs.use-persisted == 0 && always()
     needs:
       - set-vars
       - start-runner

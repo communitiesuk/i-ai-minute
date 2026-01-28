@@ -15,7 +15,7 @@ on:
 
 jobs:
   set-vars:
-    if: false # TODO: Re-enable when AWS secrets and SLACK_WEBHOOK_URL are configured
+    if: false # TODO: Re-enable when AWS secrets and SLACK_WEBHOOK_URL are configured (requires build.yml to be enabled)
     runs-on: ubuntu-latest
     outputs:
       app-name: ${{ steps.export.outputs.app-name }}
@@ -105,6 +105,7 @@ jobs:
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   stop-runner:
+    if: false # TODO: Re-enable when set-vars is re-enabled
     needs:
       - set-vars
       - start-runner
@@ -112,7 +113,6 @@ jobs:
       - notify-slack
     permissions: write-all
     uses: i-dot-ai/i-dot-ai-core-github-actions/.github/workflows/stop-runner.yml@main
-    if: needs.start-runner.outputs.use-persisted == 0 && always()
     with:
       RUNNER_LABEL: ${{ needs.start-runner.outputs.label }}
       EC2_INSTANCE_ID: ${{ needs.start-runner.outputs.ec2-instance-id }}
