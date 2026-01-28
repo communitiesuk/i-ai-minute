@@ -6,6 +6,7 @@ from zoneinfo import ZoneInfo
 from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore[import-untyped]
 from sqlmodel import and_, col, func, null, select, update
 from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlalchemy import cast, Integer
 
 from common.database.postgres_database import async_engine
 from common.database.postgres_models import JobStatus, MinuteVersion, Recording, Transcription, User
@@ -58,7 +59,7 @@ async def cleanup_old_records() -> None:
             .where(
                 col(User.data_retention_days).is_not(null()),
                 Transcription.created_datetime
-                < func.now() - func.coalesce(User.data_retention_days, math.inf) * timedelta(days=1),
+                < func.now() - cast(User.data_retention_days, Integer) * timedelta(days=1),
             )
         )
         transcriptions = (await session.exec(statement)).all()
