@@ -1,6 +1,6 @@
 # Put action within a raw block so that the curly bracket expressions aren't picked up by the cookiecutter
 #
-name: Checks
+name: checks
 
 env:
   DOCKER_BUILDKIT: 1
@@ -88,8 +88,21 @@ jobs:
         run: |
           cp .env.example .env
 
+      - name: Create test data directory
+        run: |
+          mkdir -p .data/test_audio/normal
+
+      - name: Start services
+        run: |
+          docker compose up -d db localstack --wait
+
       - name: Run tests
         run: |
           make test
+
+      - name: Stop services
+        if: always()
+        run: |
+          docker compose down
 
 #
