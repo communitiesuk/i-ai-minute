@@ -75,7 +75,11 @@ The sections should be in the order they appear in the transcript. Typically you
         minute: Minute,
     ) -> MinuteAndHallucinations:
         chatbot = create_default_chatbot(FastOrBestLLM.BEST)
-        initial_messages = cls.get_system_message_for_delivery(minute.transcription.dialogue_entries)
+        transcript = minute.transcription.dialogue_entries
+        if not transcript:
+            msg = f"Minute {minute.id} has no dialogue entries"
+            raise ValueError(msg)
+        initial_messages = cls.get_system_message_for_delivery(transcript)
         # meeting sections
         initial_messages.append(cls.get_messages_for_sections())
         sections: DeliveryMeetingSections = await chatbot.structured_chat(
@@ -103,5 +107,5 @@ The sections should be in the order they appear in the transcript. Typically you
                 action_index += 1
 
         final = header + "\n\n" + initial_draft
-        final = await add_citations_to_minute(transcript=minute.transcription.dialogue_entries, initial_draft=final)
+        final = await add_citations_to_minute(transcript=transcript, initial_draft=final)
         return final, hallucinations

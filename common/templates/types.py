@@ -30,7 +30,7 @@ class Template(Protocol):
     description: str
     category: str
     agenda_usage: AgendaUsage
-    temperature = 0.0
+    temperature: float = 0.0
 
     @classmethod
     async def generate(
@@ -94,12 +94,14 @@ class SimpleTemplate(Template, Protocol):
         minute: Minute,
     ) -> MinuteAndHallucinations:
         chatbot = create_default_chatbot(FastOrBestLLM.BEST)
-        minutes = await chatbot.chat(cls.prompt(minute.transcription.dialogue_entries, minute.agenda))
+        transcript = minute.transcription.dialogue_entries
+        if not transcript:
+            msg = f"Minute {minute.id} has no dialogue entries"
+            raise ValueError(msg)
+        minutes = await chatbot.chat(cls.prompt(transcript, minute.agenda))
         hallucinations = await chatbot.hallucination_check()
         if cls.citations_required:
-            minutes = await add_citations_to_minute(
-                transcript=minute.transcription.dialogue_entries, initial_draft=minutes
-            )
+            minutes = await add_citations_to_minute(transcript=transcript, initial_draft=minutes)
         return minutes, hallucinations
 
 
@@ -165,6 +167,9 @@ class SectionTemplate(Template, Protocol):
         minute: Minute,
     ) -> MinuteAndHallucinations:
         transcript = minute.transcription.dialogue_entries
+        if not transcript:
+            msg = f"Minute {minute.id} has no dialogue entries"
+            raise ValueError(msg)
         sections = await cls.sections(transcript, minute.agenda)
         # Generate content for each section
         final_sections = []

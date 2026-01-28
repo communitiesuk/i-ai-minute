@@ -13,7 +13,7 @@ mock_storage_app.mount("/static", StaticFiles(directory=settings.LOCAL_STORAGE_P
 
 
 @mock_storage_app.put("/uploadfile/{file_path:path}")
-async def upload_file_to_mock_storage(file_path: str, request: Request):
+async def upload_file_to_mock_storage(file_path: str, request: Request) -> None:
     storage_path = Path(settings.LOCAL_STORAGE_PATH) / file_path
     storage_path.parent.mkdir(parents=True, exist_ok=True)
     storage_path.write_bytes(await request.body())

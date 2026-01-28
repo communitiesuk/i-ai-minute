@@ -2,10 +2,11 @@ import logging
 import shutil
 import uuid
 from pathlib import Path
-from typing import Any
+from typing import TypedDict
 
-from whisply import models
-from whisply.transcription import TranscriptionHandler
+# local-only dependency, not required in prod, hence the ignores
+from whisply import models  # type: ignore[import-untyped]
+from whisply.transcription import TranscriptionHandler  # type: ignore[import-untyped]
 
 from common.database.postgres_models import DialogueEntry, Recording
 from common.services.transcription_services.adapter import AdapterType, TranscriptionAdapter
@@ -14,6 +15,17 @@ from common.types import TranscriptionJobMessageData
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
+
+
+class WordData(TypedDict):
+    speaker: str
+    word: str
+    start: float
+    end: float
+
+
+class WhisplyOutput(TypedDict):
+    transcription: dict[str, dict[str, dict[str, list[dict[str, list[WordData]]]]]]
 
 
 class WhisplyLocalAdapter(TranscriptionAdapter):
@@ -43,7 +55,7 @@ class WhisplyLocalAdapter(TranscriptionAdapter):
 
         if not settings.WHISPLY_HF_TOKEN:
             msg = "HuggingFace token required for speaker diarization. Set WHISPLY_HF_TOKEN."
-            raise ValueError(msg)   
+            raise ValueError(msg)
 
         try:
             handler = TranscriptionHandler(
@@ -101,42 +113,37 @@ class WhisplyLocalAdapter(TranscriptionAdapter):
             return False
 
     @classmethod
-    def convert_to_dialogue_entries(cls, whisply_data: dict[str, Any]) -> list[DialogueEntry]:
+    def convert_to_dialogue_entries(cls, whisply_data: WhisplyOutput) -> list[DialogueEntry]:
         """
         Convert Whisply JSON output to DialogueEntry format.
         Whisply output structure: transcription -> transcriptions -> language -> chunks (with word-level speaker info)
         """
-        dialogue_entries = []
+        dialogue_entries: list[DialogueEntry] = []
 
-        transcription = whisply_data.get("transcription", {})
-        transcriptions = transcription.get("transcriptions", {})
-
-        if not transcriptions:
-            logger.warning("No transcriptions data found in Whisply output")
-            return dialogue_entries
-
+        transcription = whisply_data["transcription"]
+        transcriptions = transcription["transcriptions"]
         lang_data = transcriptions["en"]
-        chunks = lang_data.get("chunks", [])
+        chunks = lang_data["chunks"]
 
-        current_speaker = None
-        current_text = []
-        current_start = None
-        current_end = None
+        current_speaker: str | None = None
+        current_text: list[str] = []
+        current_start: float | None = None
+        current_end: float | None = None
 
         for chunk in chunks:
-            words = chunk.get("words", [])
+            words = chunk["words"]
 
             for word_data in words:
-                speaker = word_data.get("speaker", "SPEAKER_00")
-                word = word_data.get("word", "").strip()
-                start = float(word_data.get("start", 0.0))
-                end = float(word_data.get("end", 0.0))
+                speaker = word_data["speaker"]
+                word = word_data["word"].strip()
+                start = word_data["start"]
+                end = word_data["end"]
 
                 if not word:
                     continue
 
                 if current_speaker and speaker != current_speaker:
-                    if current_text:
+                    if current_text and current_start is not None and current_end is not None:
                         dialogue_entries.append(
                             DialogueEntry(
                                 speaker=current_speaker,
@@ -154,7 +161,7 @@ class WhisplyLocalAdapter(TranscriptionAdapter):
                 current_speaker = speaker
                 current_text.append(word)
 
-        if current_text and current_speaker:
+        if current_text and current_speaker and current_start is not None and current_end is not None:
             dialogue_entries.append(
                 DialogueEntry(
                     speaker=current_speaker,

@@ -174,9 +174,9 @@ async def get_recordings_for_transcription(
     recordings = result.all()
     # Only return oldest of each file type
     # So users only see original mp3 file if it was converted due to multiple channels
-    recordings = {Path(recording.s3_file_key).suffix: recording for recording in recordings}.values()
+    unique_recordings = {Path(recording.s3_file_key).suffix: recording for recording in recordings}.values()
     signed_recordings: list[SingleRecording] = []
-    for recording in recordings:
+    for recording in unique_recordings:
         if not await storage_service.check_object_exists(recording.s3_file_key):
             continue
         key_path = Path(recording.s3_file_key)
@@ -195,7 +195,7 @@ async def save_transcription(
     transcription_data: TranscriptionPatchRequest,
     session: SQLSessionDep,
     current_user: UserDep,
-):
+) -> Transcription:
     """Save or update a transcription."""
     logger.info("saving transcription for user %s", current_user.id)
     # Use the transcription service to handle the save operation
@@ -214,7 +214,7 @@ async def save_transcription(
 
 
 @transcriptions_router.delete("/transcriptions/{transcription_id}", status_code=204)
-async def delete_transcription(transcription_id: uuid.UUID, session: SQLSessionDep, current_user: UserDep):
+async def delete_transcription(transcription_id: uuid.UUID, session: SQLSessionDep, current_user: UserDep) -> None:
     """Delete a specific transcription by ID."""
     # First check if the transcription exists and belongs to the user
     transcription = await session.get(Transcription, transcription_id)

@@ -1,10 +1,12 @@
 import logging
-from typing import TypeVar
+from typing import Any, TypeVar, cast
 
 from google import genai
 from google.genai import types
 from google.genai.types import (
     Content,
+    ContentListUnion,
+    ContentUnion,
     GenerateContentConfig,
     HttpOptions,
     ModelContent,
@@ -27,7 +29,7 @@ class GeminiModelAdapter(ModelAdapter):
         model: str,
         generate_content_config: GenerateContentConfig,
         http_options: HttpOptions | None = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         self.generate_content_config = generate_content_config
         self._model = model
@@ -57,8 +59,8 @@ class GeminiModelAdapter(ModelAdapter):
             ),
         ]
 
-    def _convert_openai_messages_to_gemini(self, messages: list[dict[str, str]]) -> tuple[list[Content], Content]:
-        gemini_messages = []
+    def _convert_openai_messages_to_gemini(self, messages: list[dict[str, str]]) -> tuple[ContentListUnion, Content]:
+        gemini_messages: list[ContentUnion] = []
         system_instructions = []
         for message in messages:
             if message["role"] == "user":
@@ -85,7 +87,10 @@ class GeminiModelAdapter(ModelAdapter):
                 }
             ),
         )
-        return response.parsed
+        if response.parsed is None:
+            msg = "Gemini response.parsed is None"
+            raise ValueError(msg)
+        return cast(T, response.parsed)
 
     async def chat(self, messages: list[dict[str, str]]) -> str:
         contents, system_instruction = self._convert_openai_messages_to_gemini(messages)
@@ -94,4 +99,7 @@ class GeminiModelAdapter(ModelAdapter):
             model=self._model,
             config=self.generate_content_config.model_copy(update={"system_instruction": system_instruction}),
         )
+        if response.text is None:
+            msg = "Gemini response.text is None"
+            raise ValueError(msg)
         return response.text

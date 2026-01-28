@@ -5,7 +5,7 @@ from i_dot_ai_utilities.logging.types.enrichment_types import ExecutionEnvironme
 from i_dot_ai_utilities.logging.types.log_output_format import LogOutputFormat
 
 
-def setup_logger():
+def setup_logger() -> None:
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",

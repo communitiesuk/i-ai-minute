@@ -2,7 +2,7 @@ import logging
 import subprocess
 from pathlib import Path
 
-import ffmpeg
+import ffmpeg  # type: ignore[import-untyped]
 
 logger = logging.getLogger(__name__)
 
@@ -73,8 +73,8 @@ def get_num_audio_channels(file_path: Path) -> int:
             msg = f"ffprobe command failed with return code {result.returncode}. ffprobe stderr: {result.stderr}"
             logger.error(msg)
             return 2
-        channels = result.stdout.strip()
-        channels = int(channels)
+        raw_channels = result.stdout.strip()
+        channels = int(raw_channels)
         msg = f"Successfully got number of channels using ffprobe: {channels=}"
         logger.info(msg)
         return channels
@@ -110,8 +110,8 @@ def get_duration(file_path: Path) -> float:
             msg = f"ffprobe command failed with return code {result.returncode},ffprobe stderr: {result.stderr}"
             logger.error(msg)
             return 2
-        duration = result.stdout.strip()
-        duration = float(duration)
+        raw_duration = result.stdout.strip()
+        duration = float(raw_duration)
         msg = f"Successfully got duration using ffprobe: {duration=}"
         logger.info(msg)
         return duration
