@@ -57,7 +57,6 @@ class _RayTranscriptionService:
             for message, receipt_handle in messages:
                 try:
                     logger.info("Received minute id for transcription: %s", message.id)
-                    # Narrow the type - transcription messages should have TranscriptionJobMessageData or None
                     data = message.data if isinstance(message.data, TranscriptionJobMessageData) else None
                     transcription_job = await TranscriptionHandlerService.process_transcription(message.id, data)
                 except TranscriptionFailedError:
