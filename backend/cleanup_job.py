@@ -23,20 +23,27 @@ storage_service = get_storage_service(settings.STORAGE_SERVICE_NAME)
 async def cleanup_failed_records() -> None:
     """clear records based on each user's retention period setting."""
     logger.info("Starting stalled object cleanup process")
+    cutoff_date = datetime.now(tz=ZoneInfo("Europe/London")) - timedelta(days=1)
+
     async with AsyncSession(async_engine) as session:
-        for object_type in [MinuteVersion, Transcription]:
-            # delete after 24 hrs if not successful
-            cutoff_date = datetime.now(tz=ZoneInfo("Europe/London")) - timedelta(days=1)
-            update_stmt = (
-                update(object_type)
-                .where(and_(object_type.created_datetime < cutoff_date, object_type.status == JobStatus.IN_PROGRESS))
-                .values(status=JobStatus.FAILED, error="Unknown error. Job finalised by cleanup process")
-            )
-            result = await session.exec(update_stmt)
-            await session.commit()
-            logger.info(
-                f"updated {result.rowcount} old {object_type.__qualname__} that were not successfully processed"  # noqa: G004
-            )
+        minute_version_stmt = (
+            update(MinuteVersion)
+            .where(and_(MinuteVersion.created_datetime < cutoff_date, MinuteVersion.status == JobStatus.IN_PROGRESS))
+            .values(status=JobStatus.FAILED, error="Unknown error. Job finalised by cleanup process")
+        )
+        result = await session.exec(minute_version_stmt)
+        await session.commit()
+        logger.info(f"updated {result.rowcount} old MinuteVersion that were not successfully processed")  # noqa: G004
+
+    async with AsyncSession(async_engine) as session:
+        transcription_stmt = (
+            update(Transcription)
+            .where(and_(Transcription.created_datetime < cutoff_date, Transcription.status == JobStatus.IN_PROGRESS))
+            .values(status=JobStatus.FAILED, error="Unknown error. Job finalised by cleanup process")
+        )
+        result = await session.exec(transcription_stmt)
+        await session.commit()
+        logger.info(f"updated {result.rowcount} old Transcription that were not successfully processed")  # noqa: G004
 
     logger.info("Stalled record cleanup process completed")
 
