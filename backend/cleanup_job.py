@@ -1,12 +1,11 @@
 import logging
-import math
 from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore[import-untyped]
+from sqlalchemy import Integer, cast
 from sqlmodel import and_, col, func, null, select, update
 from sqlmodel.ext.asyncio.session import AsyncSession
-from sqlalchemy import cast, Integer
 
 from common.database.postgres_database import async_engine
 from common.database.postgres_models import JobStatus, MinuteVersion, Recording, Transcription, User
