@@ -1,6 +1,6 @@
 # Put action within a raw block so that the curly bracket expressions aren't picked up by the cookiecutter
 #
-name: checks
+name: tests
 
 env:
   DOCKER_BUILDKIT: 1
@@ -33,36 +33,6 @@ on:
   workflow_dispatch:
 
 jobs:
-  static_checks:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Set up Python
-        uses: actions/setup-python@v3
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Set up Poetry
-        uses: abatilo/actions-poetry@v2
-        with:
-          poetry-version: ${{ env.POETRY_VERSION }}
-
-      - name: Install dependencies
-        run: |
-          poetry install --no-root --no-ansi --with dev
-
-      - name: Format code
-        run: |
-          poetry run ruff format . --check
-          poetry run ruff check .
-      
-      - name: Type Check
-        run: |
-          poetry run mypy .
-          
-
-
   run_tests:
     runs-on: ubuntu-latest
     environment: release
