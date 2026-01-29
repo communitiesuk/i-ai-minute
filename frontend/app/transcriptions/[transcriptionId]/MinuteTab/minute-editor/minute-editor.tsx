@@ -264,7 +264,7 @@ export function MinuteEditor({
             textToCopy={contentToCopy}
             posthogEvent="editor_content_copied"
           />
-     
+
 
           {hasCitations && (
             <Button
@@ -295,8 +295,14 @@ export function MinuteEditor({
           />
         </div>
       </div>
-  
-      <GuardrailResponseComponent guardrailResults={minuteVersion.guardrail_results} />
+
+      {!minuteVersion.html_content?.includes(
+        'Short meeting detected. Minutes not available.'
+      ) && (
+          <GuardrailResponseComponent
+            guardrailResults={minuteVersion.guardrail_results}
+          />
+        )}
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <Controller
           control={form.control}
