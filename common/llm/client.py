@@ -140,3 +140,4 @@ def create_default_chatbot(fast_or_best: FastOrBestLLM) -> ChatBot:
         return create_chatbot(settings.BEST_LLM_PROVIDER, settings.BEST_LLM_MODEL_NAME, temperature=0.0)
     else:
         return create_chatbot(settings.FAST_LLM_PROVIDER, settings.FAST_LLM_MODEL_NAME, temperature=0.0)
+    
