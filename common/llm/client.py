@@ -11,7 +11,7 @@ from tenacity import (
     wait_random_exponential,
 )
 
-from common.llm.adapters import GeminiModelAdapter, ModelAdapter, OpenAIModelAdapter
+from common.llm.adapters import (AzureAPIMModelAdapter, GeminiModelAdapter, ModelAdapter, OpenAIModelAdapter)
 from common.prompts import get_hallucination_detection_messages
 from common.settings import get_settings
 from common.types import LLMHallucination, LLMHallucinationList
@@ -117,6 +117,16 @@ def create_chatbot(model_type: str, model_name: str, temperature: float) -> Chat
                 temperature=temperature,
             )
         )
+    elif model_type == "azure_apim":
+        return ChatBot(
+            AzureAPIMModelAdapter(
+                url=settings.AZURE_APIM_URL,
+                deployment=settings.AZURE_APIM_DEPLOYMENT,
+                api_version=settings.AZURE_APIM_API_VERSION,
+                access_token=settings.AZURE_APIM_ACCESS_TOKEN,
+                subscription_key=settings.AZURE_APIM_SUBSCRIPTION_KEY,
+            )
+        )
     elif model_type == "gemini":
         return ChatBot(
             GeminiModelAdapter(
@@ -144,3 +154,4 @@ def create_default_chatbot(fast_or_best: FastOrBestLLM) -> ChatBot:
         return create_chatbot(settings.BEST_LLM_PROVIDER, settings.BEST_LLM_MODEL_NAME, temperature=0.0)
     else:
         return create_chatbot(settings.FAST_LLM_PROVIDER, settings.FAST_LLM_MODEL_NAME, temperature=0.0)
+    

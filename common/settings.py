@@ -73,6 +73,13 @@ class Settings(BaseSettings):
     AZURE_OPENAI_ENDPOINT: str | None = Field(description="Azure OpenAI service endpoint URL", default=None)
     AZURE_OPENAI_API_VERSION: str | None = Field(description="Azure OpenAI API version", default=None)
 
+    # if using Azure APIM
+    AZURE_APIM_URL: str | None = Field(description="Base URL for Azure APIM LLM.", default=None)
+    AZURE_APIM_DEPLOYMENT: str | None = Field(description="Azure APIM deployment, <project-model>", default=None)
+    AZURE_APIM_API_VERSION: str | None = Field(description="Azure APIM API version, <yyyy-mm-dd>", default=None)
+    AZURE_APIM_ACCESS_TOKEN: str | None = Field(description="Access token for Azure APIM", default=None)
+    AZURE_APIM_SUBSCRIPTION_KEY: str | None = Field(description="Subscription key for Azure APIM", default=None)
+
     # if using Gemini
     GOOGLE_APPLICATION_CREDENTIALS: str | None = Field(
         description="Path to Google Cloud service account credentials JSON file", default=None
@@ -92,22 +99,23 @@ class Settings(BaseSettings):
     )
 
     FAST_LLM_PROVIDER: str = Field(
-        description="Fast LLM provider to use. Currently 'openai' or 'gemini' are supported. Note that this should be "
-        "used for low complexity LLM tasks, like AI edits",
-        default="gemini",
+        description="Fast LLM provider to use. Currently 'openai', 'azure_apim', and 'gemini' are supported. Note that "
+        "this should be used for low complexity LLM tasks, like AI edits.",
+        default="azure_apim",
     )
     FAST_LLM_MODEL_NAME: str = Field(
-        description="Fast LLM model name to use. Note that this should be used for low complexity LLM tasks",
+        description="Fast LLM model name to use. Note that this should be used for low complexity LLM tasks. Currently "
+        "ignored by azure_apim as the apim controls model access.",
         default="gemini-2.5-flash-lite",
     )
     BEST_LLM_PROVIDER: str = Field(
-        description="Best LLM provider to use. Currently 'openai' or 'gemini' are supported. Note that this should be "
-        "used for higher complexity LLM tasks, like initial minute generation.",
-        default="gemini",
+        description="Best LLM provider to use. Currently 'openai', 'azure_apim', and 'gemini' are supported. Note that "
+        "this should be used for higher complexity LLM tasks, like initial minute generation.",
+        default="azure_apim",
     )
     BEST_LLM_MODEL_NAME: str = Field(
         description="Best LLM model name to use. Note that this should be used for higher complexity LLM tasks, like "
-        "initial minute generation.",
+        "initial minute generation. Currently ignored by azure_apim as the apim controls model access.",
         default="gemini-2.5-flash",
     )
 

@@ -1,0 +1,11 @@
+common/llm/adapters/azure_apim.py:37: error: Incompatible return value type (got "str", expected "T")  [return-value]
+common/llm/adapters/azure_apim.py:43: error: Argument "messages" to "create" of "AsyncCompletions" has incompatible type "list[dict[str, str]]"; expected "Iterable[ChatCompletionDeveloperMessageParam | ChatCompletionSystemMessageParam | ChatCompletionUserMessageParam | ChatCompletionAssistantMessageParam | ChatCompletionToolMessageParam | ChatCompletionFunctionMessageParam]"  [arg-type]
+common/llm/adapters/azure_apim.py:50: error: Incompatible return value type (got "str | None", expected "str")  [return-value]
+common/llm/adapters/azure_apim.py:58: error: Item "None" of "CompletionUsage | None" has no attribute "prompt_tokens"  [union-attr]
+common/llm/adapters/azure_apim.py:59: error: Item "None" of "CompletionUsage | None" has no attribute "completion_tokens"  [union-attr]
+common/llm/client.py:123: error: Argument "url" to "AzureAPIMModelAdapter" has incompatible type "str | None"; expected "str"  [arg-type]
+common/llm/client.py:124: error: Argument "deployment" to "AzureAPIMModelAdapter" has incompatible type "str | None"; expected "str"  [arg-type]
+common/llm/client.py:125: error: Argument "api_version" to "AzureAPIMModelAdapter" has incompatible type "str | None"; expected "str"  [arg-type]
+common/llm/client.py:126: error: Argument "access_token" to "AzureAPIMModelAdapter" has incompatible type "str | None"; expected "str"  [arg-type]
+common/llm/client.py:127: error: Argument "subscription_key" to "AzureAPIMModelAdapter" has incompatible type "str | None"; expected "str"  [arg-type]
+Found 10 errors in 2 files (checked 82 source files)
