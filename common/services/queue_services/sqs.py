@@ -1,8 +1,7 @@
 import logging
-from typing import cast
+from typing import Any
 
 import boto3
-from mypy_boto3_sqs.client import SQSClient
 
 from common.services.queue_services.base import QueueService
 from common.settings import get_settings
@@ -12,20 +11,18 @@ settings = get_settings()
 logger = logging.getLogger(__name__)
 
 
-def get_sqs_client() -> SQSClient:
+# Any type used instead of SQSClient - mypy-boto3-sqs plugin should not be installed in production
+def get_sqs_client() -> Any:
     if settings.USE_LOCALSTACK and settings.ENVIRONMENT == "local":
-        return cast(
-            SQSClient,
-            boto3.client(
-                "sqs",
-                aws_access_key_id="YOUR_ACCESS_KEY_ID",
-                aws_secret_access_key="YOUR_SECRET_ACCESS_KEY",  # noqa: S106
-                region_name="eu-west-2",
-                endpoint_url=settings.LOCALSTACK_URL,
-            ),
+        return boto3.client(
+            "sqs",
+            aws_access_key_id="YOUR_ACCESS_KEY_ID",
+            aws_secret_access_key="YOUR_SECRET_ACCESS_KEY",  # noqa: S106
+            region_name="eu-west-2",
+            endpoint_url=settings.LOCALSTACK_URL,
         )
 
-    return cast(SQSClient, boto3.client("sqs"))
+    return boto3.client("sqs")
 
 
 class SQSQueueService(QueueService):
