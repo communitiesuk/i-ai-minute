@@ -83,7 +83,6 @@ bandit = "^1.7.9"
 detect-secrets = "^1.5.0"
 playwright = "^1.45"
 pytest-playwright = "^0.5"
-diagrams = "^0.23.4"
 ipykernel = "^6.29.5"
 beautifulsoup4 = "^4.13.3"
 
