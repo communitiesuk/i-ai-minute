@@ -13,45 +13,25 @@ class MeetingSegment:
     utterance_cutoff_time: float | None = None
 
 
-def select_segments(metadata: MeetingMetadata, num_samples: float) -> list[MeetingSegment]:
+def select_segments(metadata: MeetingMetadata, num_samples: int | None, sample_duration_fraction: float | None = None) -> list[MeetingSegment]:
     meeting_ids = metadata["meeting_ids"]
     durations = metadata["durations_sec"]
 
     if not meeting_ids:
         return []
 
-    if num_samples >= 1.0:
-        num_meetings = int(num_samples)
-        logger.info("Selecting first %d meetings", num_meetings)
-        return [MeetingSegment(meeting_id=mid, utterance_cutoff_time=None) for mid in meeting_ids[:num_meetings]]
+    num_meetings = len(meeting_ids) if num_samples is None else num_samples
+    
+    if sample_duration_fraction is not None:
+        logger.info("Selecting first %d meetings with %.1f%% duration each", num_meetings, sample_duration_fraction * 100)
+        
+        segments = []
+        for mid in meeting_ids[:num_meetings]:
+            meeting_duration = durations.get(mid, 0)
+            cutoff_time = meeting_duration * sample_duration_fraction
+            segments.append(MeetingSegment(meeting_id=mid, utterance_cutoff_time=cutoff_time))
+        
+        return segments
 
-    first_meeting_id = meeting_ids[0]
-    first_meeting_duration = durations.get(first_meeting_id, 0)
-    target_seconds = first_meeting_duration * num_samples
-
-    logger.info("First meeting (%s) duration: %.2f sec", first_meeting_id, first_meeting_duration)
-    logger.info(
-        "Target total duration: %.2f sec (%.1f%% of first meeting)",
-        target_seconds,
-        num_samples * 100,
-    )
-
-    segments = []
-    accumulated = 0.0
-
-    for meeting_id in meeting_ids:
-        duration = durations.get(meeting_id, 0)
-
-        if accumulated + duration <= target_seconds:
-            segments.append(MeetingSegment(meeting_id=meeting_id, utterance_cutoff_time=None))
-            accumulated += duration
-            if accumulated >= target_seconds:
-                break
-        else:
-            remaining = target_seconds - accumulated
-            if remaining > 0:
-                segments.append(MeetingSegment(meeting_id=meeting_id, utterance_cutoff_time=remaining))
-            break
-
-    logger.info("Selected %d segments for target %.2f sec", len(segments), target_seconds)
-    return segments
+    logger.info("Selecting first %d meetings", num_meetings)
+    return [MeetingSegment(meeting_id=mid, utterance_cutoff_time=None) for mid in meeting_ids[:num_meetings]]
