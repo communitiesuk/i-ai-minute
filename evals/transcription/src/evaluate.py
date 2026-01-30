@@ -10,13 +10,13 @@ from core.runner import run_engine, run_engines_parallel, save_results
 logger = logging.getLogger(__name__)
 
 
-def run_evaluation(num_samples: float = 10, prepare_only: bool = False):
+def run_evaluation(num_samples: int | None = None, sample_duration_fraction: float | None = None, prepare_only: bool = False):
     output_dir = WORKDIR / "results"
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     output_path = output_dir / f"evaluation_results_{timestamp}.json"
 
     logger.info("Loading dataset...")
-    ds = load_benchmark_dataset(num_samples=num_samples)
+    ds = load_benchmark_dataset(num_samples=num_samples, sample_duration_fraction=sample_duration_fraction)
 
     indices = list(range(len(ds)))
     logger.info("Loaded %d samples from AMI dataset", len(indices))
@@ -64,10 +64,17 @@ def main():
     parser = argparse.ArgumentParser(description="Run transcription evaluation")
     parser.add_argument(
         "--num-samples",
+        type=int,
+        default=None,
+        help="Number of meetings to evaluate from AMI dataset. "
+             "If not specified, evaluates all available meetings."
+    )
+    parser.add_argument(
+        "--sample-duration-fraction",
         type=float,
-        default=10,
-        help="Number of meetings to evaluate from AMI dataset (default: 10). "
-             "If < 1.0, treated as fraction of first meeting duration (e.g., 0.1 = 10%% of first meeting)"
+        default=None,
+        help="Fraction of each meeting to use (e.g., 0.1 = use first 10%% of each meeting). "
+             "When set, --num-samples must be >= 1.0 and specifies the number of meetings."
     )
     parser.add_argument(
         "--prepare-only",
@@ -76,7 +83,11 @@ def main():
     )
     args = parser.parse_args()
 
-    run_evaluation(num_samples=args.num_samples, prepare_only=args.prepare_only)
+    run_evaluation(
+        num_samples=args.num_samples,
+        sample_duration_fraction=args.sample_duration_fraction,
+        prepare_only=args.prepare_only
+    )
 
 
 if __name__ == "__main__":

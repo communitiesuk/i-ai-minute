@@ -13,11 +13,11 @@ TARGET_SAMPLE_RATE = 16000
 STEREO_CHANNELS = 2
 
 
-def load_benchmark_dataset(num_samples: float):
+def load_benchmark_dataset(num_samples: int | None, sample_duration_fraction: float | None = None):
     logger.info("Loading AMI dataset with %d samples...", num_samples)
     logger.info("Using cache directory: %s", CACHE_DIR)
     
-    ami_loader = load_ami_dataset(CACHE_DIR, num_samples)
+    ami_loader = load_ami_dataset(CACHE_DIR, num_samples, sample_duration_fraction)
     
     logger.info("Dataset loaded successfully")
     logger.info("Number of samples: %d", len(ami_loader))

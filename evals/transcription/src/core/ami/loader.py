@@ -68,12 +68,14 @@ class AMIDatasetLoader:
     def __init__(
         self,
         cache_dir: Path,
-        num_samples: float,
+        num_samples: int | None,
+        sample_duration_fraction: float | None = None,
         split: str = "train",
         config: str = "ihm",
     ):
         self.cache_dir = cache_dir
         self.num_samples = num_samples
+        self.sample_duration_fraction = sample_duration_fraction
         self.split = split
         self.config = config
 
@@ -87,7 +89,7 @@ class AMIDatasetLoader:
 
     def prepare(self) -> list[Sample]:
         metadata = load_or_build_metadata(self.cache_dir, self.split, self.config)
-        segments = select_segments(metadata, self.num_samples)
+        segments = select_segments(metadata, self.num_samples, self.sample_duration_fraction)
 
         if not segments:
             logger.warning("No segments selected")

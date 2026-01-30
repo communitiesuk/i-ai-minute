@@ -41,11 +41,17 @@ cp .env.example .env
 
 Run the evaluation:
 ```bash
-# Evaluate on 10 full meetings
+# Evaluate all available meetings
+poetry run python src/evaluate.py
+
+# Evaluate 10 full meetings
 poetry run python src/evaluate.py --num-samples 10
 
-# Quick test: evaluate on 10% of first meeting duration (~9 minutes)
-poetry run python src/evaluate.py --num-samples 0.1
+# Evaluate 10 meetings, using only first 10% of each meeting
+poetry run python src/evaluate.py --num-samples 10 --sample-duration-fraction 0.1
+
+# Evaluate 5 meetings, using first 25% of each
+poetry run python src/evaluate.py --num-samples 5 --sample-duration-fraction 0.25
 
 # Cache dataset only without running transcription
 poetry run python src/evaluate.py --prepare-only
@@ -56,8 +62,9 @@ Results are saved to `results/evaluation_results_YYYYMMDD_HHMMSS.json` with time
 ## Configuration
 
 **Sample Selection**:
-- `--num-samples N` where N ≥ 1: Evaluate N complete meetings from AMI dataset
-- `--num-samples 0.X`: Fractional mode - evaluate X% of first meeting duration (e.g., `0.1` = 10% ≈ 9 minutes)
+- `--num-samples N`: Evaluate N meetings from AMI dataset (if not specified, evaluates all available meetings)
+- `--sample-duration-fraction 0.X`: Use first X% of each selected meeting (e.g., `0.1` = first 10% of each meeting)
+  - Useful for testing multiple meetings with shorter audio clips
 - `--prepare-only`: Download and cache dataset without running transcription
 
 **Dataset**: Uses AMI Corpus meeting recordings. Audio is automatically:
