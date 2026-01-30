@@ -7,9 +7,7 @@ from breame.spelling import american_spelling_exists, get_british_spelling  # ty
 logger = logging.getLogger(__name__)
 
 
-def convert_american_to_british_spelling(  # noqa: C901
-    text: str, strict: bool = False
-) -> str:
+def convert_american_to_british_spelling(text: str, strict: bool = False) -> str:
     if not text.strip():
         return text
 

@@ -1,43 +1,39 @@
 from __future__ import annotations
- 
+
 import json
 import os
 import shutil
 import subprocess
 import sys
 from typing import Any, cast
+
+from openai import OpenAI
 from openai.types.chat import ChatCompletionMessageParam
 
- 
-from openai import OpenAI
- 
- 
+from common.settings import get_settings
+
+settings = get_settings()
+
+
 DEPLOYMENT_ID = "minute-gpt4o"
 API_VERSION = "2024-10-21"
-TOKEN_SCOPE = "api://api.azc.test.communities.gov.uk/.default"
-SUBSCRIPTION_KEY = "35ddfd28ad164ab79927019bea8fd901"
-BASE_URL = (
-    "https://api.azc.test.communities.gov.uk/"
-    "minute/openai001"
-)
- 
- 
+TOKEN_SCOPE = "api://api.azc.test.communities.gov.uk/.default"  # noqa: S105
+SUBSCRIPTION_KEY = settings.AZURE_APIM_SUBSCRIPTION_KEY or ""
+BASE_URL = "https://api.azc.test.communities.gov.uk/" "minute/openai001"
+
+
 def get_access_token() -> str:
     """Fetch an AAD token using an env override or Azure CLI."""
-    env_token = (
-        os.getenv("APIM_ACCESS_TOKEN")
-        or os.getenv("APIM_BEARER_TOKEN")
-        or os.getenv("AZ_ACCESS_TOKEN")
-    )
+    env_token = os.getenv("APIM_ACCESS_TOKEN") or os.getenv("APIM_BEARER_TOKEN") or os.getenv("AZ_ACCESS_TOKEN")
     if env_token:
         return env_token.strip()
- 
+
     if shutil.which("az") is None:
         raise RuntimeError(
             "Azure CLI is not available and no access token override was provided. "
             "Install Azure CLI or export APIM_ACCESS_TOKEN with a valid bearer token."
         )
- 
+
     command = [
         "az",
         "account",
@@ -47,7 +43,7 @@ def get_access_token() -> str:
         "--output",
         "json",
     ]
- 
+
     try:
         result = subprocess.run(
             command,
@@ -60,16 +56,15 @@ def get_access_token() -> str:
         print("Failed to fetch access token via Azure CLI.", file=sys.stderr)
         print(exc.stderr.strip(), file=sys.stderr)
         print(
-            "Run `az login --scope "
-            f"{TOKEN_SCOPE}` or export APIM_ACCESS_TOKEN before executing this script.",
+            "Run `az login --scope " f"{TOKEN_SCOPE}` or export APIM_ACCESS_TOKEN before executing this script.",
             file=sys.stderr,
         )
         raise
- 
+
     payload = json.loads(result.stdout)
     return cast(str, payload["accessToken"])
- 
- 
+
+
 def build_client(access_token: str) -> OpenAI:
     """Create an OpenAI client configured for APIM + Azure OpenAI."""
     return OpenAI(
@@ -81,8 +76,8 @@ def build_client(access_token: str) -> OpenAI:
             "Ocp-Apim-Subscription-Key": SUBSCRIPTION_KEY,
         },
     )
- 
- 
+
+
 def invoke_chat_completion(client: OpenAI, messages: list[dict[str, str]]) -> Any:
     """Send a chat-completions request to the deployment."""
     return client.chat.completions.create(
@@ -92,8 +87,8 @@ def invoke_chat_completion(client: OpenAI, messages: list[dict[str, str]]) -> An
         temperature=0,
         extra_query={"api-version": API_VERSION},
     )
- 
- 
+
+
 def main() -> None:
     token = get_access_token()
     client = build_client(token)
@@ -103,7 +98,7 @@ def main() -> None:
     ]
     result = invoke_chat_completion(client, messages)
     print(result)
- 
- 
+
+
 if __name__ == "__main__":
     main()

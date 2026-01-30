@@ -11,7 +11,7 @@ from tenacity import (
     wait_random_exponential,
 )
 
-from common.llm.adapters import (AzureAPIMModelAdapter, GeminiModelAdapter, ModelAdapter, OpenAIModelAdapter)
+from common.llm.adapters import AzureAPIMModelAdapter, GeminiModelAdapter, ModelAdapter, OpenAIModelAdapter
 from common.prompts import get_hallucination_detection_messages
 from common.settings import get_settings
 from common.types import LLMHallucination, LLMHallucinationList
@@ -133,7 +133,7 @@ def create_chatbot(model_type: str, model_name: str, temperature: float) -> Chat
         if not settings.AZURE_APIM_SUBSCRIPTION_KEY:
             msg = "AZURE_APIM_SUBSCRIPTION_KEY is required for azure_apim model"
             raise ValueError(msg)
-        
+
         return ChatBot(
             AzureAPIMModelAdapter(
                 url=settings.AZURE_APIM_URL,
@@ -170,4 +170,3 @@ def create_default_chatbot(fast_or_best: FastOrBestLLM) -> ChatBot:
         return create_chatbot(settings.BEST_LLM_PROVIDER, settings.BEST_LLM_MODEL_NAME, temperature=0.0)
     else:
         return create_chatbot(settings.FAST_LLM_PROVIDER, settings.FAST_LLM_MODEL_NAME, temperature=0.0)
-    

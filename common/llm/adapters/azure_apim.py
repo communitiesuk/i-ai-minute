@@ -1,5 +1,5 @@
 import logging
-from typing import TypeVar, Any, cast
+from typing import TypeVar, cast
 
 from openai import AsyncAzureOpenAI
 from openai.types.chat import ChatCompletion, ChatCompletionMessageParam
@@ -19,12 +19,11 @@ class AzureAPIMModelAdapter(ModelAdapter):
         api_version: str,
         access_token: str,
         subscription_key: str,
-        **kwargs: Any,
     ) -> None:
         self._deployment = deployment
         self.async_apim_client = AsyncAzureOpenAI(
             base_url=url,
-            api_key="", # Dummy key unused by APIM, 
+            api_key="",  # Dummy key unused by APIM,
             api_version=api_version,
             default_headers={
                 "Authorization": f"Bearer {access_token}",
@@ -32,10 +31,9 @@ class AzureAPIMModelAdapter(ModelAdapter):
             },
         )
 
-    async def structured_chat(
-        self, messages: list[dict[str, str]], response_format: type[T]) -> T:
-        response= await self.async_apim_client.beta.chat.completions.parse(
-            model=self._deployment, 
+    async def structured_chat(self, messages: list[dict[str, str]], response_format: type[T]) -> T:
+        response = await self.async_apim_client.beta.chat.completions.parse(
+            model=self._deployment,
             messages=cast(list[ChatCompletionMessageParam], messages),
             response_format=response_format,
         )
@@ -44,12 +42,11 @@ class AzureAPIMModelAdapter(ModelAdapter):
         if parsed is None:
             msg = "Azure APIM response.parsed is None"
             raise ValueError(msg)
-        return cast(T, parsed)        
+        return cast(T, parsed)
 
     async def chat(self, messages: list[dict[str, str]]) -> str:
-
         response = await self.async_apim_client.chat.completions.create(
-            model=self._deployment, 
+            model=self._deployment,
             messages=cast(list[ChatCompletionMessageParam], messages),
             temperature=0.0,
             max_tokens=16384,
@@ -62,7 +59,7 @@ class AzureAPIMModelAdapter(ModelAdapter):
             msg = "Azure APIM message.content is None"
             raise ValueError(msg)
         return message_content
-    
+
     @staticmethod
     def choice_incomplete(choice: Choice, response: ChatCompletion) -> bool:
         if choice.finish_reason == "length":

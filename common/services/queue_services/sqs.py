@@ -12,7 +12,6 @@ settings = get_settings()
 logger = logging.getLogger(__name__)
 
 
-
 def get_sqs_client() -> SQSClient:
     if settings.USE_LOCALSTACK and settings.ENVIRONMENT == "local":
         return cast(
