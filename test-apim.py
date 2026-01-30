@@ -5,7 +5,9 @@ import os
 import shutil
 import subprocess
 import sys
-from typing import Any
+from typing import Any, cast
+from openai.types.chat import ChatCompletionMessageParam
+
  
 from openai import OpenAI
  
@@ -65,7 +67,7 @@ def get_access_token() -> str:
         raise
  
     payload = json.loads(result.stdout)
-    return payload["accessToken"]
+    return cast(str, payload["accessToken"])
  
  
 def build_client(access_token: str) -> OpenAI:
@@ -85,7 +87,7 @@ def invoke_chat_completion(client: OpenAI, messages: list[dict[str, str]]) -> An
     """Send a chat-completions request to the deployment."""
     return client.chat.completions.create(
         model=DEPLOYMENT_ID,
-        messages=messages,
+        messages=cast(list[ChatCompletionMessageParam], messages),
         max_tokens=128,
         temperature=0,
         extra_query={"api-version": API_VERSION},
