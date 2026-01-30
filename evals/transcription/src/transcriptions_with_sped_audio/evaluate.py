@@ -67,28 +67,28 @@ def main() -> None:
 
     audio_samples = get_wav_txt_file_paths(CACHE_DIR / 'processed')
     results = {
-        # 'meta': {
-        #     'speeds': SPEEDS,
-        #     'files': list(audio_samples.keys())
-        # },
+        'meta': {
+            'speeds': SPEEDS,
+            'files': [str(path.name) for path in audio_samples]
+        },
+        'data': {}
     }
 
     for wav_path, txt_path in audio_samples.items():
         logging.info(f'Processing {wav_path.name}')
         reference = read_txt(txt_path)
-        results[wav_path.stem] = {}
+
+        results['data'][wav_path.stem] = {}
         
         for speed in SPEEDS: 
             try:
                 sped_audio = speed_audio(wav_path, speed)
-                text, _, debug = azureTTS.transcribe_with_debug(str(sped_audio))
+                text, proc_time, _ = azureTTS.transcribe_with_debug(str(sped_audio))
 
-                print(f'-------{speed}: {text[:50]}-------')
-                # print(debug)
-
-                results[wav_path.stem][f'{speed}x_speed'] = {
+                results['data'][wav_path.stem][f'{speed}x_speed'] = {
                     'meta': {
-                        'duration': get_audio_duration(sped_audio)
+                        'duration': get_audio_duration(sped_audio),
+                        'proc_time': proc_time
                         },
                     'score': score_transcript(reference, text)
                 }
