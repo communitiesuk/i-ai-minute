@@ -29,11 +29,11 @@ def get_access_token() -> str:
         return env_token.strip()
 
     if shutil.which("az") is None:
-        raise RuntimeError(
+        msg = (
             "Azure CLI is not available and no access token override was provided. "
             "Install Azure CLI or export APIM_ACCESS_TOKEN with a valid bearer token."
         )
-
+        raise RuntimeError(msg)
     command = [
         "az",
         "account",
@@ -45,17 +45,16 @@ def get_access_token() -> str:
     ]
 
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # noqa: S603
             command,
             check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             text=True,
         )
     except subprocess.CalledProcessError as exc:
-        print("Failed to fetch access token via Azure CLI.", file=sys.stderr)
-        print(exc.stderr.strip(), file=sys.stderr)
-        print(
+        print("Failed to fetch access token via Azure CLI.", file=sys.stderr)  # noqa: T201
+        print(exc.stderr.strip(), file=sys.stderr)  # noqa: T201
+        print(  # noqa: T201
             "Run `az login --scope " f"{TOKEN_SCOPE}` or export APIM_ACCESS_TOKEN before executing this script.",
             file=sys.stderr,
         )
@@ -97,7 +96,7 @@ def main() -> None:
         {"role": "user", "content": "Say hello to the APIM test team."},
     ]
     result = invoke_chat_completion(client, messages)
-    print(result)
+    print(result)  # noqa: T201
 
 
 if __name__ == "__main__":
