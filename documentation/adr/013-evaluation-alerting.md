@@ -12,7 +12,7 @@ Evaluations need to surface issues to the right people at the right time. We nee
 
 ## Considered Options
 
-* CI/CD Native Alerting [preferred]
+* CI/CD Native Alerting
 * Dedicated Monitoring and Alerting Systems
 * No Dedicated Alerting Infrastructure
 
@@ -22,7 +22,7 @@ CI/CD Native Alerting, because it integrates seamlessly with existing workflows 
 
 ## Pros and Cons of the Options
 
-### CI/CD Native Alerting [preferred]
+### CI/CD Native Alerting
 
 Use the CI/CD platform's built-in notification system (e.g., GitHub Actions status checks, pipeline failure notifications).
 

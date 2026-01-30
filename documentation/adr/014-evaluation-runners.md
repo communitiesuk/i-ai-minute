@@ -13,7 +13,7 @@ Choice of execution infrastructure affects control, cost, and complexity. Since 
 ## Considered Options
 
 * Standard CI/CD Runners
-* Dedicated CI/CD Runners [preferred]
+* Dedicated CI/CD Runners
 
 ## Decision Outcome
 
@@ -30,7 +30,7 @@ Run evaluations on the CI/CD platform's default shared runners (e.g., GitHub Act
 * Bad, because limited control over environment and network access.
 * Bad, because sensitive data may touch shared infrastructure or logs.
 
-### Dedicated CI/CD Runners [preferred]
+### Dedicated CI/CD Runners
 
 Deploy dedicated runners specifically for evaluation workloads (e.g. self-hosted GitHub Actions runners).
 

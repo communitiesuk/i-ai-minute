@@ -20,12 +20,12 @@ We need to determine optimal storage strategies that address these distinct requ
 
 ### Input Storage Options
 * Git repository (version controlled test cases)
-* S3 Bucket (versioned test datasets) [preferred]
+* S3 Bucket (versioned test datasets)
 * Dedicated test case database
 
 ### Output Storage Options
 * CI/CD Artifacts
-* S3 Bucket (or similar object storage) [preferred]
+* S3 Bucket (or similar object storage)
 * Dedicated Database
 
 ## Decision Outcome
@@ -47,7 +47,7 @@ Store evaluation test cases, prompts, and configurations in the git repository a
 * Bad, because not suitable for large binary test files (e.g., audio samples).
 * Bad, because it is completely unsuitable for sensitive data.
 
-#### S3 Bucket (versioned test datasets) [preferred]
+#### S3 Bucket (versioned test datasets)
 
 Store evaluation inputs as versioned files in S3 bucket with lifecycle policies.
 
@@ -79,7 +79,7 @@ Store evaluation results as build artifacts in the CI/CD system.
 * Bad, because it is not built for long-term persistence.
 * Bad, because querying across artifacts is difficult.
 
-#### S3 Bucket (or similar object storage) [preferred]
+#### S3 Bucket (or similar object storage)
 
 Store evaluation results as files in an S3 bucket or similar object storage.
 
