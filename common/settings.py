@@ -198,7 +198,7 @@ class Settings(BaseSettings):
         model_config = SettingsConfigDict(env_file=DOT_ENV_PATH, extra="ignore")
 
 
-def get_settings():
+def get_settings() -> Settings:
     return Settings()  # type: ignore  # noqa: PGH003
 
 

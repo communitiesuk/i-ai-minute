@@ -3,7 +3,7 @@ from .base import StorageService
 from .local.local import LocalStorageService
 from .s3 import S3StorageService
 
-storage_services = {
+storage_services: dict[str, StorageService] = {
     S3StorageService.name: S3StorageService,
     AzureBlobStorageService.name: AzureBlobStorageService,
     LocalStorageService.name: LocalStorageService,

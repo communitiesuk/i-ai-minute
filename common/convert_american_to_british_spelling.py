@@ -1,20 +1,19 @@
 import logging
 import re
+from re import Match
 
-from breame.spelling import american_spelling_exists, get_british_spelling
+from breame.spelling import american_spelling_exists, get_british_spelling  # type: ignore[import-untyped]
 
 logger = logging.getLogger(__name__)
 
 
-def convert_american_to_british_spelling(  # noqa: C901
-    text: str, strict: bool = False
-) -> str:
+def convert_american_to_british_spelling(text: str, strict: bool = False) -> str:
     if not text.strip():
         return text
 
     try:
 
-        def replace_word(match):
+        def replace_word(match: Match[str]) -> str:
             # The first group contains any leading punctuation/spaces
             # The second group contains the word
             # The third group contains any trailing punctuation/spaces
@@ -26,7 +25,7 @@ def convert_american_to_british_spelling(  # noqa: C901
 
             if american_spelling_exists(word.lower()):
                 try:
-                    british = get_british_spelling(word.lower())
+                    british = str(get_british_spelling(word.lower()))
                     # Preserve capitalization
                     if word.isupper():
                         british = british.upper()

@@ -11,11 +11,14 @@ from common.database.postgres_database import SessionLocal
 from common.database.postgres_models import Recording, Transcription
 from common.services.exceptions import TranscriptionFailedError
 from common.services.storage_services import get_storage_service
-from common.services.transcription_services.adapter import AdapterType, TranscriptionAdapter
-from common.services.transcription_services.aws import AWSTranscribeAdapter
-from common.services.transcription_services.azure import AzureSpeechAdapter
-from common.services.transcription_services.azure_async import AzureBatchTranscriptionAdapter
-from common.services.transcription_services.whisply_local import WhisplyLocalAdapter
+from common.services.transcription_services import (
+    AWSTranscribeAdapter,
+    AzureBatchTranscriptionAdapter,
+    AzureSpeechAdapter,
+    TranscriptionAdapter,
+    WhisplyLocalAdapter,
+)
+from common.services.transcription_services.adapter import AdapterType
 from common.settings import get_settings
 from common.types import TranscriptionJobMessageData
 
@@ -33,10 +36,10 @@ storage_service = get_storage_service(get_settings().STORAGE_SERVICE_NAME)
 class TranscriptionServiceManager:
     """Manager class that handles switching between different transcription adapters."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._available_adapters = self.get_available_services()
 
-    def get_available_services(self) -> dict[str, TranscriptionAdapter]:
+    def get_available_services(self) -> dict[str, type[TranscriptionAdapter]]:
         """Get list of available (properly configured) services."""
         adapters = {}
         for adapter_name in settings.TRANSCRIPTION_SERVICES:
@@ -53,7 +56,7 @@ class TranscriptionServiceManager:
 
         return adapters
 
-    def select_adaptor(self, duration_seconds: int) -> TranscriptionAdapter:
+    def select_adaptor(self, duration_seconds: int) -> type[TranscriptionAdapter]:
         for adaptor in self._available_adapters.values():
             if adaptor.max_audio_length >= duration_seconds:
                 return adaptor

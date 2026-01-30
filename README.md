@@ -156,3 +156,17 @@ different tests (see [test_queues_e2e.py](tests/test_queues_e2e.py) for an examp
 
 You can add your own templates by implementing either the `SimpleTemplate` or `SectionTemplate` protocols (see [here](backend/templates/types.py))
 Simply put them in the [templates](backend/templates) directory, and they will automatically be discovered when the backend starts.
+
+## Type Checking
+
+```bash
+poetry install --with dev
+
+poetry run mypy .                
+# check entire project
+
+poetry run mypy path/to/file.py  
+# check a specific file
+```
+
+mypy analyses type hints to catch type-related bugs before runtime. Run it before committing (further validation occurs during the CI/CD process) changes.

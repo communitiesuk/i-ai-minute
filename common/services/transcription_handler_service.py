@@ -61,7 +61,12 @@ class TranscriptionHandlerService:
                 result = session.exec(query)
                 chats = result.all()
 
-                chat_history = [get_chat_with_transcript_system_message(chat.transcription.dialogue_entries)]
+                dialogue_entries = chat.transcription.dialogue_entries
+                if not dialogue_entries:
+                    msg = f"Transcription {chat.transcription_id} has no dialogue entries"
+                    raise InteractionFailedError(msg)
+
+                chat_history = [get_chat_with_transcript_system_message(dialogue_entries)]
                 for entry in chats:
                     chat_history.append(
                         {
@@ -88,10 +93,13 @@ class TranscriptionHandlerService:
             msg = f"Chat interaction failed: {e!s}"
             logger.exception(msg)
             try:
-                chat.status = JobStatus.FAILED
-                chat.error = msg
-                session.add(chat)
-                session.commit()
+                with SessionLocal() as session:
+                    chat_to_update = session.get(Chat, chat_id)
+                    if chat_to_update:
+                        chat_to_update.status = JobStatus.FAILED
+                        chat_to_update.error = msg
+                        session.add(chat_to_update)
+                        session.commit()
             except Exception:
                 logger.exception("Error updating chat status. Maybe it doesn't exist?")
 

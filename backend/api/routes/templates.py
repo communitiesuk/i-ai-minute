@@ -101,7 +101,7 @@ async def create_user_template(user: UserDep, session: SQLSessionDep, request: C
                 position=question.position,
                 title=question.title,
                 description=question.description,
-            )  # type: ignore  # noqa: PGH003
+            )
             for question in (request.questions or [])
         ],
     )
@@ -194,7 +194,7 @@ async def duplicate_user_template(user: UserDep, session: SQLSessionDep, templat
                 position=question.position,
                 title=question.title,
                 description=question.description,
-            )  # type: ignore  # noqa: PGH003
+            )
             for question in original_template.questions
         ],
     )

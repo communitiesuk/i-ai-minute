@@ -15,7 +15,12 @@ acceptance_test = pytest.mark.skipif(
 )
 
 
+def _has_audio_data() -> bool:
+    audio_path = Path(".data/test_audio/normal")
+    return audio_path.exists() and len(list(audio_path.iterdir())) > 0
+
+
 requires_audio_data = pytest.mark.skipif(
-    len(list(Path(".data/test_audio/normal").iterdir())) == 0,
+    not _has_audio_data(),
     reason="This test requires audio files in .data/test_audio/normal",
 )

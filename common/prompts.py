@@ -120,7 +120,7 @@ def get_section_for_agenda_prompt(section: str) -> dict[str, str]:
     return {"role": "user", "content": f"The item of the meeting that you will be contributing to is: {section}"}
 
 
-def get_citations_prompt(initial_draft: str, transcript: list[DialogueEntry]):
+def get_citations_prompt(initial_draft: str, transcript: list[DialogueEntry]) -> list[dict[str, str]]:
     return [
         {
             "role": "user",

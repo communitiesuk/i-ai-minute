@@ -12,15 +12,15 @@ logger = logging.getLogger(__name__)
 
 
 class TemplateManager:
-    templates: typing.ClassVar[dict[str, Template]] = {}
+    templates: typing.ClassVar[dict[str, type[Template]]] = {}
 
     @classmethod
-    def register_template(cls, template: Template) -> None:
+    def register_template(cls, template: type[Template]) -> None:
         """Register a template instance in the templates module."""
         if template.name in cls.templates:
             msg = (
-                f"Failed loading {template.__qualname__} with name: '{template.name}'. A template with the same name"
-                f" ({cls.templates[template.name].__qualname__}) has already been registered. Please ensure template"
+                f"Failed loading {template.__name__} with name: '{template.name}'. A template with the same name"
+                f" ({cls.templates[template.name].__name__}) has already been registered. Please ensure template"
                 f" names are unique."
             )
             raise ValueError(msg)
@@ -28,7 +28,7 @@ class TemplateManager:
         cls.templates[template.name] = template
 
     @classmethod
-    def get_template(cls, name: str) -> Template:
+    def get_template(cls, name: str) -> type[Template]:
         """Get a template instance by name."""
         try:
             return cls.templates[name]
@@ -66,9 +66,8 @@ class TemplateManager:
                 # Inspect all classes in the module
                 for name, obj in inspect.getmembers(module, inspect.isclass):
                     # Check if it's a class defined in this module and has the required Template protocol attributes
-                    if obj.__module__ == modname and (
-                        all(hasattr(obj, attrib_name) for attrib_name in typing._get_protocol_attrs(Template))  # noqa: SLF001
-                    ):
+                    protocol_attrs = set(typing.get_type_hints(Template).keys())
+                    if obj.__module__ == modname and all(hasattr(obj, attr) for attr in protocol_attrs):
                         try:
                             cls.register_template(obj)
                             logger.info("successfully registered template: %s", obj.name)
