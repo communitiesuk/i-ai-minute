@@ -3714,7 +3714,7 @@ version = "1.42.3"
 description = "Type annotations for boto3 SQS 1.42.3 service generated with mypy-boto3-builder 8.12.0"
 optional = false
 python-versions = ">=3.9"
-groups = ["dev"]
+groups = ["main"]
 files = [
     {file = "mypy_boto3_sqs-1.42.3-py3-none-any.whl", hash = "sha256:a1f4ddf8f84112931a4814f0b5ff63e3ec026a07fbbc68e60bf15fa697dc214e"},
     {file = "mypy_boto3_sqs-1.42.3.tar.gz", hash = "sha256:699995b9a6f69a97c6d3e9126a76f06751e3b405640174fe7c20fe71d9ddc82a"},
@@ -9964,4 +9964,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<3.13"
-content-hash = "3bad3c0e75a7ebbcad988a1223e00bd6a6d0fd10b833f15c39a0710a74a5a1a5"
+content-hash = "b8f8b97351f53c3eb9b0ad00046679a9b1f535c6462402b59880a79604345bb0"

@@ -47,6 +47,7 @@ markdownify = "^1.2.0"
 python-multipart = "^0.0.20"
 i-dot-ai-utilities = "^0.4.4"
 azure-servicebus = "^7.14.2"
+mypy-boto3-sqs = "^1.42.3"
 
 [tool.poetry.group.backend.dependencies]
 pyjwt = "^2.9.0"
@@ -113,7 +114,6 @@ types-ujson = "^5.10.0.20250822"
 types-aioboto3 = "^15.5.0"
 types-botocore = "^1.0.2"
 types-boto3 = "^1.42.34"
-mypy-boto3-sqs = "^1.42.3"
 
 [build-system]
 requires = ["poetry-core"]
