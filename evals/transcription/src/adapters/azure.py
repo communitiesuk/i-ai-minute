@@ -33,36 +33,24 @@ class AzureSTTAdapter(TranscriptionAdapter):
         recogniser = self._make_recogniser(wav_path)
 
         parts = []
-        debug = {
-            "mode": "continuous",
-            "recognized_segments": [],
-            "canceled": None,
-            "session_stopped": False,
-        }
-
+        error_info = {"canceled": False, "details": None}
         done = threading.Event()
 
         def on_recognized(evt):
             res = evt.result
             if res.reason == speechsdk.ResultReason.RecognizedSpeech and (res.text or "").strip():
                 parts.append(res.text.strip())
-                debug["recognized_segments"].append({
-                    "text": res.text,
-                    "offset": getattr(res, "offset", None),
-                    "duration": getattr(res, "duration", None),
-                })
+            elif res.reason == speechsdk.ResultReason.NoMatch:
+                no_match_details = speechsdk.NoMatchDetails(res)
+                logger.warning(f"No speech recognized: {no_match_details.reason}")
 
         def on_canceled(evt):
             cd = speechsdk.CancellationDetails.from_result(evt.result)
-            debug["canceled"] = {
-                "reason": str(cd.reason),
-                "error_code": str(cd.error_code),
-                "error_details": cd.error_details,
-            }
+            error_info["canceled"] = True
+            error_info["details"] = f"{cd.reason}: {cd.error_details}"
             done.set()
 
         def on_session_stopped(evt):
-            debug["session_stopped"] = True
             done.set()
 
         recogniser.recognized.connect(on_recognized)
@@ -75,8 +63,18 @@ class AzureSTTAdapter(TranscriptionAdapter):
         recogniser.stop_continuous_recognition_async().get()
         t1 = time.time()
 
+        if error_info["canceled"]:
+            logger.error(f"Azure Speech recognition failed: {error_info['details']}")
+
         full_text = " ".join(parts).strip()
-        debug["final_text_len_chars"] = len(full_text)
-        debug["final_text_len_words"] = len(full_text.split())
+        
+        if not full_text:
+            logger.error(f"Azure Speech produced no transcription for {wav_path}")
+
+        debug = {
+            "mode": "continuous",
+            "recognized_segments": len(parts),
+            "final_text_len_chars": len(full_text),
+        }
 
         return full_text, (t1 - t0), debug
