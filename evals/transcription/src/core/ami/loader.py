@@ -108,7 +108,8 @@ class AMIDatasetLoader:
 
     def _load_required_utterances(self, segments) -> dict:
         all_cached = all(
-            cache.get_cache_paths(self.processed_cache_dir, seg, idx).is_complete() for idx, seg in enumerate(segments)
+            cache.get_cache_paths(self.processed_cache_dir, seg, idx).is_complete()
+            for idx, seg in enumerate(segments)
         )
 
         if all_cached:
@@ -119,7 +120,12 @@ class AMIDatasetLoader:
         required_meetings = {seg.meeting_id for seg in segments}
         return _load_utterances_for_meetings(required_meetings, self.split, self.config)
 
-    def _process_segment(self, segment: MeetingSegment, idx: int, utterances_by_meeting: dict) -> Sample | None:
+    def _process_segment(
+        self,
+        segment: MeetingSegment,
+        idx: int,
+        utterances_by_meeting: dict,
+    ) -> Sample | None:
         paths = cache.get_cache_paths(self.processed_cache_dir, segment, idx)
 
         if paths.is_complete():
@@ -132,7 +138,12 @@ class AMIDatasetLoader:
 
         return self._build_from_utterances(utterances, paths, segment, idx)
 
-    def _load_from_cache(self, paths: cache.CachePaths, segment: MeetingSegment, idx: int) -> Sample:
+    def _load_from_cache(
+        self,
+        paths: cache.CachePaths,
+        segment: MeetingSegment,
+        idx: int,
+    ) -> Sample:
         mixed_audio = cache.load_audio(paths.wav)
         text = cache.load_transcript(paths.transcript)
         sample = _build_sample(mixed_audio, text, segment, idx, paths.wav, len(text.split()))
@@ -146,7 +157,11 @@ class AMIDatasetLoader:
         return sample
 
     def _build_from_utterances(
-        self, utterances: list, paths: cache.CachePaths, segment: MeetingSegment, idx: int
+        self,
+        utterances: list,
+        paths: cache.CachePaths,
+        segment: MeetingSegment,
+        idx: int,
     ) -> Sample:
         utterances = _apply_cutoff(utterances, segment.utterance_cutoff_time)
         mixed_audio, text = audio.mix_utterances(utterances)

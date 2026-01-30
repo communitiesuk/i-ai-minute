@@ -4,7 +4,8 @@ from typing import Any
 import librosa
 import soundfile as sf
 
-from .ami_dataset import load_ami_dataset, audio_duration_seconds as ami_audio_duration
+from .ami_dataset import audio_duration_seconds as ami_audio_duration
+from .ami_dataset import load_ami_dataset
 from .config import CACHE_DIR
 
 logger = logging.getLogger(__name__)
@@ -16,19 +17,19 @@ STEREO_CHANNELS = 2
 def load_benchmark_dataset(num_samples: int | None, sample_duration_fraction: float | None = None):
     logger.info("Loading AMI dataset with %d samples...", num_samples)
     logger.info("Using cache directory: %s", CACHE_DIR)
-    
+
     ami_loader = load_ami_dataset(CACHE_DIR, num_samples, sample_duration_fraction)
-    
+
     logger.info("Dataset loaded successfully")
     logger.info("Number of samples: %d", len(ami_loader))
-    
+
     return ami_loader
 
 
 def to_wav_16k_mono(example: dict[str, Any], idx: int) -> str:
     if "path" in example["audio"]:
         return example["audio"]["path"]
-    
+
     audio = example["audio"]
     y = audio["array"]
     sr = audio["sampling_rate"]
@@ -40,6 +41,7 @@ def to_wav_16k_mono(example: dict[str, Any], idx: int) -> str:
         y = librosa.resample(y, orig_sr=sr, target_sr=TARGET_SAMPLE_RATE)
 
     from .config import AUDIO_DIR
+
     path = AUDIO_DIR / f"sample_{idx:06d}.wav"
     sf.write(path, y, TARGET_SAMPLE_RATE, subtype="PCM_16")
     return str(path)

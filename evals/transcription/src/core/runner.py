@@ -73,13 +73,13 @@ def run_engines_parallel(adapters_config, indices, *, dataset, wav_write_fn, dur
     total_tasks = len(indices) * len(adapters_config)
     pbar = tqdm(total=total_tasks, desc="Processing all engines", unit="task")
     pbar_lock = Lock()
-    
+
     results = {}
-    
+
     def process_sample(adapter_cfg, idx):
         adapter = adapter_cfg["adapter"]
         label = adapter_cfg["label"]
-        
+
         ex = dataset[int(idx)]
         wav_path = wav_write_fn(ex, int(idx))
         ref_raw = ex["text"]
@@ -108,36 +108,36 @@ def run_engines_parallel(adapters_config, indices, *, dataset, wav_write_fn, dur
             "hyp_norm": hyp_n,
             "engine_debug": dbg,
         }
-        
+
         with pbar_lock:
             pbar.update(1)
             pbar.set_postfix({"engine": label, "sample": idx})
-        
+
         return label, idx, row, aud_sec, proc_sec
-    
+
     for adapter_cfg in adapters_config:
         results[adapter_cfg["label"]] = {"rows": [], "timing": TimingAccumulator()}
-    
+
     with ThreadPoolExecutor(max_workers=len(adapters_config)) as executor:
         futures = []
         for adapter_cfg in adapters_config:
             for idx in indices:
                 future = executor.submit(process_sample, adapter_cfg, idx)
                 futures.append(future)
-        
+
         for future in as_completed(futures):
             label, idx, row, aud_sec, proc_sec = future.result()
             results[label]["rows"].append(row)
             results[label]["timing"].add(aud_sec, proc_sec)
-    
+
     pbar.close()
-    
+
     output_results = []
     for adapter_cfg in adapters_config:
         label = adapter_cfg["label"]
         rows = sorted(results[label]["rows"], key=lambda x: x["dataset_index"])
         timing = results[label]["timing"]
-        
+
         overall_wer = compute_wer_pct([r["ref_raw"] for r in rows], [r["hyp_raw"] for r in rows])
         per_wers = [r["wer_pct"] for r in rows]
 
@@ -152,9 +152,9 @@ def run_engines_parallel(adapters_config, indices, *, dataset, wav_write_fn, dur
             "per_sample_wer_max": float(np.max(per_wers)) if per_wers else None,
             "per_sample_wer_mean": float(np.mean(per_wers)) if per_wers else None,
         }
-        
+
         output_results.append({"summary": summary, "samples": rows})
-    
+
     return output_results
 
 
@@ -163,7 +163,7 @@ def save_results(results: list, output_path: Path):
 
     combined = {
         "summaries": [r["summary"] for r in results],
-        "engines": {r["summary"]["engine"]: r["samples"] for r in results}
+        "engines": {r["summary"]["engine"]: r["samples"] for r in results},
     }
 
     with output_path.open("w", encoding="utf-8") as f:

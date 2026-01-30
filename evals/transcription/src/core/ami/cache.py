@@ -28,7 +28,11 @@ def get_cache_paths(processed_dir: Path, segment: MeetingSegment, idx: int) -> C
 def load_audio(path: Path) -> np.ndarray:
     audio, sr = sf.read(path)
     if sr != TARGET_SAMPLE_RATE:
-        logger.warning("Cached audio has unexpected sample rate %d, expected %d", sr, TARGET_SAMPLE_RATE)
+        logger.warning(
+            "Cached audio has unexpected sample rate %d, expected %d",
+            sr,
+            TARGET_SAMPLE_RATE,
+        )
     return audio
 
 

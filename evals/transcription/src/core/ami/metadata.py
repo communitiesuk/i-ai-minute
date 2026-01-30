@@ -16,7 +16,11 @@ class MeetingMetadata(TypedDict):
     durations_sec: dict[MeetingId, float]
 
 
-def load_or_build_metadata(cache_dir: Path, split: str = "train", config: str = "ihm") -> MeetingMetadata:
+def load_or_build_metadata(
+    cache_dir: Path,
+    split: str = "train",
+    config: str = "ihm",
+) -> MeetingMetadata:
     metadata_cache_path = cache_dir / "meeting_metadata.json"
 
     if metadata_cache_path.exists():

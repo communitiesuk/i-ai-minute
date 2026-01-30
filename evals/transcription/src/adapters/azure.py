@@ -23,7 +23,7 @@ class AzureSTTAdapter(TranscriptionAdapter):
 
     def transcribe_with_debug(self, wav_path: str):
         t0 = time.time()
-        
+
         with open(wav_path, "rb") as audio_file:
             audio_content = audio_file.read()
             files = {
@@ -33,17 +33,17 @@ class AzureSTTAdapter(TranscriptionAdapter):
                     f'{{"locales":["{self.language}"],"diarization":{{"enabled":true}},"profanityFilterMode":"None"}}',
                 ),
             }
-        
+
         headers = {"Ocp-Apim-Subscription-Key": self.speech_key}
         params = {"api-version": "2024-11-15"}
-        
+
         timeout_settings = httpx.Timeout(
             timeout=900.0,
             connect=900.0,
             read=900.0,
             write=900.0,
         )
-        
+
         try:
             with httpx.Client(timeout=timeout_settings) as client:
                 response = client.post(self.url, headers=headers, files=files, params=params)
@@ -53,25 +53,25 @@ class AzureSTTAdapter(TranscriptionAdapter):
             logger.error(f"Azure Speech API request failed: {e}")
             t1 = time.time()
             return "", (t1 - t0), {"error": str(e)}
-        
+
         t1 = time.time()
-        
+
         if "code" in full_response:
             error_message = full_response.get("message", "Unknown error occurred")
             logger.error(f"Azure Speech recognition failed: {error_message}")
             return "", (t1 - t0), {"error": error_message}
-        
+
         phrases = full_response.get("phrases", [])
         if not phrases:
             logger.error(f"Azure Speech produced no transcription for {wav_path}")
             return "", (t1 - t0), {"error": "No phrases found"}
-        
+
         full_text = " ".join(phrase["text"] for phrase in phrases).strip()
-        
+
         debug = {
             "mode": "post_api",
             "recognized_segments": len(phrases),
             "final_text_len_chars": len(full_text),
         }
-        
+
         return full_text, (t1 - t0), debug

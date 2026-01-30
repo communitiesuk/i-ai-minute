@@ -6,8 +6,11 @@ from jiwer import wer
 _unicode_replacements = [
     ("'", "'"),
     ("'", "'"),
-    (""", '"'),
-    (""", '"'),
+    (
+        """, '"'),
+    (""",
+        '"',
+    ),
     ("–", " "),
     ("—", " "),
     ("…", " "),
@@ -36,13 +39,13 @@ def token_ops(a: str, b: str) -> dict:
     ops = {"equal": 0, "replace": 0, "delete": 0, "insert": 0}
     for tag, i1, i2, j1, j2 in sm.get_opcodes():
         if tag == "equal":
-            ops["equal"] += (i2 - i1)
+            ops["equal"] += i2 - i1
         elif tag == "replace":
             ops["replace"] += max(i2 - i1, j2 - j1)
         elif tag == "delete":
-            ops["delete"] += (i2 - i1)
+            ops["delete"] += i2 - i1
         elif tag == "insert":
-            ops["insert"] += (j2 - j1)
+            ops["insert"] += j2 - j1
     return ops
 
 

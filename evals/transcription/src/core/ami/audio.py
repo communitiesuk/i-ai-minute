@@ -14,7 +14,11 @@ def to_mono(audio: np.ndarray) -> np.ndarray:
     return audio
 
 
-def resample_if_needed(audio: np.ndarray, sr: int, target_sr: int = TARGET_SAMPLE_RATE) -> np.ndarray:
+def resample_if_needed(
+    audio: np.ndarray,
+    sr: int,
+    target_sr: int = TARGET_SAMPLE_RATE,
+) -> np.ndarray:
     if sr != target_sr:
         return librosa.resample(audio, orig_sr=sr, target_sr=target_sr)
     return audio

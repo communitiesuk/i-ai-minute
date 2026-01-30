@@ -8,7 +8,11 @@ from .ami import AMIDatasetLoader
 logger = logging.getLogger(__name__)
 
 
-def load_ami_dataset(cache_dir: Path, num_samples: int | None, sample_duration_fraction: float | None = None):
+def load_ami_dataset(
+    cache_dir: Path,
+    num_samples: int | None,
+    sample_duration_fraction: float | None = None,
+):
     loader = AMIDatasetLoader(cache_dir, num_samples, sample_duration_fraction)
     samples = loader.prepare()
 
