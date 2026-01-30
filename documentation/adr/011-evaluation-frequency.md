@@ -17,7 +17,7 @@ When should evaluations run throughout the development and deployment lifecycle?
 * Commit checks
 * Pre-deployment checks
 * Scheduled production monitoring
-* Combination of multiple stages [preferred]
+* Combination of multiple stages
 
 ## Decision Outcome
 
@@ -75,7 +75,7 @@ Run evaluations on a regular cadence (e.g., daily, weekly) against the productio
 * Bad, because detects issues after they may have affected users.
 * Bad, because incurs ongoing resource costs.
 
-### Combination of multiple stages [preferred]
+### Combination of multiple stages
 
 Implement evaluations at multiple stages with different levels of thoroughness: local checks for rapid iteration, commit checks for quality gates, pre-deployment checks for final validation, and scheduled monitoring for production health. It's potentially beneficial to not use local-models in this options so that comparisons are more direct.
 
