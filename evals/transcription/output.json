@@ -1,0 +1,886 @@
+{
+  "meta": {
+    "files": [
+      "EN2001a_000000.wav",
+      "EN2001b_000001.wav",
+      "EN2001d_000002.wav",
+      "EN2001e_000003.wav",
+      "EN2003a_000004.wav",
+      "EN2004a_000005.wav",
+      "EN2005a_000006.wav",
+      "EN2006a_000007.wav",
+      "EN2006b_000008.wav",
+      "EN2009b_000009.wav"
+    ],
+    "speeds": [
+      1,
+      1.1,
+      1.2,
+      1.3,
+      1.4,
+      1.5
+    ]
+  },
+  "data": {
+    "EN2001a_000000": {
+      "1x_speed": {
+        "meta": {
+          "duration": 542.844938,
+          "proc_time": 29.085592031478882
+        },
+        "score": {
+          "wer": 0.18484500574052812,
+          "cer": 0.18484500574052812,
+          "substitutions": 83,
+          "insertions": 13,
+          "deletions": 226,
+          "hits": 1433
+        }
+      },
+      "1.2x_speed": {
+        "meta": {
+          "duration": 452.383438,
+          "proc_time": 25.989717960357666
+        },
+        "score": {
+          "wer": 0.19345579793340986,
+          "cer": 0.19345579793340986,
+          "substitutions": 96,
+          "insertions": 13,
+          "deletions": 228,
+          "hits": 1418
+        }
+      },
+      "1.5x_speed": {
+        "meta": {
+          "duration": 361.901063,
+          "proc_time": 21.725194215774536
+        },
+        "score": {
+          "wer": 0.2095292766934558,
+          "cer": 0.2095292766934558,
+          "substitutions": 102,
+          "insertions": 12,
+          "deletions": 251,
+          "hits": 1389
+        }
+      },
+      "1.1x_speed": {
+        "meta": {
+          "duration": 493.513188,
+          "proc_time": 26.69937801361084
+        },
+        "score": {
+          "wer": 0.18828932261768083,
+          "cer": 0.18828932261768083,
+          "substitutions": 88,
+          "insertions": 10,
+          "deletions": 230,
+          "hits": 1424
+        }
+      },
+      "1.3x_speed": {
+        "meta": {
+          "duration": 417.594563,
+          "proc_time": 24.057716846466064
+        },
+        "score": {
+          "wer": 0.1928817451205511,
+          "cer": 0.1928817451205511,
+          "substitutions": 96,
+          "insertions": 11,
+          "deletions": 229,
+          "hits": 1417
+        }
+      },
+      "1.4x_speed": {
+        "meta": {
+          "duration": 387.761625,
+          "proc_time": 23.657505750656128
+        },
+        "score": {
+          "wer": 0.2066590126291619,
+          "cer": 0.2066590126291619,
+          "substitutions": 100,
+          "insertions": 13,
+          "deletions": 247,
+          "hits": 1395
+        }
+      }
+    },
+    "EN2001b_000001": {
+      "1x_speed": {
+        "meta": {
+          "duration": 456.476875,
+          "proc_time": 23.74740195274353
+        },
+        "score": {
+          "wer": 0.21825396825396826,
+          "cer": 0.21825396825396826,
+          "substitutions": 41,
+          "insertions": 10,
+          "deletions": 169,
+          "hits": 798
+        }
+      },
+      "1.2x_speed": {
+        "meta": {
+          "duration": 380.406563,
+          "proc_time": 20.732606887817383
+        },
+        "score": {
+          "wer": 0.2251984126984127,
+          "cer": 0.2251984126984127,
+          "substitutions": 49,
+          "insertions": 8,
+          "deletions": 170,
+          "hits": 789
+        }
+      },
+      "1.5x_speed": {
+        "meta": {
+          "duration": 304.314563,
+          "proc_time": 16.551928997039795
+        },
+        "score": {
+          "wer": 0.24702380952380953,
+          "cer": 0.24702380952380953,
+          "substitutions": 57,
+          "insertions": 5,
+          "deletions": 187,
+          "hits": 764
+        }
+      },
+      "1.1x_speed": {
+        "meta": {
+          "duration": 414.977375,
+          "proc_time": 20.171943187713623
+        },
+        "score": {
+          "wer": 0.22321428571428573,
+          "cer": 0.22321428571428573,
+          "substitutions": 47,
+          "insertions": 6,
+          "deletions": 172,
+          "hits": 789
+        }
+      },
+      "1.3x_speed": {
+        "meta": {
+          "duration": 351.138563,
+          "proc_time": 18.160173892974854
+        },
+        "score": {
+          "wer": 0.23809523809523808,
+          "cer": 0.23809523809523808,
+          "substitutions": 47,
+          "insertions": 6,
+          "deletions": 187,
+          "hits": 774
+        }
+      },
+      "1.4x_speed": {
+        "meta": {
+          "duration": 326.058063,
+          "proc_time": 17.39177703857422
+        },
+        "score": {
+          "wer": 0.2390873015873016,
+          "cer": 0.2390873015873016,
+          "substitutions": 53,
+          "insertions": 6,
+          "deletions": 182,
+          "hits": 773
+        }
+      }
+    },
+    "EN2001d_000002": {
+      "1x_speed": {
+        "meta": {
+          "duration": 400.996188,
+          "proc_time": 20.100282907485962
+        },
+        "score": {
+          "wer": 0.2676443629697525,
+          "cer": 0.2676443629697525,
+          "substitutions": 48,
+          "insertions": 11,
+          "deletions": 233,
+          "hits": 810
+        }
+      },
+      "1.2x_speed": {
+        "meta": {
+          "duration": 334.183813,
+          "proc_time": 17.439498901367188
+        },
+        "score": {
+          "wer": 0.25939505041246563,
+          "cer": 0.25939505041246563,
+          "substitutions": 60,
+          "insertions": 10,
+          "deletions": 213,
+          "hits": 818
+        }
+      },
+      "1.5x_speed": {
+        "meta": {
+          "duration": 267.326875,
+          "proc_time": 14.62007999420166
+        },
+        "score": {
+          "wer": 0.33455545371219064,
+          "cer": 0.33455545371219064,
+          "substitutions": 73,
+          "insertions": 9,
+          "deletions": 283,
+          "hits": 735
+        }
+      },
+      "1.1x_speed": {
+        "meta": {
+          "duration": 364.56,
+          "proc_time": 19.77101421356201
+        },
+        "score": {
+          "wer": 0.25114573785517874,
+          "cer": 0.25114573785517874,
+          "substitutions": 63,
+          "insertions": 8,
+          "deletions": 203,
+          "hits": 825
+        }
+      },
+      "1.3x_speed": {
+        "meta": {
+          "duration": 308.473313,
+          "proc_time": 16.930696964263916
+        },
+        "score": {
+          "wer": 0.27864344637946836,
+          "cer": 0.27864344637946836,
+          "substitutions": 63,
+          "insertions": 10,
+          "deletions": 231,
+          "hits": 797
+        }
+      },
+      "1.4x_speed": {
+        "meta": {
+          "duration": 286.439938,
+          "proc_time": 15.617295980453491
+        },
+        "score": {
+          "wer": 0.27222731439046743,
+          "cer": 0.27222731439046743,
+          "substitutions": 71,
+          "insertions": 13,
+          "deletions": 213,
+          "hits": 807
+        }
+      }
+    },
+    "EN2001e_000003": {
+      "1x_speed": {
+        "meta": {
+          "duration": 440.039,
+          "proc_time": 22.68580985069275
+        },
+        "score": {
+          "wer": 0.15201900237529692,
+          "cer": 0.15201900237529692,
+          "substitutions": 56,
+          "insertions": 10,
+          "deletions": 126,
+          "hits": 1081
+        }
+      },
+      "1.2x_speed": {
+        "meta": {
+          "duration": 366.726,
+          "proc_time": 19.48545002937317
+        },
+        "score": {
+          "wer": 0.15201900237529692,
+          "cer": 0.15201900237529692,
+          "substitutions": 46,
+          "insertions": 9,
+          "deletions": 137,
+          "hits": 1080
+        }
+      },
+      "1.5x_speed": {
+        "meta": {
+          "duration": 293.37,
+          "proc_time": 17.62756109237671
+        },
+        "score": {
+          "wer": 0.17973079968329375,
+          "cer": 0.17973079968329375,
+          "substitutions": 56,
+          "insertions": 7,
+          "deletions": 164,
+          "hits": 1043
+        }
+      },
+      "1.1x_speed": {
+        "meta": {
+          "duration": 400.054,
+          "proc_time": 21.178616285324097
+        },
+        "score": {
+          "wer": 0.1543942992874109,
+          "cer": 0.1543942992874109,
+          "substitutions": 51,
+          "insertions": 11,
+          "deletions": 133,
+          "hits": 1079
+        }
+      },
+      "1.3x_speed": {
+        "meta": {
+          "duration": 338.51325,
+          "proc_time": 19.408395051956177
+        },
+        "score": {
+          "wer": 0.166270783847981,
+          "cer": 0.166270783847981,
+          "substitutions": 50,
+          "insertions": 9,
+          "deletions": 151,
+          "hits": 1062
+        }
+      },
+      "1.4x_speed": {
+        "meta": {
+          "duration": 314.325188,
+          "proc_time": 18.599758863449097
+        },
+        "score": {
+          "wer": 0.1726049089469517,
+          "cer": 0.1726049089469517,
+          "substitutions": 56,
+          "insertions": 7,
+          "deletions": 155,
+          "hits": 1052
+        }
+      }
+    },
+    "EN2003a_000004": {
+      "1x_speed": {
+        "meta": {
+          "duration": 290.36925,
+          "proc_time": 14.118284225463867
+        },
+        "score": {
+          "wer": 0.20359281437125748,
+          "cer": 0.20359281437125748,
+          "substitutions": 35,
+          "insertions": 10,
+          "deletions": 91,
+          "hits": 542
+        }
+      },
+      "1.2x_speed": {
+        "meta": {
+          "duration": 241.997875,
+          "proc_time": 12.283665895462036
+        },
+        "score": {
+          "wer": 0.2275449101796407,
+          "cer": 0.2275449101796407,
+          "substitutions": 35,
+          "insertions": 9,
+          "deletions": 108,
+          "hits": 525
+        }
+      },
+      "1.5x_speed": {
+        "meta": {
+          "duration": 193.582813,
+          "proc_time": 10.914453983306885
+        },
+        "score": {
+          "wer": 0.2559880239520958,
+          "cer": 0.2559880239520958,
+          "substitutions": 52,
+          "insertions": 8,
+          "deletions": 111,
+          "hits": 505
+        }
+      },
+      "1.1x_speed": {
+        "meta": {
+          "duration": 263.981375,
+          "proc_time": 13.184579849243164
+        },
+        "score": {
+          "wer": 0.23652694610778444,
+          "cer": 0.23652694610778444,
+          "substitutions": 37,
+          "insertions": 11,
+          "deletions": 110,
+          "hits": 521
+        }
+      },
+      "1.3x_speed": {
+        "meta": {
+          "duration": 223.390438,
+          "proc_time": 12.245759963989258
+        },
+        "score": {
+          "wer": 0.2470059880239521,
+          "cer": 0.2470059880239521,
+          "substitutions": 39,
+          "insertions": 10,
+          "deletions": 116,
+          "hits": 513
+        }
+      },
+      "1.4x_speed": {
+        "meta": {
+          "duration": 207.425125,
+          "proc_time": 11.313930034637451
+        },
+        "score": {
+          "wer": 0.24251497005988024,
+          "cer": 0.24251497005988024,
+          "substitutions": 48,
+          "insertions": 9,
+          "deletions": 105,
+          "hits": 515
+        }
+      }
+    },
+    "EN2004a_000005": {
+      "1x_speed": {
+        "meta": {
+          "duration": 339.170688,
+          "proc_time": 16.708308935165405
+        },
+        "score": {
+          "wer": 0.19840364880273662,
+          "cer": 0.19840364880273662,
+          "substitutions": 23,
+          "insertions": 5,
+          "deletions": 146,
+          "hits": 708
+        }
+      },
+      "1.2x_speed": {
+        "meta": {
+          "duration": 282.669688,
+          "proc_time": 15.399003028869629
+        },
+        "score": {
+          "wer": 0.19726339794754846,
+          "cer": 0.19726339794754846,
+          "substitutions": 22,
+          "insertions": 2,
+          "deletions": 149,
+          "hits": 706
+        }
+      },
+      "1.5x_speed": {
+        "meta": {
+          "duration": 226.127875,
+          "proc_time": 13.340036153793335
+        },
+        "score": {
+          "wer": 0.20752565564424175,
+          "cer": 0.20752565564424175,
+          "substitutions": 26,
+          "insertions": 3,
+          "deletions": 153,
+          "hits": 698
+        }
+      },
+      "1.1x_speed": {
+        "meta": {
+          "duration": 308.364125,
+          "proc_time": 15.467212915420532
+        },
+        "score": {
+          "wer": 0.1961231470923603,
+          "cer": 0.1961231470923603,
+          "substitutions": 24,
+          "insertions": 1,
+          "deletions": 147,
+          "hits": 706
+        }
+      },
+      "1.3x_speed": {
+        "meta": {
+          "duration": 260.925813,
+          "proc_time": 14.23518681526184
+        },
+        "score": {
+          "wer": 0.18700114025085518,
+          "cer": 0.18700114025085518,
+          "substitutions": 22,
+          "insertions": 2,
+          "deletions": 140,
+          "hits": 715
+        }
+      },
+      "1.4x_speed": {
+        "meta": {
+          "duration": 242.274313,
+          "proc_time": 13.574700117111206
+        },
+        "score": {
+          "wer": 0.19270239452679588,
+          "cer": 0.19270239452679588,
+          "substitutions": 24,
+          "insertions": 4,
+          "deletions": 141,
+          "hits": 712
+        }
+      }
+    },
+    "EN2005a_000006": {
+      "1x_speed": {
+        "meta": {
+          "duration": 549.152438,
+          "proc_time": 25.78681230545044
+        },
+        "score": {
+          "wer": 0.24129353233830847,
+          "cer": 0.24129353233830847,
+          "substitutions": 63,
+          "insertions": 2,
+          "deletions": 226,
+          "hits": 917
+        }
+      },
+      "1.2x_speed": {
+        "meta": {
+          "duration": 457.648125,
+          "proc_time": 22.31976819038391
+        },
+        "score": {
+          "wer": 0.2462686567164179,
+          "cer": 0.2462686567164179,
+          "substitutions": 67,
+          "insertions": 1,
+          "deletions": 229,
+          "hits": 910
+        }
+      },
+      "1.5x_speed": {
+        "meta": {
+          "duration": 366.086813,
+          "proc_time": 19.028603076934814
+        },
+        "score": {
+          "wer": 0.25456053067993367,
+          "cer": 0.25456053067993367,
+          "substitutions": 72,
+          "insertions": 1,
+          "deletions": 234,
+          "hits": 900
+        }
+      },
+      "1.1x_speed": {
+        "meta": {
+          "duration": 499.248063,
+          "proc_time": 24.71442198753357
+        },
+        "score": {
+          "wer": 0.23466003316749584,
+          "cer": 0.23466003316749584,
+          "substitutions": 58,
+          "insertions": 2,
+          "deletions": 223,
+          "hits": 925
+        }
+      },
+      "1.3x_speed": {
+        "meta": {
+          "duration": 422.434875,
+          "proc_time": 21.57917881011963
+        },
+        "score": {
+          "wer": 0.23383084577114427,
+          "cer": 0.23383084577114427,
+          "substitutions": 55,
+          "insertions": 3,
+          "deletions": 224,
+          "hits": 927
+        }
+      },
+      "1.4x_speed": {
+        "meta": {
+          "duration": 392.264125,
+          "proc_time": 20.839228868484497
+        },
+        "score": {
+          "wer": 0.24543946932006633,
+          "cer": 0.24543946932006633,
+          "substitutions": 61,
+          "insertions": 1,
+          "deletions": 234,
+          "hits": 911
+        }
+      }
+    },
+    "EN2006a_000007": {
+      "1x_speed": {
+        "meta": {
+          "duration": 331.23575,
+          "proc_time": 16.959025144577026
+        },
+        "score": {
+          "wer": 0.3333333333333333,
+          "cer": 0.3333333333333333,
+          "substitutions": 40,
+          "insertions": 10,
+          "deletions": 339,
+          "hits": 788
+        }
+      },
+      "1.2x_speed": {
+        "meta": {
+          "duration": 276.049063,
+          "proc_time": 15.347517013549805
+        },
+        "score": {
+          "wer": 0.35904027420736934,
+          "cer": 0.35904027420736934,
+          "substitutions": 63,
+          "insertions": 8,
+          "deletions": 348,
+          "hits": 756
+        }
+      },
+      "1.5x_speed": {
+        "meta": {
+          "duration": 220.833313,
+          "proc_time": 12.864845037460327
+        },
+        "score": {
+          "wer": 0.4413024850042845,
+          "cer": 0.4413024850042845,
+          "substitutions": 66,
+          "insertions": 4,
+          "deletions": 445,
+          "hits": 656
+        }
+      },
+      "1.1x_speed": {
+        "meta": {
+          "duration": 301.142563,
+          "proc_time": 16.410643339157104
+        },
+        "score": {
+          "wer": 0.3350471293916024,
+          "cer": 0.3350471293916024,
+          "substitutions": 57,
+          "insertions": 12,
+          "deletions": 322,
+          "hits": 788
+        }
+      },
+      "1.3x_speed": {
+        "meta": {
+          "duration": 254.814563,
+          "proc_time": 14.587960243225098
+        },
+        "score": {
+          "wer": 0.38131962296486716,
+          "cer": 0.38131962296486716,
+          "substitutions": 60,
+          "insertions": 9,
+          "deletions": 376,
+          "hits": 731
+        }
+      },
+      "1.4x_speed": {
+        "meta": {
+          "duration": 236.610125,
+          "proc_time": 13.465814113616943
+        },
+        "score": {
+          "wer": 0.41216795201371037,
+          "cer": 0.41216795201371037,
+          "substitutions": 60,
+          "insertions": 11,
+          "deletions": 410,
+          "hits": 697
+        }
+      }
+    },
+    "EN2006b_000008": {
+      "1x_speed": {
+        "meta": {
+          "duration": 328.264063,
+          "proc_time": 16.719413995742798
+        },
+        "score": {
+          "wer": 0.4101508916323731,
+          "cer": 0.4101508916323731,
+          "substitutions": 82,
+          "insertions": 14,
+          "deletions": 203,
+          "hits": 444
+        }
+      },
+      "1.2x_speed": {
+        "meta": {
+          "duration": 273.5745,
+          "proc_time": 14.196798086166382
+        },
+        "score": {
+          "wer": 0.41838134430727025,
+          "cer": 0.41838134430727025,
+          "substitutions": 81,
+          "insertions": 21,
+          "deletions": 203,
+          "hits": 445
+        }
+      },
+      "1.5x_speed": {
+        "meta": {
+          "duration": 218.850688,
+          "proc_time": 12.388418197631836
+        },
+        "score": {
+          "wer": 0.4663923182441701,
+          "cer": 0.4663923182441701,
+          "substitutions": 94,
+          "insertions": 19,
+          "deletions": 227,
+          "hits": 408
+        }
+      },
+      "1.1x_speed": {
+        "meta": {
+          "duration": 298.439313,
+          "proc_time": 15.481065034866333
+        },
+        "score": {
+          "wer": 0.40329218106995884,
+          "cer": 0.40329218106995884,
+          "substitutions": 71,
+          "insertions": 19,
+          "deletions": 204,
+          "hits": 454
+        }
+      },
+      "1.3x_speed": {
+        "meta": {
+          "duration": 252.53325,
+          "proc_time": 13.74562406539917
+        },
+        "score": {
+          "wer": 0.42661179698216734,
+          "cer": 0.42661179698216734,
+          "substitutions": 79,
+          "insertions": 16,
+          "deletions": 216,
+          "hits": 434
+        }
+      },
+      "1.4x_speed": {
+        "meta": {
+          "duration": 234.477813,
+          "proc_time": 13.959911823272705
+        },
+        "score": {
+          "wer": 0.43209876543209874,
+          "cer": 0.43209876543209874,
+          "substitutions": 80,
+          "insertions": 20,
+          "deletions": 215,
+          "hits": 434
+        }
+      }
+    },
+    "EN2009b_000009": {
+      "1x_speed": {
+        "meta": {
+          "duration": 164.0925,
+          "proc_time": 10.209995746612549
+        },
+        "score": {
+          "wer": 0.341991341991342,
+          "cer": 0.341991341991342,
+          "substitutions": 50,
+          "insertions": 8,
+          "deletions": 179,
+          "hits": 464
+        }
+      },
+      "1.2x_speed": {
+        "meta": {
+          "duration": 136.762188,
+          "proc_time": 8.875118732452393
+        },
+        "score": {
+          "wer": 0.36796536796536794,
+          "cer": 0.36796536796536794,
+          "substitutions": 45,
+          "insertions": 7,
+          "deletions": 203,
+          "hits": 445
+        }
+      },
+      "1.5x_speed": {
+        "meta": {
+          "duration": 109.406125,
+          "proc_time": 7.539700031280518
+        },
+        "score": {
+          "wer": 0.40115440115440115,
+          "cer": 0.40115440115440115,
+          "substitutions": 58,
+          "insertions": 4,
+          "deletions": 216,
+          "hits": 419
+        }
+      },
+      "1.1x_speed": {
+        "meta": {
+          "duration": 149.205375,
+          "proc_time": 10.129759073257446
+        },
+        "score": {
+          "wer": 0.35064935064935066,
+          "cer": 0.35064935064935066,
+          "substitutions": 51,
+          "insertions": 8,
+          "deletions": 184,
+          "hits": 458
+        }
+      },
+      "1.3x_speed": {
+        "meta": {
+          "duration": 126.241938,
+          "proc_time": 8.237284183502197
+        },
+        "score": {
+          "wer": 0.37373737373737376,
+          "cer": 0.37373737373737376,
+          "substitutions": 50,
+          "insertions": 5,
+          "deletions": 204,
+          "hits": 439
+        }
+      },
+      "1.4x_speed": {
+        "meta": {
+          "duration": 117.245,
+          "proc_time": 7.629722833633423
+        },
+        "score": {
+          "wer": 0.39105339105339104,
+          "cer": 0.39105339105339104,
+          "substitutions": 53,
+          "insertions": 5,
+          "deletions": 213,
+          "hits": 427
+        }
+      }
+    }
+  }
+}

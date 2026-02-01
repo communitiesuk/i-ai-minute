@@ -9,7 +9,8 @@ from src.adapters import AzureSTTAdapter
 from src.core.config import AZURE_SPEECH_KEY, AZURE_SPEECH_REGION, CACHE_DIR
 
 
-SPEEDS = [1, 1.2, 1.5] # only values between 0.5 and 2.0
+# SPEEDS = [1, 1.1, 1.2, 1.3, 1.4, 1.5] # only values between 0.5 and 2.0
+SPEEDS = [1, 1.1] # only values between 0.5 and 2.0
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +20,6 @@ def speed_audio(input_path: Path, speed: float = 1) -> Path:
     output_directory.mkdir(parents=True, exist_ok=True)
 
     output_file = output_directory / f"{input_path.stem}_{speed}x.wav"
-    if output_file.exists(): return output_file
 
     if not 0.5 <= speed <= 2.0:
         raise ValueError("ffmpeg atempo supports speeds between 0.5 and 2.0")
@@ -95,7 +95,7 @@ def main() -> None:
             except Exception as e:
                 logging.error(f'Failed at {wav_path.name} ({speed}x): {e}')
 
-        with open("output.json", "w", encoding="utf-8") as f:
+        with open(str(CACHE_DIR / "sped_transcriptions_output.json"), "w", encoding="utf-8") as f:
             json.dump(results, f, indent=2, ensure_ascii=False)
 
 if __name__ == "__main__":
