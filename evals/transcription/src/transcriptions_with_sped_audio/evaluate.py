@@ -9,8 +9,7 @@ from src.adapters import AzureSTTAdapter
 from src.core.config import AZURE_SPEECH_KEY, AZURE_SPEECH_REGION, CACHE_DIR
 
 
-# SPEEDS = [1, 1.1, 1.2, 1.3, 1.4, 1.5] # only values between 0.5 and 2.0
-SPEEDS = [1, 1.1] # only values between 0.5 and 2.0
+SPEEDS = [1, 1.1, 1.2, 1.3, 1.4, 1.5] # only values between 0.5 and 2.0
 
 logger = logging.getLogger(__name__)
 
