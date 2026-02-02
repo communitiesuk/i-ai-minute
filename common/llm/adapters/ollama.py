@@ -1,3 +1,4 @@
+import json
 import logging
 from typing import TypeVar
 
@@ -22,31 +23,44 @@ class OllamaModelAdapter(ModelAdapter):
         self._model = model
         self.async_client = AsyncOpenAI(
             base_url=base_url,
-            api_key="ollama", # Ollama doesn't typically require an API key, but client needs one
+            api_key="ollama",
         )
         self._kwargs = kwargs
 
     async def structured_chat(self, messages: list[dict[str, str]], response_format: type[T]) -> T:
-        # Ollama via OpenAI compat layer supports JSON mode but structured outputs (pydantic) 
-        # via the .beta.chat.completions.parse are newer and might not be fully supported by all ollama versions
-        # or all models. However, standard approach is to try .parse if the library allows it.
-        # But commonly with Ollama we stick to standard chat with json_mode + pydantic validation manually 
-        # OR we rely on the client library's parsing if it works.
-        # Given we are using the 'openai' python library, let's try the .parse method as it's the interface 
-        # required by the ChatBot class.
-        # Note: If this fails, we might need a more manual approach (request json, parse with pydantic).
-        
-        # For robustness with common/llm/client.py expecting a pydantic model response:
-        response = await self.async_client.beta.chat.completions.parse(
-            model=self._model, messages=messages, response_format=response_format, **self._kwargs
-        )
-        return response.choices[0].message.parsed
+        schema = response_format.model_json_schema()
+        json_instruction = f"\n\nRespond with valid JSON matching this schema:\n{schema}"
 
-    async def chat(self, messages: list[dict[str, str]]) -> str:
+        modified_messages = messages.copy()
+        if modified_messages:
+            last_msg = modified_messages[-1].copy()
+            last_msg["content"] = last_msg["content"] + json_instruction
+            modified_messages[-1] = last_msg
+
         response = await self.async_client.chat.completions.create(
             model=self._model,
-            messages=messages,
-            temperature=0.0,
-            # max_tokens might be optional or handled differently
+            messages=modified_messages,
+            response_format={"type": "json_object"},
+            temperature=self._kwargs.get("temperature", 0.0),
         )
-        return response.choices[0].message.content
+
+        content = response.choices[0].message.content
+        try:
+            json_data = json.loads(content)
+            return response_format.model_validate(json_data)
+        except Exception as e:
+            logger.error("Ollama JSON parsing/validation failed: %s: %s", type(e).__name__, str(e))
+            raise
+
+    async def chat(self, messages: list[dict[str, str]]) -> str:
+        try:
+            response = await self.async_client.chat.completions.create(
+                model=self._model,
+                messages=messages,
+                temperature=0.0,
+            )
+
+            return response.choices[0].message.content
+        except Exception as e:
+            logger.error("Ollama chat failed: %s: %s", type(e).__name__, str(e))
+            raise
