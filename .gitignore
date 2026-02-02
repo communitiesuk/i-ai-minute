@@ -40,7 +40,7 @@ Brewfile.lock.json
 *.docx
 
 # Rendered presentations
-*.html
+frontend/**/*.html
 *_files/
 
 # Docker cache
@@ -109,3 +109,5 @@ config/google-credentials.json
 /test-results/
 /playwright-report/
 /playwright/.cache/
+
+.whisply_temp/
