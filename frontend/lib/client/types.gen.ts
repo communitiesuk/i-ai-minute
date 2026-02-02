@@ -433,6 +433,28 @@ export type MinuteVersionResponse = {
    * Guardrail Results
    */
   guardrail_results: Array<GuardrailResultResponse>
+  /**
+   * Hallucinations
+   */
+  hallucinations?: Array<LLMHallucination> | null
+}
+
+/**
+ * LLMHallucination
+ */
+export type LLMHallucination = {
+  /**
+   * Hallucination Type
+   */
+  hallucination_type: string
+  /**
+   * Hallucination Text
+   */
+  hallucination_text: string | null
+  /**
+   * Hallucination Reason
+   */
+  hallucination_reason: string | null
 }
 
 /**

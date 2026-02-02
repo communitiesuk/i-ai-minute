@@ -4,14 +4,10 @@ from datetime import UTC, datetime
 from fastapi import APIRouter, HTTPException
 from sqlalchemy.orm import selectinload
 from sqlmodel import col, select
-from common.types import MinuteVersionResponse, GuardrailResultResponse
-
-from backend.api.dependencies import SQLSessionDep, UserDep
-from common.database.postgres_models import JobStatus, Minute, MinuteVersion, Transcription
-from common.services.queue_services import get_queue_service
-from common.settings import get_settings
 from common.types import (
     EditMessageData,
+    GuardrailResultResponse,
+    LLMHallucination,
     MinuteListItem,
     MinutesCreateRequest,
     MinuteVersionCreateRequest,
@@ -19,6 +15,11 @@ from common.types import (
     TaskType,
     WorkerMessage,
 )
+
+from backend.api.dependencies import SQLSessionDep, UserDep
+from common.database.postgres_models import JobStatus, Minute, MinuteVersion, Transcription
+from common.services.queue_services import get_queue_service
+from common.settings import get_settings
 
 settings = get_settings()
 
@@ -101,12 +102,22 @@ async def list_minute_versions(
         .options(
             # FIX 1: Chain the load to fetch guardrails inside the versions
             selectinload(Minute.minute_versions).selectinload(MinuteVersion.guardrail_results),
+            selectinload(Minute.minute_versions).selectinload(MinuteVersion.hallucinations),
             selectinload(Minute.transcription)
         )
     )
     minute = result.first()
     if not minute or not minute.transcription.user_id or minute.transcription.user_id != user.id:
         raise HTTPException(404)
+
+    # DEBUG: Log guardrail data
+    print(f"[DEBUG] list_minute_versions: Found {len(minute.minute_versions)} versions for minute {minute_id}")
+    for idx, version in enumerate(minute.minute_versions):
+        print(f"[DEBUG] Version {idx} (ID: {version.id}): {len(version.guardrail_results)} guardrails, {len(version.hallucinations)} hallucinations")
+        for gr in version.guardrail_results:
+            print(f"[DEBUG]   - Guardrail: {gr.guardrail_type} = {gr.result} (score: {gr.score})")
+        for h in version.hallucinations:
+            print(f"[DEBUG]   - Hallucination: {h.hallucination_type}")
 
     return [
         MinuteVersionResponse(
@@ -131,6 +142,14 @@ async def list_minute_versions(
                     error=gr.error
                 )
                 for gr in version.guardrail_results
+            ],
+            hallucinations=[
+                LLMHallucination(
+                    hallucination_type=h.hallucination_type,
+                    hallucination_text=h.hallucination_text,
+                    hallucination_reason=h.hallucination_reason,
+                )
+                for h in version.hallucinations
             ],
         )
         for version in minute.minute_versions
@@ -171,6 +190,7 @@ async def create_minute_version(
         html_content=minute_version.html_content,
         content_source=minute_version.content_source,
         guardrail_results=[],
+        hallucinations=[],
     )
 
 
@@ -182,6 +202,7 @@ async def get_minute_version(minute_version_id: uuid.UUID, session: SQLSessionDe
         .options(
             selectinload(MinuteVersion.minute).selectinload(Minute.transcription),
             selectinload(MinuteVersion.guardrail_results),
+            selectinload(MinuteVersion.hallucinations),
         )
     )
     minute_version = (await session.exec(query)).first()

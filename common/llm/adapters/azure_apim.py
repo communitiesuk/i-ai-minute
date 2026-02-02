@@ -33,8 +33,14 @@ class AzureAPIMModelAdapter(ModelAdapter):
     async def structured_chat(
         self, messages: list[dict[str, str]], response_format: type[T]
     ) -> T:
-        logger.exception("'AzureAPIMModelAdapter.structured_chat' is unimplemented.")
-        return ''
+        response = await self.async_apim_client.beta.chat.completions.parse(
+            model=self._deployment,
+            messages=messages,
+            response_format=response_format,
+        )
+        choice = response.choices[0]
+        self.choice_incomplete(choice, response)
+        return choice.message.parsed
 
     async def chat(self, messages: list[dict[str, str]]) -> str:
 
