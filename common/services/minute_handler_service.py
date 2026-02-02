@@ -184,6 +184,17 @@ class MinuteHandlerService:
                 edit_instructions=target_minute_version.ai_edit_instructions,
                 transcript=source_minute_version.minute.transcription.dialogue_entries,
             )
+            # Post-processing: Run Guardrail Check
+            try:
+                accuracy_score = await cls.calculate_accuracy_score(
+                    minute=edited_string,
+                    transcript=source_minute_version.minute.transcription.dialogue_entries,
+                )
+                cls.save_guardrail_result(target_minute_version.id, accuracy_score)
+                logger.info("%s: Saved guardrail result for edit: %s", target_minute_version.minute_id, accuracy_score)
+            except Exception:
+                logger.exception("%s: Failed to run guardrail check for edit", target_minute_version.minute_id)
+
             cls.update_minute_version(
                 minute_version_id=target_minute_version.id,
                 status=JobStatus.COMPLETED,
