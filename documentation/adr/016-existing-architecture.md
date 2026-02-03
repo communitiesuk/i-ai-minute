@@ -8,7 +8,9 @@ Date of decision TBC
 
 ## Context and Problem Statement
 
-Ideally, each architectural decision would be captured in an ADR as the system is designed. In our case, we are inheriting Minute as essentially a fully formed system. How much re-examination, retrospective documentation, and rebuilding should be aiming for?
+Ideally, each architectural decision would be captured in an ADR as the system is designed. In our case, we are inheriting Minute as essentially a fully formed system. This system has been deployed and trialled with 22 councils, so we can trust it is fit for that purpose, at least.
+
+How much re-examination, retrospective documentation, and rebuilding should be aiming for?
 
 ## Considered Options
 
@@ -34,7 +36,7 @@ Assume we're starting from zero, and build up a new Minute solution design makin
 
 Attempt to document all the decisions that lead to the existing architecture
 
-* Good, because it should leave us with good coverage of decisions.
+* Good, because it essentially forces a comprehensive review and an opportunity to rationalise, leaving us with good coverage of decisions.
 * Bad, because it requires us to artificially create ADRs retrospectively (and our reasoning may not be the reasoning of the time).
 * Bad, because it requires us to write quite a lot of ADRs up front (though less work than potentially changing all those decisions).
 
