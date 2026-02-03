@@ -27,23 +27,22 @@ class OpenAIModelAdapter(ModelAdapter):
 
         self._model = model
         
-        # Prepare arguments for AsyncAzureOpenAI
-        client_kwargs = {
+ 
+        if not azure_endpoint:
+            raise ValueError("Azure Endpoint is required for Azure OpenAI")
+        if not azure_deployment:
+            raise ValueError("Azure Deployment name is required for Azure OpenAI")
+    
+        arguments_for_client = {
             "api_key": api_key,
             "api_version": api_version,
         }
 
-        # Handling custom path structure for APIM/Gateways that don't use the standard /openai/ path segment
-        # If azure_endpoint is provided, we construct base_url manually to be explicit.
-        if azure_endpoint and azure_deployment:
-             endpoint = azure_endpoint.rstrip("/")
-             client_kwargs["base_url"] = f"{endpoint}/deployments/{azure_deployment}"
-        else:
-             # Fallback to standard behavior if inputs are missing (though they should be present based on usage)
-             client_kwargs["azure_endpoint"] = azure_endpoint
-             client_kwargs["azure_deployment"] = azure_deployment
 
-        self.async_azure_client = AsyncAzureOpenAI(**client_kwargs)
+        endpoint = azure_endpoint.rstrip("/")
+        arguments_for_client["base_url"] = f"{endpoint}/deployments/{azure_deployment}"
+
+        self.async_azure_client = AsyncAzureOpenAI(**arguments_for_client)
         self._kwargs = kwargs
 
     async def structured_chat(self, messages: list[dict[str, str]], response_format: type[T]) -> T:

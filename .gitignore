@@ -2,6 +2,9 @@ venv
 .DS_Store
 .idea
 .gcloudignore
+.env
+.env.example
+.env.copy.example
 .git
 .venv
 __pycache__/

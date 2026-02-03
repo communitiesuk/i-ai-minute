@@ -8,7 +8,18 @@ from sqlalchemy.orm import selectinload
 
 from common.convert_american_to_british_spelling import convert_american_to_british_spelling
 from common.database.postgres_database import SessionLocal
-from common.database.postgres_models import DialogueEntry, GuardrailResult, Guardrailtype, GuardrailStatus, Hallucination, JobStatus, Minute, MinuteVersion, UserTemplate
+# Ensure these imports match your actual file structure
+from common.database.postgres_models import (
+    DialogueEntry, 
+    GuardrailResult, 
+    GuardrailType, 
+    GuardrailStatus, 
+    Hallucination, 
+    JobStatus, 
+    Minute, 
+    MinuteVersion, 
+    UserTemplate
+)
 from common.format_transcript import transcript_as_speaker_and_utterance
 from common.llm.client import FastOrBestLLM, create_default_chatbot
 from common.prompts import (
@@ -54,12 +65,35 @@ class MinuteHandlerService:
         score: GuardrailScore,
     ) -> None:
         with SessionLocal() as session:
+            # Determine Pass/Fail based on a threshold (e.g. 0.7)
+            status = GuardrailStatus.PASS if score.score > 0.7 else GuardrailStatus.WARNING
+            
             guardrail_result = GuardrailResult(
                 minute_version_id=minute_version_id,
-                guardrail_type="accuracy_check",
-                result="PASS" if score.score > 0.7 else "FAIL",  # Simple threshold for now
+                guardrail_type=GuardrailType.HALLUCINATION,
+                status=status,
                 score=score.score,
                 reasoning=score.reasoning,
+            )
+            session.add(guardrail_result)
+            session.commit()
+
+    @staticmethod
+    def save_guardrail_error(
+        minute_version_id: UUID,
+        error_message: str
+    ) -> None:
+        """
+        New helper to save system errors (Patryk's Request)
+        """
+        with SessionLocal() as session:
+            guardrail_result = GuardrailResult(
+                minute_version_id=minute_version_id,
+                guardrail_type=GuardrailType.HALLUCINATION,
+                status=GuardrailStatus.FAIL,
+                score=0.0,
+                reasoning="System Error: Could not verify accuracy.",
+                error=error_message
             )
             session.add(guardrail_result)
             session.commit()
@@ -141,7 +175,9 @@ class MinuteHandlerService:
             meeting_type = cls.predict_meeting(minute_version.minute.transcription.dialogue_entries)
             logger.info("%s: Predicted minute version %s", minute_version.minute_id, meeting_type)
             html_content, hallucinations = await cls.generate_minutes(meeting_type, minute_version.minute)
-            # Post-processing: Run Guardrail Check
+            
+            # 1. Post-processing: Run Guardrail Check BEFORE marking as completed
+            # This ensures the frontend doesn't show the summary until guardrails are ready
             try:
                 accuracy_score = await cls.calculate_accuracy_score(
                     minute=html_content,
@@ -149,16 +185,19 @@ class MinuteHandlerService:
                 )
                 cls.save_guardrail_result(minute_version.id, accuracy_score)
                 logger.info("%s: Saved guardrail result: %s", minute_version.minute_id, accuracy_score)
-            except Exception:
+            except Exception as e:
+                # Catch system errors (Timeout, API fail) and save them to DB
                 logger.exception("%s: Failed to run guardrail check", minute_version.minute_id)
-                # We don't fail the whole job if guardrail fails, just log it
+                cls.save_guardrail_error(minute_version.id, str(e))
 
+            # 2. Update the Minute (Success) - Now it becomes available to the frontend
             cls.update_minute_version(
                 minute_version.id,
                 html_content=html_content,
                 hallucinations=hallucinations,
                 status=JobStatus.COMPLETED,
             )
+
         except Exception as e:
             cls.update_minute_version(minute_version.id, status=JobStatus.FAILED, error=str(e))
             raise MinuteGenerationFailedError from e
@@ -184,7 +223,8 @@ class MinuteHandlerService:
                 edit_instructions=target_minute_version.ai_edit_instructions,
                 transcript=source_minute_version.minute.transcription.dialogue_entries,
             )
-            # Post-processing: Run Guardrail Check
+            
+            # 1. Run Guardrails on the Edited Version BEFORE marking as completed
             try:
                 accuracy_score = await cls.calculate_accuracy_score(
                     minute=edited_string,
@@ -192,9 +232,11 @@ class MinuteHandlerService:
                 )
                 cls.save_guardrail_result(target_minute_version.id, accuracy_score)
                 logger.info("%s: Saved guardrail result for edit: %s", target_minute_version.minute_id, accuracy_score)
-            except Exception:
+            except Exception as e:
                 logger.exception("%s: Failed to run guardrail check for edit", target_minute_version.minute_id)
+                cls.save_guardrail_error(target_minute_version.id, str(e))
 
+            # 2. Update Minute (Success) - Now it becomes available to the frontend
             cls.update_minute_version(
                 minute_version_id=target_minute_version.id,
                 status=JobStatus.COMPLETED,

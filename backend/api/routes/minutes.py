@@ -100,24 +100,22 @@ async def list_minute_versions(
         select(Minute)
         .where(Minute.id == minute_id)
         .options(
-            # FIX 1: Chain the load to fetch guardrails inside the versions
-            selectinload(Minute.minute_versions).selectinload(MinuteVersion.guardrail_results),
-            selectinload(Minute.minute_versions).selectinload(MinuteVersion.hallucinations),
-            selectinload(Minute.transcription)
+            # Load all minute_versions and their related data in one go
+            selectinload(Minute.minute_versions).options(
+                selectinload(MinuteVersion.guardrail_results),
+                selectinload(MinuteVersion.hallucinations),
+            ),
+            # Load transcription separately
+            selectinload(Minute.transcription),
         )
-    )
+
+        )
+    
     minute = result.first()
     if not minute or not minute.transcription.user_id or minute.transcription.user_id != user.id:
         raise HTTPException(404)
 
-    # DEBUG: Log guardrail data
-    print(f"[DEBUG] list_minute_versions: Found {len(minute.minute_versions)} versions for minute {minute_id}")
-    for idx, version in enumerate(minute.minute_versions):
-        print(f"[DEBUG] Version {idx} (ID: {version.id}): {len(version.guardrail_results)} guardrails, {len(version.hallucinations)} hallucinations")
-        for gr in version.guardrail_results:
-            print(f"[DEBUG]   - Guardrail: {gr.guardrail_type} = {gr.result} (score: {gr.score})")
-        for h in version.hallucinations:
-            print(f"[DEBUG]   - Hallucination: {h.hallucination_type}")
+
 
     return [
         MinuteVersionResponse(
