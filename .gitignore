@@ -111,3 +111,9 @@ config/google-credentials.json
 /playwright/.cache/
 
 .whisply_temp/
+
+#testing
+.coverage
+htmlcov/
+coverage.xml
+.pytest_cache/

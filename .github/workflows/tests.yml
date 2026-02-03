@@ -70,9 +70,31 @@ jobs:
         run: |
           poetry run alembic upgrade head
 
-      - name: Run tests
+
+      - name: Run tests with coverage
         run: |
-          make test
+          make test-cov
+
+      - name: Upload coverage HTML report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: htmlcov/
+
+      - name: Upload coverage XML
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+         name: coverage-xml
+         path: coverage.xml
+
+
+      - name: Coverage summary
+        if: always()
+        run: |
+          echo "## Coverage Report" >> $GITHUB_STEP_SUMMARY
+          poetry run coverage report --format=markdown >> $GITHUB_STEP_SUMMARY || true
 
       - name: Stop services
         if: always()

@@ -7,10 +7,44 @@ skip = [
 
 [tool.pytest.ini_options]
 minversion = "8.3"
-addopts = "-ra -q"
 testpaths = [
     "tests"
 ]
+adopts = [
+    "-ra -q",
+    "--cov=backend",               
+    "--cov=common",
+    "--cov=evals", 
+    "--cov-worker",                 
+    "--cov-report=term-missing",   
+    "--cov-report=html",             
+    ]
+
+[tool.coverage.run]
+source = ["backend", "common", "evals"]
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "*/terraform/*",
+    "*/alembic/*",
+    "*/__pycache__/*",
+    "*/migrations/*",
+    "*/.venv/*",
+    "*/venv/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+]
+fail_under = 10
+
 
 [tool.poetry]
 name = "minute"
@@ -113,6 +147,7 @@ types-ujson = "^5.10.0.20250822"
 types-aioboto3 = "^15.5.0"
 types-botocore = "^1.0.2"
 types-boto3 = "^1.42.34"
+coverage = "^7.13.2"
 
 [build-system]
 requires = ["poetry-core"]
