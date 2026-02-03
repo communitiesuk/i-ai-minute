@@ -1,3 +1,14 @@
+[project]
+name = "minute"
+authors = [
+    { name = "i.AI", email = "i-dot-ai-enquiries@cabinetoffice.gov.uk"}
+]
+license = "MIT"
+readme = "README.md"
+version = "2.0.0"
+requires-python = ">=3.12,<3.13"
+dynamic = [ "dependencies" ]
+
 [tool.cruft]
 skip = [
     # general_paths
@@ -13,20 +24,15 @@ testpaths = [
 ]
 
 [tool.poetry]
-name = "minute"
-authors = ["i.AI <i-dot-ai-enquiries@cabinetoffice.gov.uk>"]
-license = "MIT"
-readme = "README.md"
 packages = [
     {include = "worker"},
     {include = "backend"},
     {include = "common"},
 ]
-version = "2.0.0"
+requires-poetry = ">=2.3,<2.4"
 
 # add common dependencies here
 [tool.poetry.dependencies]
-python = ">=3.12,<3.13"
 cryptography = "^44.0.2"
 pydantic-settings = "^2.5.2"
 alembic = "^1.13.3"
@@ -113,7 +119,7 @@ types-botocore = "^1.0.2"
 types-boto3 = "^1.42.34"
 
 [build-system]
-requires = ["poetry-core"]
+requires = ["poetry-core>=2.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.ruff]
