@@ -1,0 +1,97 @@
+# Put action within a raw block so that the curly bracket expressions aren't picked up by the cookiecutter
+#
+name: tests
+
+env:
+  DOCKER_BUILDKIT: 1
+  PYTHON_VERSION: "3.12"
+  POETRY_VERSION: "2.1.3"
+
+on:
+  push:
+    paths:
+      - backend/**
+      - Makefile
+      - frontend/**
+      - .github/workflows/*.yml
+      - .github/workflows/*.yaml
+
+    branches:
+      - "main"
+      - "feature/**"
+      - "chore/**"
+      - "bugfix/**"
+      - "hotfix/**"
+      - "development/**"
+      - "dependabot/**"
+      - "security/**"
+
+  pull_request: 
+    branches: 
+      - development
+      
+  workflow_dispatch:
+
+jobs:
+  run_tests:
+    name: Run tests
+    runs-on: ubuntu-latest
+    environment: release
+
+    steps:
+      - uses: actions/checkout@v3 
+
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Set up Poetry
+        uses: abatilo/actions-poetry@v2
+        with:
+          poetry-version: ${{ env.POETRY_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          poetry install --no-root --no-ansi --with dev
+
+      - name: Copy env file
+        run: |
+          cp .env.example .env
+
+      - name: Run backend tests
+      - name: Create test data directory
+        run: |
+          mkdir -p .data/test_audio/normal
+
+      - name: Start services
+        run: |
+          docker compose up -d db localstack --wait
+
+      - name: Run database migrations
+        run: |
+          poetry run alembic upgrade head
+
+      - name: Run tests
+        run: |
+          make test
+      
+      - name: Set up Node 
+        uses: actions/setup-node@v3 
+        with: 
+            node-version: 20 
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run frontend tests
+        working-directory: frontend
+        run: npm test
+
+      - name: Stop services
+        if: always()
+        run: |
+          docker compose down
+
+#

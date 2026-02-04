@@ -1,12 +1,19 @@
 import logging
+import os
 import sys
+import tempfile
 import time
 from pathlib import Path
 
 logger = logging.getLogger()
 
 
-HEARTBEAT_DIR = Path("/healthcheck")
+# Use /tmp for local runs (OS will restrict access otherwise), /healthcheck for Docker
+if Path("/healthcheck").exists() and os.access("/healthcheck", os.W_OK):
+    HEARTBEAT_DIR = Path("/healthcheck")
+else:
+    HEARTBEAT_DIR = Path(tempfile.gettempdir()) / "minute-healthcheck"
+
 HEARTBEAT_TIMEOUT = 1200  # 20 minutes
 HEARTBEAT_DIR.mkdir(exist_ok=True)
 

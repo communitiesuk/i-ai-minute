@@ -11,10 +11,10 @@ from tenacity import (
     wait_random_exponential,
 )
 
-from common.llm.adapters import GeminiModelAdapter, ModelAdapter, OpenAIModelAdapter
+from common.llm.adapters import AzureAPIMModelAdapter, GeminiModelAdapter, ModelAdapter, OpenAIModelAdapter
 from common.prompts import get_hallucination_detection_messages
 from common.settings import get_settings
-from common.types import LLMHallucination
+from common.types import LLMHallucination, LLMHallucinationList
 
 settings = get_settings()
 T = TypeVar("T", bound=BaseModel)
@@ -37,13 +37,14 @@ class ChatBot:
 
     def __init__(self, adapter: ModelAdapter) -> None:
         self.adapter = adapter
-        self.messages = []
+        self.messages: list[dict[str, str]] = []
 
     async def hallucination_check(self) -> list[LLMHallucination]:
         if settings.HALLUCINATION_CHECK:
-            return await self.structured_chat(
-                messages=get_hallucination_detection_messages(), response_format=list[LLMHallucination]
+            result = await self.structured_chat(
+                messages=get_hallucination_detection_messages(), response_format=LLMHallucinationList
             )
+            return result.hallucinations
         return []
 
     @retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(6))
@@ -66,13 +67,13 @@ def create_chatbot(model_type: str, model_name: str, temperature: float) -> Chat
     Creates and returns a chatbot instance based on the specified model type and name.
 
     This function initializes a ChatBot instance by selecting the appropriate model adapter
-    based on the provided model type. It supports "openai" and "gemini" model types. Additional
+    based on the provided model type. It supports "openai", "ollama" and "gemini" model types. Additional
     settings required for model initialization are sourced from application settings or passed
     as keyword arguments. If an unsupported model type is specified, a ValueError is raised.
 
     Args:
-        model_type: A string specifying the type of the model. Supported values are "openai"
-            and "gemini".
+        model_type: A string specifying the type of the model. Supported values are "openai",
+            "ollama" and "gemini".
         model_name: A string indicating the name of the model to be used.
         **kwargs: Additional keyword arguments to be passed to the model api call, if required.
 
@@ -83,6 +84,19 @@ def create_chatbot(model_type: str, model_name: str, temperature: float) -> Chat
         ValueError: If the specified model type is unsupported.
     """
     if model_type == "openai":
+        if not settings.AZURE_OPENAI_API_KEY:
+            msg = "AZURE_OPENAI_API_KEY is required for openai model"
+            raise ValueError(msg)
+        if not settings.AZURE_OPENAI_API_VERSION:
+            msg = "AZURE_OPENAI_API_VERSION is required for openai model"
+            raise ValueError(msg)
+        if not settings.AZURE_DEPLOYMENT:
+            msg = "AZURE_DEPLOYMENT is required for openai model"
+            raise ValueError(msg)
+        if not settings.AZURE_OPENAI_ENDPOINT:
+            msg = "AZURE_OPENAI_ENDPOINT is required for openai model"
+            raise ValueError(msg)
+
         return ChatBot(
             OpenAIModelAdapter(
                 model=model_name,
@@ -91,6 +105,42 @@ def create_chatbot(model_type: str, model_name: str, temperature: float) -> Chat
                 azure_deployment=settings.AZURE_DEPLOYMENT,
                 azure_endpoint=settings.AZURE_OPENAI_ENDPOINT,
                 temperature=temperature,
+            )
+        )
+    elif model_type == "ollama":
+        from common.llm.adapters.ollama import OllamaModelAdapter
+
+        return ChatBot(
+            OllamaModelAdapter(
+                model=model_name,
+                base_url=settings.OLLAMA_BASE_URL,
+                temperature=temperature,
+            )
+        )
+    elif model_type == "azure_apim":
+        if not settings.AZURE_APIM_URL:
+            msg = "AZURE_APIM_URL is required for azure_apim model"
+            raise ValueError(msg)
+        if not settings.AZURE_APIM_DEPLOYMENT:
+            msg = "AZURE_APIM_DEPLOYMENT is required for azure_apim model"
+            raise ValueError(msg)
+        if not settings.AZURE_APIM_API_VERSION:
+            msg = "AZURE_APIM_API_VERSION is required for azure_apim model"
+            raise ValueError(msg)
+        if not settings.AZURE_APIM_ACCESS_TOKEN:
+            msg = "AZURE_APIM_ACCESS_TOKEN is required for azure_apim model"
+            raise ValueError(msg)
+        if not settings.AZURE_APIM_SUBSCRIPTION_KEY:
+            msg = "AZURE_APIM_SUBSCRIPTION_KEY is required for azure_apim model"
+            raise ValueError(msg)
+
+        return ChatBot(
+            AzureAPIMModelAdapter(
+                url=settings.AZURE_APIM_URL,
+                deployment=settings.AZURE_APIM_DEPLOYMENT,
+                api_version=settings.AZURE_APIM_API_VERSION,
+                access_token=settings.AZURE_APIM_ACCESS_TOKEN,
+                subscription_key=settings.AZURE_APIM_SUBSCRIPTION_KEY,
             )
         )
     elif model_type == "gemini":
@@ -114,7 +164,7 @@ class FastOrBestLLM(Enum):
 
 
 def create_default_chatbot(fast_or_best: FastOrBestLLM) -> ChatBot:
-    """Helper function to create an OpenAI client. Let's replace when we have something like OmegaConf/Hydra.cc to
+    """Helper function to create a chatbot client. Let's replace when we have something like OmegaConf/Hydra.cc to
     instantiate chatbot"""
     if fast_or_best == FastOrBestLLM.BEST:
         return create_chatbot(settings.BEST_LLM_PROVIDER, settings.BEST_LLM_MODEL_NAME, temperature=0.0)

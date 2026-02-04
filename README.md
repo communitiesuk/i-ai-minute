@@ -27,8 +27,9 @@ Minute streamlines the traditionally time-intensive process of creating meeting 
 
 #### Run the app locally
 
-1. copy `.env.example` to a file called `.env`, and fill in the required values
-2. Run `docker compose up --build`
+1. [Install Docker](https://docs.docker.com/desktop/setup/install/mac-install/).
+2. Make a copy of the `.env.example` file and name it `.env`.
+3. Run `docker compose up --build`.
 
 This will build and run 5 containers:
 
@@ -38,13 +39,50 @@ This will build and run 5 containers:
 4. Postgres database hosted at http:localhost:5432
 5. Localstack to simulate AWS SQS
 
+#### LLM and Transcription Services
+
+If you want to run these services locally, see `LOCAL_SETUP.md` and follow the instructions there.
+
+If you have access to a supported LLM and Transcription provider, you will need to fill in the associated `.env` variables and configure `common/settings.py` accordingly. For example, to use transcription and LLM services via Azure APIM, update the following values:
+
+##### In `.env`
+
+- Transcription: `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION`
+- LLM: `AZURE_APIM_URL`, `AZURE_APIM_DEPLOYMENT`, `AZURE_APIM_API_VERSION`, `AZURE_APIM_ACCESS_TOKEN`, and `AZURE_APIM_SUBSCRIPTION_KEY`.
+
+Note:
+
+- These APIM values can be found on the [Azure APIM Portal](https://portal.api.azc.test.communities.gov.uk/).
+- The `AZURE_APIM_ACCESS_TOKEN` is short lived and so must be regenerated every 2 hours.
+
+##### In `common/settings.py`:
+
+- Update `FAST_LLM_PROVIDER`, `FAST_LLM_MODEL_NAME`, `BEST_LLM_PROVIDER`, and `BEST_LLM_MODEL_NAME` correspondingly.
+
+This should be sufficient for local development. Keys related to 'AWS', 'Google cloud', and 'other' (Sentry/Posthog) are not required. After updating `.env`, restart the Docker container to apply changes
+
 #### Set up your development environment:
 
 We use dev containers to emulate the cloud environment in which Minute is usually deployed.
 
-` docker compose up --watch`
+Running ` docker compose up --watch` will sync local file changes to the docker containers and restart them as appropriate. Note that `docker compose down` will revert the containers to their base state. See [this issue](https://github.com/docker/compose/issues/11102)
 
-...will sync local file changes to the docker containers and restart them as appropriate. Note that `docker compose down` will revert the containers to their base state. See [this issue](https://github.com/docker/compose/issues/11102)
+To instead configure the environemnt locally:
+
+##### Backend
+
+1. [Install Poetry](https://python-poetry.org/docs/).
+2. In the root directory, run `poetry install`.
+3. If using VS Code, open the command palette (`Command+Shift+P`), click 'Python: Select Interpreter' and select the 'minute-xxxxxxxxxx' env file Poetry has just created.
+
+##### Frontend
+
+- [Install node](https://github.com/nvm-sh/nvm?tab=readme-ov-file#installing-and-updating).
+- In the `/frontend` directory, run `npm install`.
+
+#### Notes
+
+- User authenitcation and autherisation is turned off for local development, a 'dummy_user' is created for which every requested is authorised.
 
 ## Project structure
 
@@ -118,3 +156,17 @@ different tests (see [test_queues_e2e.py](tests/test_queues_e2e.py) for an examp
 
 You can add your own templates by implementing either the `SimpleTemplate` or `SectionTemplate` protocols (see [here](backend/templates/types.py))
 Simply put them in the [templates](backend/templates) directory, and they will automatically be discovered when the backend starts.
+
+## Type Checking
+
+```bash
+poetry install --with dev
+
+poetry run mypy .                
+# check entire project
+
+poetry run mypy path/to/file.py  
+# check a specific file
+```
+
+mypy analyses type hints to catch type-related bugs before runtime. Run it before committing (further validation occurs during the CI/CD process) changes.
