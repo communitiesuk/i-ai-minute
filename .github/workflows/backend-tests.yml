@@ -5,8 +5,10 @@ on:
     inputs: 
       python_version: 
         required: true
+        type: string
       poetry_version: 
         required: true
+        type: string
 
 jobs:
   backend:
