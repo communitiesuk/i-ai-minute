@@ -299,11 +299,7 @@ export function MinuteEditor({
         'Short meeting detected. Minutes not available.'
       ) && (
           <>
-            {/* DEBUG: Log guardrail data */}
-            {console.log('[DEBUG] MinuteEditor - Guardrail Results:', minuteVersion.guardrail_results)}
-            {console.log('[DEBUG] MinuteEditor - Hallucinations:', minuteVersion.hallucinations)}
-            {console.log('[DEBUG] MinuteEditor - Guardrail count:', minuteVersion.guardrail_results?.length || 0)}
-            {console.log('[DEBUG] MinuteEditor - Hallucination count:', minuteVersion.hallucinations?.length || 0)}
+
             <GuardrailResponseComponent
               guardrailResults={minuteVersion.guardrail_results}
               hallucinations={minuteVersion.hallucinations}

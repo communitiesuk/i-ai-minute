@@ -16,26 +16,12 @@ export function GuardrailResponseComponent({
 }) {
     const GUARDRAIL_THRESHOLD = Number(process.env.NEXT_PUBLIC_GUARDRAIL_THRESHOLD) || 0.8;
 
-    // DEBUG: Log component props
-    console.log('[DEBUG] GuardrailResponseComponent - Received props:', {
-        guardrailResults,
-        hallucinations,
-        guardrailCount: guardrailResults?.length || 0,
-        hallucinationCount: hallucinations?.length || 0,
-        threshold: GUARDRAIL_THRESHOLD
-    })
 
     const hasGuardrails = guardrailResults && guardrailResults.length > 0
     const hasHallucinations = hallucinations && hallucinations.length > 0
 
-    console.log('[DEBUG] GuardrailResponseComponent - Render decision:', {
-        hasGuardrails,
-        hasHallucinations,
-        willRender: hasGuardrails || hasHallucinations
-    })
 
     if (!hasGuardrails && !hasHallucinations) {
-        console.log('[DEBUG] GuardrailResponseComponent - Returning null (no data)')
         return null
     }
 
