@@ -25,28 +25,32 @@ class AzureSTTAdapter(TranscriptionAdapter):
             speaker = phrase.get("speaker")
             if speaker is None:
                 continue
-            
+
             text = phrase.get("text", "").strip()
             if not text:
                 continue
-            
+
             offset_ms = phrase.get("offsetMilliseconds", 0)
             duration_ms = phrase.get("durationMilliseconds", 0)
-            
+
             start = offset_ms / 1000.0
             end = (offset_ms + duration_ms) / 1000.0
-            
-            diarization.append({
-                "speaker": f"Speaker_{speaker}",
-                "text": text,
-                "start": start,
-                "end": end,
-            })
 
-        logger.info("Azure diarization extracted: %d segments, %d unique speakers", 
-                   len(diarization), 
-                   len(set(seg["speaker"] for seg in diarization)) if diarization else 0)
-        
+            diarization.append(
+                {
+                    "speaker": f"Speaker_{speaker}",
+                    "text": text,
+                    "start": start,
+                    "end": end,
+                }
+            )
+
+        logger.info(
+            "Azure diarization extracted: %d segments, %d unique speakers",
+            len(diarization),
+            len(set(seg["speaker"] for seg in diarization)) if diarization else 0,
+        )
+
         return diarization
 
     def transcribe(self, wav_path: str):

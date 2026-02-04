@@ -2,8 +2,12 @@ import argparse
 import logging
 from datetime import datetime
 
-from adapters import AzureSTTAdapter, WhisplyAdapter
-from core.config import AZURE_SPEECH_KEY, AZURE_SPEECH_REGION, WHISPLY_DEVICE, WHISPLY_HF_TOKEN, WORKDIR
+from adapters import AzureSTTAdapter
+from core.config import (
+    AZURE_SPEECH_KEY,
+    AZURE_SPEECH_REGION,
+    WORKDIR,
+)
 from core.dataset import audio_duration_seconds, load_benchmark_dataset, to_wav_16k_mono
 from core.runner import run_engines_parallel, save_results
 
@@ -40,15 +44,8 @@ def run_evaluation(
         language="en-GB",
     )
 
-    whisply_adapter = WhisplyAdapter(
-        model="large-v3",
-        device=WHISPLY_DEVICE,
-        hf_token=WHISPLY_HF_TOKEN,
-    )
-
     adapters_config = [
         {"adapter": azure_adapter, "label": "Azure Speech-to-Text"},
-        # {"adapter": whisply_adapter, "label": "Whisply"},
     ]
 
     logger.info(

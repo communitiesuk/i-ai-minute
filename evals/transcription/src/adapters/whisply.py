@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 class WhisplyAdapter(TranscriptionAdapter):
     def __init__(self, model: str = "large-v3", device: str = "cpu", hf_token: str | None = None):
         import torch
-        
+
         self.model = model
         self.device = device
         self.hf_token = hf_token
@@ -32,7 +32,11 @@ class WhisplyAdapter(TranscriptionAdapter):
             raise ImportError(msg) from e
 
         logger.info("Whisply adapter initialized with model '%s' on device: %s", model, device)
-        logger.info("MPS available: %s, MPS built: %s", torch.backends.mps.is_available(), torch.backends.mps.is_built())
+        logger.info(
+            "MPS available: %s, MPS built: %s",
+            torch.backends.mps.is_available(),
+            torch.backends.mps.is_built(),
+        )
         if device == "mps" and not torch.backends.mps.is_available():
             logger.warning("MPS device requested but not available, falling back to CPU")
             self.device = "cpu"
@@ -71,18 +75,23 @@ class WhisplyAdapter(TranscriptionAdapter):
                 implementation="whisperx",
                 translation=handler.translate,
             )
-            
+
             handler.device = self.device
 
-            logger.info("Starting Whisply transcription with device: %s (handler.device: %s)", self.device, getattr(handler, 'device', 'unknown'))
+            logger.info(
+                "Starting Whisply transcription with device: %s (handler.device: %s)",
+                self.device,
+                getattr(handler, "device", "unknown"),
+            )
 
             whisply_output = handler.transcribe_with_whisperx(Path(wav_path))
 
             text, diarization = self._extract_text_and_diarization(whisply_output)
 
             t1 = time.time()
-            
+
             import torch
+
             actual_device = "unknown"
             if torch.cuda.is_available() and self.device == "cuda":
                 actual_device = "cuda (verified)"
@@ -90,14 +99,20 @@ class WhisplyAdapter(TranscriptionAdapter):
                 actual_device = "mps (verified)"
             else:
                 actual_device = self.device
-            
-            logger.info("Whisply transcription completed. Requested device: %s, Actual: %s", self.device, actual_device)
+
+            logger.info(
+                "Whisply transcription completed. Requested device: %s, Actual: %s",
+                self.device,
+                actual_device,
+            )
 
             debug = {
                 "model": self.model,
                 "device": self.device,
                 "actual_device": actual_device,
-                "num_speakers": len(set(seg["speaker"] for seg in diarization)) if diarization else 0,
+                "num_speakers": len(set(seg["speaker"] for seg in diarization))
+                if diarization
+                else 0,
                 "num_segments": len(diarization) if diarization else 0,
                 "diarization": diarization,
             }
@@ -144,12 +159,14 @@ class WhisplyAdapter(TranscriptionAdapter):
                 if current_speaker and speaker != current_speaker:
                     if current_text and current_start is not None and current_end is not None:
                         segment_text = " ".join(current_text)
-                        diarization.append({
-                            "speaker": current_speaker,
-                            "text": segment_text,
-                            "start": current_start,
-                            "end": current_end,
-                        })
+                        diarization.append(
+                            {
+                                "speaker": current_speaker,
+                                "text": segment_text,
+                                "start": current_start,
+                                "end": current_end,
+                            }
+                        )
                         all_text.append(segment_text)
                     current_text = []
                     current_start = None
@@ -160,14 +177,21 @@ class WhisplyAdapter(TranscriptionAdapter):
                 current_speaker = speaker
                 current_text.append(word)
 
-        if current_text and current_speaker and current_start is not None and current_end is not None:
+        if (
+            current_text
+            and current_speaker
+            and current_start is not None
+            and current_end is not None
+        ):
             segment_text = " ".join(current_text)
-            diarization.append({
-                "speaker": current_speaker,
-                "text": segment_text,
-                "start": current_start,
-                "end": current_end,
-            })
+            diarization.append(
+                {
+                    "speaker": current_speaker,
+                    "text": segment_text,
+                    "start": current_start,
+                    "end": current_end,
+                }
+            )
             all_text.append(segment_text)
 
         full_text = " ".join(all_text)

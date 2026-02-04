@@ -146,13 +146,25 @@ class AMIDatasetLoader:
     ) -> Sample:
         mixed_audio = cache.load_audio(paths.wav)
         text = cache.load_transcript(paths.transcript)
+
+        # Load reference diarization from cache if available
+        diarization_path = paths.wav.parent / f"{paths.wav.stem}_ref_diarization.json"
+        reference_diarization = []
+        if diarization_path.exists():
+            import json
+
+            with diarization_path.open("r") as f:
+                reference_diarization = json.load(f)
+
         sample = _build_sample(mixed_audio, text, segment, idx, paths.wav, len(text.split()))
+        sample["reference_diarization"] = reference_diarization
 
         logger.info(
-            "Cache hit: %s (%.2f sec, %d words)",
+            "Cache hit: %s (%.2f sec, %d words, %d speakers)",
             segment.meeting_id,
             sample["duration_sec"],
             len(text.split()),
+            len(set(d["speaker"] for d in reference_diarization)) if reference_diarization else 0,
         )
         return sample
 
@@ -166,17 +178,44 @@ class AMIDatasetLoader:
         utterances = _apply_cutoff(utterances, segment.utterance_cutoff_time)
         mixed_audio, text = audio.mix_utterances(utterances)
 
+        # Extract ground truth diarization from utterances
+        reference_diarization = []
+        for utt in utterances:
+            speaker_id = utt.get("speaker_id", "UNKNOWN")
+            begin_time = utt.get("begin_time", 0)
+            end_time = utt.get("end_time", 0)
+            utt_text = utt.get("text", "")
+
+            if speaker_id and begin_time is not None and end_time is not None:
+                reference_diarization.append(
+                    {
+                        "speaker": speaker_id,
+                        "start": float(begin_time),
+                        "end": float(end_time),
+                        "text": utt_text,
+                    }
+                )
+
         cache.save_audio(paths.wav, mixed_audio)
         cache.save_transcript(paths.transcript, text)
 
+        # Save reference diarization to cache
+        diarization_path = paths.wav.parent / f"{paths.wav.stem}_ref_diarization.json"
+        import json
+
+        with diarization_path.open("w") as f:
+            json.dump(reference_diarization, f)
+
         sample = _build_sample(mixed_audio, text, segment, idx, paths.wav, len(utterances))
+        sample["reference_diarization"] = reference_diarization
 
         logger.info(
-            "Cache miss: mixed %s (%d utterances, %.2f sec, %d words)",
+            "Cache miss: mixed %s (%d utterances, %.2f sec, %d words, %d speakers)",
             segment.meeting_id,
             sample["num_utterances"],
             sample["duration_sec"],
             len(text.split()),
+            len(set(d["speaker"] for d in reference_diarization)),
         )
         return sample
 
