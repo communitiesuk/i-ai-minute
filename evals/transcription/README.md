@@ -73,8 +73,7 @@ Results are saved to `results/evaluation_results_YYYYMMDD_HHMMSS.json` with time
 - Cached in `cache/processed/` for reuse
 
 **Adapters**: Modify `src/evaluate.py` to change:
-- Whisper model size (currently `large-v3`)
-- Azure language settings (currently `en-US`)
+- Azure language settings (currently `en-GB`)
 - Add/remove transcription engines
 
 ## Results Interpretation
