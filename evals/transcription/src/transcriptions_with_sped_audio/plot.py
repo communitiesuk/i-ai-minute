@@ -22,7 +22,12 @@ for file_id, speeds in data["data"].items():
             "file": file_id,
             "speed": float(speed_label.replace("x_speed", "")),
             "wer": entry["score"]["wer"],
-            "duration": entry["meta"]["duration"]
+            "duration": entry["meta"]["duration"],
+            "errors": (
+                entry["score"]["substitutions"]
+                + entry["score"]["insertions"]
+                + entry["score"]["deletions"]
+            ),
         })
 df = pd.DataFrame(rows)
 
@@ -30,16 +35,20 @@ df = pd.DataFrame(rows)
 df["cost"] = df["duration"] * COST_PER_SECOND
 
 # Baseline deltas (1x speed)
-baseline = df[df["speed"] == 1.0].set_index("file")[["wer", "cost"]]
+baseline = df[df["speed"] == 1.0].set_index("file")[["wer", "cost", "errors"]]
 
 df["wer_delta"] = df.apply(lambda r: r["wer"] - baseline.loc[r["file"], "wer"], axis=1)
 df["cost_saving"] = df.apply(lambda r: baseline.loc[r["file"], "cost"] - r["cost"], axis=1)
 df["wer_per_pound"] = df["wer_delta"] / df["cost_saving"]
+df["extra_errors"] = df.apply(lambda r: r["errors"] - baseline.loc[r["file"], "errors"], axis=1)
 
 # print(df)
 
 # Only files that have been sped up
 df_fast = df[df["speed"] > 1.0]
+
+extra_errors_df = df_fast.groupby("speed")[["extra_errors", "cost_saving"]].sum().reset_index()
+extra_errors_df["errors_per_pound"] = extra_errors_df["extra_errors"] / extra_errors_df["cost_saving"]
 
 # --- PLOTS ---
 
@@ -103,3 +112,14 @@ plt.tight_layout()
 plt.show()
 
 
+# 5. Incorrect words introduced per £ saved
+plt.figure(figsize=(6, 5))
+plt.bar(
+    extra_errors_df["speed"].astype(str),
+    extra_errors_df["errors_per_pound"]
+)
+plt.xlabel("Speed factor")
+plt.ylabel("Extra incorrect words per £ saved")
+plt.title("Incorrect words introduced per £ saved by speed")
+plt.tight_layout()
+plt.show()
