@@ -26,7 +26,7 @@ on:
 
 jobs:
   set-vars:
-    if: false # TODO: Re-enable when AWS secrets are configured (also re-enable build.yml backend/worker jobs)
+    if: false # TODO: JIRA-241 Re-enable when AWS secrets are configured (also re-enable build.yml backend/worker jobs)
     runs-on: ubuntu-latest
     outputs:
       app-name: ${{ steps.export.outputs.app-name }}
@@ -48,6 +48,7 @@ jobs:
           echo "docker-build-instance=${DOCKER_BUILD_INSTANCE}" >> $GITHUB_OUTPUT
 
   start-runner:
+    if: false # TODO: JIRA-241 Re-enable when AWS secrets are configured (also re-enable build.yml backend/worker jobs)
     uses: i-dot-ai/i-dot-ai-core-github-actions/.github/workflows/start-runner.yml@main
     needs: set-vars
     permissions: write-all
@@ -63,6 +64,7 @@ jobs:
       AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
 
   build-image:
+    if: false # TODO: JIRA-241 Re-enable when set-vars is re-enabled
     needs:
       - set-vars
       - start-runner
@@ -83,7 +85,7 @@ jobs:
       AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
 
   stop-runner:
-    if: false # TODO: Re-enable when set-vars is re-enabled
+    if: false # TODO: JIRA-241Re-enable when set-vars is re-enabled
     uses: i-dot-ai/i-dot-ai-core-github-actions/.github/workflows/stop-runner.yml@main
     needs:
       - set-vars
