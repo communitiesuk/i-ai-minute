@@ -17,6 +17,38 @@ class AzureSTTAdapter(TranscriptionAdapter):
         self.language = language
         self.url = f"https://{speech_region}.api.cognitive.microsoft.com/speechtotext/transcriptions:transcribe"
 
+    def _extract_diarization(self, response: dict) -> list[dict]:
+        diarization = []
+        phrases = response.get("phrases", [])
+
+        for phrase in phrases:
+            speaker = phrase.get("speaker")
+            if speaker is None:
+                continue
+            
+            text = phrase.get("text", "").strip()
+            if not text:
+                continue
+            
+            offset_ms = phrase.get("offsetMilliseconds", 0)
+            duration_ms = phrase.get("durationMilliseconds", 0)
+            
+            start = offset_ms / 1000.0
+            end = (offset_ms + duration_ms) / 1000.0
+            
+            diarization.append({
+                "speaker": f"Speaker_{speaker}",
+                "text": text,
+                "start": start,
+                "end": end,
+            })
+
+        logger.info("Azure diarization extracted: %d segments, %d unique speakers", 
+                   len(diarization), 
+                   len(set(seg["speaker"] for seg in diarization)) if diarization else 0)
+        
+        return diarization
+
     def transcribe(self, wav_path: str):
         text, proc_sec, _ = self.transcribe_with_debug(wav_path)
         return text, proc_sec
@@ -52,7 +84,7 @@ class AzureSTTAdapter(TranscriptionAdapter):
         except httpx.HTTPError as e:
             logger.error(f"Azure Speech API request failed: {e}")
             t1 = time.time()
-            return "", (t1 - t0), {"error": str(e)}
+            return "", (t1 - t0), {"error": str(e), "diarization": []}
 
         t1 = time.time()
 
@@ -64,14 +96,19 @@ class AzureSTTAdapter(TranscriptionAdapter):
         phrases = full_response.get("phrases", [])
         if not phrases:
             logger.error(f"Azure Speech produced no transcription for {wav_path}")
-            return "", (t1 - t0), {"error": "No phrases found"}
+            return "", (t1 - t0), {"error": "No phrases found", "diarization": []}
 
         full_text = " ".join(phrase["text"] for phrase in phrases).strip()
+
+        diarization = self._extract_diarization(full_response)
 
         debug = {
             "mode": "post_api",
             "recognized_segments": len(phrases),
             "final_text_len_chars": len(full_text),
+            "num_speakers": len(set(seg["speaker"] for seg in diarization)) if diarization else 0,
+            "num_segments": len(diarization) if diarization else 0,
+            "diarization": diarization,
         }
 
         return full_text, (t1 - t0), debug
