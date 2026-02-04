@@ -39,13 +39,13 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-        name: frontend-coverage-html
-        path: frontend/coverage
+          name: frontend-coverage-html
+          path: frontend/coverage
 
       - name: Upload frontend LCOV
         uses: actions/upload-artifact@v4
         if: always()
         with:
-        name: frontend-coverage-lcov
-        path: frontend/coverage/lcov.info
+          name: frontend-coverage-lcov
+          path: frontend/coverage/lcov.info
 
