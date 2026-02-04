@@ -30,6 +30,13 @@ llm_queue_service = get_queue_service(
 minutes_router = APIRouter(tags=["Minutes"])
 
 
+def get_minute_version_options():
+    return [
+        selectinload(MinuteVersion.guardrail_results),
+        selectinload(MinuteVersion.hallucinations),
+    ]
+
+
 @minutes_router.get("/transcription/{transcription_id}/minutes")
 async def list_minutes_for_transcription(
     transcription_id: uuid.UUID, session: SQLSessionDep, user: UserDep
@@ -101,10 +108,7 @@ async def list_minute_versions(
         .where(Minute.id == minute_id)
         .options(
             # Load all minute_versions and their related data in one go
-            selectinload(Minute.minute_versions).options(
-                selectinload(MinuteVersion.guardrail_results),
-                selectinload(MinuteVersion.hallucinations),
-            ),
+            selectinload(Minute.minute_versions).options(*get_minute_version_options()),
             # Load transcription separately
             selectinload(Minute.transcription),
         )
@@ -131,10 +135,7 @@ async def list_minute_versions(
                 GuardrailResultResponse(
                     id=gr.id,
                     guardrail_type=str(gr.guardrail_type),
-                    
-                    # --- THE FIX IS HERE ---
-                    # The DB column is 'result', so use gr.result
-                    result=str(gr.result), 
+                    passed=gr.passed, 
                     score=gr.score,
                     reasoning=gr.reasoning,
                     error=gr.error
@@ -199,8 +200,7 @@ async def get_minute_version(minute_version_id: uuid.UUID, session: SQLSessionDe
         .where(MinuteVersion.id == minute_version_id)
         .options(
             selectinload(MinuteVersion.minute).selectinload(Minute.transcription),
-            selectinload(MinuteVersion.guardrail_results),
-            selectinload(MinuteVersion.hallucinations),
+            *get_minute_version_options(),
         )
     )
     minute_version = (await session.exec(query)).first()

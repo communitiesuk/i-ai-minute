@@ -14,12 +14,15 @@ export function GuardrailResponseComponent({
     guardrailResults: GuardrailResultResponse[]
     hallucinations?: LLMHallucination[] | null
 }) {
+    const GUARDRAIL_THRESHOLD = Number(process.env.NEXT_PUBLIC_GUARDRAIL_THRESHOLD) || 0.8;
+
     // DEBUG: Log component props
     console.log('[DEBUG] GuardrailResponseComponent - Received props:', {
         guardrailResults,
         hallucinations,
         guardrailCount: guardrailResults?.length || 0,
-        hallucinationCount: hallucinations?.length || 0
+        hallucinationCount: hallucinations?.length || 0,
+        threshold: GUARDRAIL_THRESHOLD
     })
 
     const hasGuardrails = guardrailResults && guardrailResults.length > 0
@@ -40,19 +43,16 @@ export function GuardrailResponseComponent({
 
     // 2. Robust Filter Logic (Handles 'FAIL', 'Fail', 'fail')
     const warnings = guardrailResults.filter((r) => {
-        const status = (r.result || '').toLowerCase()
         return (
-            status === 'warning' ||
-            status === 'fail' ||
-            (r.score !== null && r.score !== undefined && r.score < 0.8)
+            r.passed === false ||
+            (r.score !== null && r.score !== undefined && r.score < GUARDRAIL_THRESHOLD)
         )
     })
 
     const passes = guardrailResults.filter((r) => {
-        const status = (r.result || '').toLowerCase()
         return (
-            status === 'pass' &&
-            (r.score === null || r.score === undefined || r.score >= 0.8)
+            r.passed === true &&
+            (r.score === null || r.score === undefined || r.score >= GUARDRAIL_THRESHOLD)
         )
     })
 
@@ -99,21 +99,19 @@ export function GuardrailResponseComponent({
                     </div>
                     <div className="flex flex-col gap-2">
                         {warnings.map((result) => {
-                            const statusLower = (result.result || '').toLowerCase();
-                            const isFail = statusLower === 'fail';
                             return (
-                                <div key={result.id} className={`flex flex-col gap-1 text-sm p-2 rounded border ${isFail ? 'bg-red-50 border-red-100' : 'bg-white/50 border-yellow-100'}`}>
+                                <div key={result.id} className={`flex flex-col gap-1 text-sm p-2 rounded border ${result.passed === false ? 'bg-red-50 border-red-100' : 'bg-white/50 border-yellow-100'}`}>
                                     <div className="flex items-center gap-2">
-                                        {isFail ? <XCircle className="h-4 w-4 text-red-600" /> : <AlertTriangle className="h-4 w-4 text-yellow-600" />}
-                                        <span className={`font-medium capitalize ${isFail ? 'text-red-800' : 'text-yellow-800'}`}>
+                                        {result.passed === false ? <XCircle className="h-4 w-4 text-red-600" /> : <AlertTriangle className="h-4 w-4 text-yellow-600" />}
+                                        <span className={`font-medium capitalize ${result.passed === false ? 'text-red-800' : 'text-yellow-800'}`}>
                                             {result.guardrail_type.replace('_', ' ')}:
                                         </span>
-                                        <span className={`uppercase text-xs font-bold border px-1 rounded ${isFail ? 'border-red-600 text-red-700 bg-red-100' : 'border-yellow-600 text-yellow-800 bg-yellow-100'}`}>
-                                            {result.result}
+                                        <span className={`uppercase text-xs font-bold border px-1 rounded ${result.passed === false ? 'border-red-600 text-red-700 bg-red-100' : 'border-yellow-600 text-yellow-800 bg-yellow-100'}`}>
+                                            {result.passed ? 'PASSED (LOW SCORE)' : 'FAILED'}
                                         </span>
                                     </div>
                                     {result.reasoning && (
-                                        <p className={`${isFail ? 'text-red-900' : 'text-yellow-900'} italic`}>
+                                        <p className={`${result.passed === false ? 'text-red-900' : 'text-yellow-900'} italic`}>
                                             "{result.reasoning}"
                                         </p>
                                     )}

@@ -470,9 +470,9 @@ export type GuardrailResultResponse = {
    */
   guardrail_type: string
   /**
-   * Result
+   * Passed
    */
-  result: string
+  passed: boolean
   /**
    * Score
    */

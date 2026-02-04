@@ -264,8 +264,6 @@ export function MinuteEditor({
             textToCopy={contentToCopy}
             posthogEvent="editor_content_copied"
           />
-
-
           {hasCitations && (
             <Button
               variant="outline"

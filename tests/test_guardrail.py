@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from common.database.postgres_models import GuardrailResult, JobStatus
+from common.database.postgres_models import GuardrailResult, JobStatus, GuardrailType
 from common.services.minute_handler_service import MinuteHandlerService
 from common.types import GuardrailScore, MeetingType
 from uuid import uuid4
@@ -55,7 +55,28 @@ def test_save_guardrail_result(mock_session_local):
     assert str(saved_obj.minute_version_id) == minute_version_id
     assert saved_obj.score == 0.8
     assert saved_obj.reasoning == "Good"
-    assert saved_obj.result == "PASS"
+    assert saved_obj.passed is True
+    
+    mock_session.commit.assert_called_once()
+
+
+@patch("common.services.minute_handler_service.SessionLocal")
+def test_save_guardrail_error(mock_session_local):
+    mock_session = MagicMock()
+    mock_session_local.return_value.__enter__.return_value = mock_session
+    
+    minute_version_id = "123e4567-e89b-12d3-a456-426614174000"
+    error_msg = "Test error"
+    
+    MinuteHandlerService.save_guardrail_error(minute_version_id, error_msg)
+    
+    # Verify DB interaction
+    mock_session.add.assert_called_once()
+    saved_obj = mock_session.add.call_args[0][0]
+    assert isinstance(saved_obj, GuardrailResult)
+    assert str(saved_obj.minute_version_id) == minute_version_id
+    assert saved_obj.passed is False
+    assert saved_obj.error == error_msg
     
     mock_session.commit.assert_called_once()
 
@@ -107,25 +128,28 @@ async def test_process_minute_generation_handles_guardrail_failure():
          patch("common.services.minute_handler_service.MinuteHandlerService.generate_minutes", new_callable=AsyncMock) as mock_gen_minutes, \
          patch("common.services.minute_handler_service.MinuteHandlerService.calculate_accuracy_score", new_callable=AsyncMock) as mock_calc_score, \
          patch("common.services.minute_handler_service.MinuteHandlerService.save_guardrail_result") as mock_save_result, \
+         patch("common.services.minute_handler_service.MinuteHandlerService.save_guardrail_error") as mock_save_error, \
          patch("common.services.minute_handler_service.MinuteHandlerService.update_minute_version") as mock_update_mv:
         
         mock_get_mv.return_value = mock_minute_version
         mock_predict.return_value = MeetingType.standard
-        mock_gen_minutes.return_value = ("<html>Minutes</html>", [])
-        
-        # Guardrail check raises exception
-        mock_calc_score.side_effect = Exception("Guardrail failed")
+        with patch.object(MinuteHandlerService, 'save_guardrail_error', mock_save_error):
+             mock_gen_minutes.return_value = ("<html>Minutes</html>", [])
+             
+             # Guardrail check raises exception
+             mock_calc_score.side_effect = Exception("Guardrail failed")
 
-        # Execute
-        await MinuteHandlerService.process_minute_generation_message(mock_minute_version.id)
+             # Execute
+             await MinuteHandlerService.process_minute_generation_message(mock_minute_version.id)
 
-        # Verify
-        mock_calc_score.assert_called_once()
-        mock_save_result.assert_not_called()
-        # Should still complete effectively
-        mock_update_mv.assert_called_with(
-            mock_minute_version.id, 
-            html_content="<html>Minutes</html>", 
-            hallucinations=[], 
-            status=JobStatus.COMPLETED
-        )
+             # Verify
+             mock_calc_score.assert_called_once()
+             mock_save_result.assert_not_called()
+             mock_save_error.assert_called_once()
+             # Should still complete effectively
+             mock_update_mv.assert_called_with(
+                 mock_minute_version.id, 
+                 html_content="<html>Minutes</html>", 
+                 hallucinations=[], 
+                 status=JobStatus.COMPLETED
+             )

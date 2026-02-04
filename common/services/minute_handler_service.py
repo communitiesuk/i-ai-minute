@@ -13,7 +13,6 @@ from common.database.postgres_models import (
     DialogueEntry, 
     GuardrailResult, 
     GuardrailType, 
-    GuardrailStatus, 
     Hallucination, 
     JobStatus, 
     Minute, 
@@ -66,12 +65,12 @@ class MinuteHandlerService:
     ) -> None:
         with SessionLocal() as session:
             # Determine Pass/Fail based on a threshold (e.g. 0.7)
-            status = GuardrailStatus.PASS if score.score > 0.7 else GuardrailStatus.WARNING
+            passed = score.score > 0.7
             
             guardrail_result = GuardrailResult(
                 minute_version_id=minute_version_id,
                 guardrail_type=GuardrailType.HALLUCINATION,
-                status=status,
+                passed=passed,
                 score=score.score,
                 reasoning=score.reasoning,
             )
@@ -90,7 +89,7 @@ class MinuteHandlerService:
             guardrail_result = GuardrailResult(
                 minute_version_id=minute_version_id,
                 guardrail_type=GuardrailType.HALLUCINATION,
-                status=GuardrailStatus.FAIL,
+                passed=False,
                 score=0.0,
                 reasoning="System Error: Could not verify accuracy.",
                 error=error_message

@@ -51,17 +51,13 @@ class ContentSource(StrEnum):
     INITIAL_GENERATION = auto()
 
 
-# --- FIXED: Capitalized 'Type' ---
 class GuardrailType(StrEnum):
     HALLUCINATION = auto()
     TOXICITY = auto()
     COMPLETENESS = auto()
 
 
-class GuardrailStatus(StrEnum):
-    PASS = auto()
-    WARNING = auto()
-    FAIL = auto()
+
    
 
 class MinuteVersion(BaseTableMixin, table=True):
@@ -237,11 +233,8 @@ class GuardrailResult(BaseTableMixin, table=True):
     updated_datetime: datetime = Field(sa_column=updated_datetime_column(), default=None)
     minute_version_id: UUID | None = Field(default=None, foreign_key="minute_version.id", ondelete="CASCADE")
     minute_version: "MinuteVersion" = Relationship(back_populates="guardrail_results")
-    
-    # --- UPDATED: Use the Enums explicitly ---
     guardrail_type: GuardrailType = Field(sa_column=Column(Enum(GuardrailType)), description="Type of check")
-    result: GuardrailStatus = Field(sa_column=Column(Enum(GuardrailStatus)), description="Pass/Fail status")
-    
+    passed: bool = Field(description="Whether the guardrail check passed")
     score: float | None = Field(default=None, description="Confidence Score assigned by the guardrail check")
     reasoning: str | None = Field(default=None, description="Reasoning behind the guardrail result")
     error: str | None = Field(default=None, description="Error message if the guardrail check failed")
