@@ -59,7 +59,6 @@ jobs:
         run: |
           cp .env.example .env
 
-      - name: Run backend tests
       - name: Create test data directory
         run: |
           mkdir -p .data/test_audio/normal
