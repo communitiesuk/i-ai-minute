@@ -39,10 +39,9 @@ class AzureSpeechAdapter(TranscriptionAdapter):
     )
     async def start(cls, audio_file_path_or_recording: Path | Recording) -> TranscriptionJobMessageData:
         """Transcribe using Azure Speech-to-Text API."""
-        # Use your existing Azure transcription function
-        """
-        Async version of transcribe audio using Azure Speech-to-Text API
-        """
+        if not isinstance(audio_file_path_or_recording, Path):
+            msg = "AzureSpeechAdapter only accepts Path objects"
+            raise TypeError(msg)
 
         with sentry_sdk.start_transaction(op="process", name="read_file_before_azure_transcribe") as transaction:
             async with aiofiles.open(audio_file_path_or_recording, "rb") as audio_file:
