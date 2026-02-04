@@ -28,33 +28,65 @@ class OllamaModelAdapter(ModelAdapter):
         self._kwargs = kwargs
 
     async def structured_chat(self, messages: list[dict[str, str]], response_format: type[T]) -> T:
-        # Get the schema and extract just the properties for clearer instructions
+        # Get the full schema
         schema = response_format.model_json_schema()
-        
-        # Build a clearer instruction that focuses on the actual fields, not the full schema
-        properties = schema.get("properties", {})
-        field_descriptions = []
-        for field_name, field_info in properties.items():
-            field_type = field_info.get("type", "string")
-            field_desc = field_info.get("description", "")
-            field_descriptions.append(f'  "{field_name}": <{field_type}> {field_desc}')
-        
-        fields_str = "\n".join(field_descriptions)
-        
+
+        def parse_schema(s):
+            if "type" not in s:
+                if "anyOf" in s:
+                    return " | ".join([parse_schema(x) for x in s["anyOf"]])
+                return "any"
+
+            type_ = s["type"]
+            if type_ == "object":
+                props = s.get("properties", {})
+                obj_repr = "{\n"
+                for name, info in props.items():
+                    desc = f" // {info.get('description', '')}" if info.get("description") else ""
+                    obj_repr += f'  "{name}": {parse_schema(info)},{desc}\n'
+                obj_repr += "}"
+                return obj_repr
+            elif type_ == "array":
+                items = s.get("items", {})
+                return f"[{parse_schema(items)}]"
+            elif type_ == "string":
+                return '"string"'
+            elif type_ == "integer" or type_ == "number":
+                return "number"
+            elif type_ == "boolean":
+                return "boolean"
+            return type_
+
+        # Resolve $defs if present
+        def resolve_refs(s, root_schema):
+            if isinstance(s, dict):
+                if "$ref" in s:
+                    ref_path = s["$ref"].split("/")
+                    ref_node = root_schema
+                    for part in ref_path[1:]:
+                        ref_node = ref_node[part]
+                    return resolve_refs(ref_node, root_schema)
+                return {k: resolve_refs(v, root_schema) for k, v in s.items()}
+            elif isinstance(s, list):
+                return [resolve_refs(x, root_schema) for x in s]
+            return s
+
+        resolved_schema = resolve_refs(schema, schema)
+        json_template = parse_schema(resolved_schema)
+
         json_instruction = f"""
 
 You must respond with ONLY valid JSON in this exact format (no markdown, no code blocks):
-{{
-{fields_str}
-}}
+{json_template}
 
-Provide actual values for each field, not the schema definition."""
+Provide actual values for each field, not the type definitions or placeholders like <string>."""
 
         modified_messages = messages.copy()
         if modified_messages:
             last_msg = modified_messages[-1].copy()
             last_msg["content"] = last_msg["content"] + json_instruction
             modified_messages[-1] = last_msg
+
 
         response = await self.async_client.chat.completions.create(
             model=self._model,
