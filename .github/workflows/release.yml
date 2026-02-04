@@ -15,7 +15,7 @@ on:
 
 jobs:
   set-vars:
-    if: false # TODO: Re-enable when AWS secrets and SLACK_WEBHOOK_URL are configured (requires build.yml to be enabled)
+    if: false # TODO: JIRA-241 Re-enable when AWS secrets and SLACK_WEBHOOK_URL are configured (requires build.yml to be enabled)
     runs-on: ubuntu-latest
     outputs:
       app-name: ${{ steps.export.outputs.app-name }}
@@ -105,7 +105,7 @@ jobs:
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   stop-runner:
-    if: false # TODO: Re-enable when set-vars is re-enabled
+    if: false # TODO: JIRA-241 Re-enable when set-vars is re-enabled
     needs:
       - set-vars
       - start-runner
