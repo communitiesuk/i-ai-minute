@@ -4,6 +4,8 @@ name: tests
 
 env:
   DOCKER_BUILDKIT: 1
+  PYTHON_VERSION: "3.12" 
+  POETRY_VERSION: "2.3.2"
 
 
 on:
@@ -33,9 +35,7 @@ on:
 
 jobs:
   backend_tests:
-    env: 
-      PYTHON_VERSION: "3.12" 
-      POETRY_VERSION: "2.3.2"
+   
     uses: ./.github/workflows/backend-tests.yml
     with:
       python_version: ${{ env.PYTHON_VERSION }}
