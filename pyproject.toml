@@ -1,8 +1,3 @@
-[tool.ruff]
-line-length = 120
-target-version = 'py312'
-fix = true
-
 [tool.cruft]
 skip = [
     # general_paths
@@ -85,10 +80,46 @@ playwright = "^1.45"
 pytest-playwright = "^0.5"
 ipykernel = "^6.29.5"
 beautifulsoup4 = "^4.13.3"
+mypy = "^1.19.1"
+types-aiofiles = "^25.1.0.20251011"
+types-cffi = "^1.17.0.20250915"
+types-colorama = "^0.4.15.20250801"
+types-decorator = "^5.2.0.20251101"
+types-docutils = "^0.22.3.20251115"
+types-gevent = "^25.9.0.20251228"
+types-greenlet = "^3.3.0.20251206"
+types-grpcio = "^1.0.0.20251009"
+types-grpcio-status = "^1.0.0.20250506"
+types-jsonschema = "^4.26.0.20260109"
+types-pexpect = "^4.9.0.20250916"
+types-protobuf = "^6.32.1.20251210"
+types-psutil = "^7.2.1.20260116"
+types-psycopg2 = "^2.9.21.20251012"
+types-pyasn1 = "^0.6.0.20250914"
+types-pycurl = "^7.45.7.20251101"
+types-pygments = "^2.19.0.20251121"
+types-pysocks = "^1.7.1.20251001"
+types-python-dateutil = "^2.9.0.20251115"
+types-pytz = "^2025.2.0.20251108"
+types-pyyaml = "^6.0.12.20250915"
+types-requests = "^2.32.4.20260107"
+types-setuptools = "^80.9.0.20251223"
+types-six = "^1.17.0.20251009"
+types-tensorflow = "^2.18.0.20260121"
+types-tqdm = "^4.67.0.20250809"
+types-ujson = "^5.10.0.20250822"
+types-aioboto3 = "^15.5.0"
+types-botocore = "^1.0.2"
+types-boto3 = "^1.42.34"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 120
+target-version = 'py312'
+fix = true
 
 [tool.ruff.format]
 exclude = ["data/*"]
@@ -101,8 +132,9 @@ select = [
     "PT", "PTH", "PYI", "RET", "RSE", "RUF", "SIM", "SLF", "SLOT",
     "TCH", "TD", "TID", "UP", "YTT"
 ]
-exclude = ["out/*"]
-ignore = ["COM812", "DJ001", "RET505", "RET508", "PLR0913", "S318","ISC001"]
+# TODO: Decide on a structure for evals folder and add ruff support properly
+exclude = ["out/*", "viewer/*", "alembic/*"]
+ignore = ["COM812", "DJ001", "RET505", "RET508", "PLR0913", "S318","ISC001","PLR0912","C901","PLR0912"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["backend", "frontend"]
@@ -111,3 +143,16 @@ known-first-party = ["backend", "frontend"]
 "tests/*" = ["S101", "S106", "PLR0913", "PLR0915", "PLR2004", "TD003", "S311"]
 "*/tests/*" = ["S101", "S106", "PLR0913", "PLR0915", "PLR2004", "TD003"]
 "*/tests_playwright/*" = ["S101", "S106", "PLR0913", "PLR2004", "TD003"]
+
+[tool.mypy]
+warn_unused_configs = true
+warn_return_any = true
+warn_unused_ignores = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+strict_optional = true
+check_untyped_defs = true
+no_implicit_optional = true
+# terraform: non production diagram scripts using untyped diagrams
+# TODO: Decide on a structure for evals and viewer folder and add mypy support properly
+exclude = ["alembic/*", "tests/*", "terraform/*", "viewer/*", "evals/*"]

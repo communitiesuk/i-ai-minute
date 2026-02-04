@@ -120,7 +120,12 @@ class MinuteHandlerService:
         except Exception as e:
             raise MinuteGenerationFailedError from e
         try:
-            meeting_type = cls.predict_meeting(minute_version.minute.transcription.dialogue_entries)
+            dialogue_entries = minute_version.minute.transcription.dialogue_entries
+            if not dialogue_entries:
+                msg = f"Transcription for minute {minute_version.minute_id} has no dialogue entries"
+                raise MinuteGenerationFailedError(msg)
+
+            meeting_type = cls.predict_meeting(dialogue_entries)
             logger.info("%s: Predicted minute version %s", minute_version.minute_id, meeting_type)
             html_content, hallucinations = await cls.generate_minutes(meeting_type, minute_version.minute)
             cls.update_minute_version(
@@ -149,10 +154,15 @@ class MinuteHandlerService:
             raise MinuteGenerationFailedError(msg)
 
         try:
+            transcript = source_minute_version.minute.transcription.dialogue_entries
+            if not transcript:
+                msg = "Source minute version has no transcript"
+                raise MinuteGenerationFailedError(msg)
+
             edited_string, hallucinations = await cls.edit_minutes_with_ai(
                 minutes=source_minute_version.html_content,
                 edit_instructions=target_minute_version.ai_edit_instructions,
-                transcript=source_minute_version.minute.transcription.dialogue_entries,
+                transcript=transcript,
             )
             cls.update_minute_version(
                 minute_version_id=target_minute_version.id,
@@ -166,7 +176,7 @@ class MinuteHandlerService:
             raise MinuteGenerationFailedError from e
 
     @classmethod
-    async def generate_minute_from_user_template(cls, minute: Minute):
+    async def generate_minute_from_user_template(cls, minute: Minute) -> MinuteAndHallucinations:
         with SessionLocal() as session:
             template = session.get(
                 UserTemplate, minute.user_template_id, options=[selectinload(UserTemplate.questions)]
@@ -184,15 +194,23 @@ class MinuteHandlerService:
         meeting_type: MeetingType,
         minute: Minute,
     ) -> MinuteAndHallucinations:
+        dialogue_entries = minute.transcription.dialogue_entries
+        if not dialogue_entries:
+            msg = f"Minute {minute.id} has no dialogue entries"
+            raise MinuteGenerationFailedError(msg)
+
+        result: str
+        hallucinations: list[LLMHallucination] | None
+
         match meeting_type:
             case MeetingType.too_short:
-                result, hallucinations = cls.handle_bad_transcript(minute.transcription.dialogue_entries)
+                result, hallucinations = cls.handle_bad_transcript(dialogue_entries)
             case MeetingType.short:
-                result, hallucinations = await cls.generate_basic_minutes(minute.transcription.dialogue_entries)
+                result, hallucinations = await cls.generate_basic_minutes(dialogue_entries)
             case _:
                 result, hallucinations = await cls.generate_full_minutes(minute)
-        result = mistune.html(result)
-        return cast(str, result), hallucinations
+        html_result = mistune.html(result)
+        return cast(str, html_result), hallucinations
 
     @classmethod
     async def generate_full_minutes(cls, minute: Minute) -> MinuteAndHallucinations:

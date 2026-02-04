@@ -199,6 +199,10 @@ class LLMHallucination(BaseModel):
     hallucination_reason: str | None = Field(description="Reason for hallucination", default=None)
 
 
+class LLMHallucinationList(BaseModel):
+    hallucinations: list[LLMHallucination] = Field(description="List of detected hallucinations")
+
+
 MinuteAndHallucinations = tuple[str, list[LLMHallucination] | None]
 
 

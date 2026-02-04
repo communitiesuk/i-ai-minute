@@ -1,6 +1,7 @@
-import logging
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Any
 
 import aioboto3
 import aiofiles
@@ -10,11 +11,10 @@ from common.services.storage_services.base import StorageService
 from common.settings import get_settings
 
 settings = get_settings()
-logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
-async def _create_boto3_s3_client():
+async def _create_boto3_s3_client() -> AsyncGenerator[Any, None]:
     async_session = aioboto3.Session()
     async with (
         async_session.client("s3", region_name=settings.AWS_REGION) as s3,
@@ -41,7 +41,7 @@ class S3StorageService(StorageService):
     @classmethod
     async def generate_presigned_url_put_object(cls, key: str, expiry_seconds: int) -> str:
         async with _create_boto3_s3_client() as session:
-            return await session.generate_presigned_url(
+            url: str = await session.generate_presigned_url(
                 ClientMethod="put_object",
                 Params={
                     "Bucket": settings.DATA_S3_BUCKET,
@@ -50,11 +50,12 @@ class S3StorageService(StorageService):
                 ExpiresIn=expiry_seconds,
                 HttpMethod="PUT",
             )
+            return url
 
     @classmethod
     async def generate_presigned_url_get_object(cls, key: str, filename: str, expiry_seconds: int) -> str:
         async with _create_boto3_s3_client() as session:
-            return await session.generate_presigned_url(
+            url: str = await session.generate_presigned_url(
                 ClientMethod="get_object",
                 Params={
                     "Bucket": settings.DATA_S3_BUCKET,
@@ -63,6 +64,7 @@ class S3StorageService(StorageService):
                 },
                 ExpiresIn=expiry_seconds,
             )
+            return url
 
     @classmethod
     async def check_object_exists(cls, key: str) -> bool:
