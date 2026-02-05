@@ -1,9 +1,9 @@
 # Put action within a raw block so that the curly bracket expressions aren't picked up by the cookiecutter
 #
 name: build-push
-on:
-  push:
-    branches: "**"
+# on:
+#   push:
+#     branches: "**"
 
 jobs:
   frontend:
