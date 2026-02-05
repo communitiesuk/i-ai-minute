@@ -38,7 +38,11 @@ from common.types import (
 
 settings = get_settings()
 
+
+
 logger = logging.getLogger(__name__)
+
+THRESHOLD_FOR_PASSING_ACCURACY_CHECK = 0.7  # This can be adjusted based on requirements
 
 
 class MinuteGenerationFailedError(Exception):
@@ -65,7 +69,7 @@ class MinuteHandlerService:
     ) -> None:
         with SessionLocal() as session:
             # Determine Pass/Fail based on a threshold (e.g. 0.7)
-            passed = score.score > 0.7
+            passed = score.score > THRESHOLD_FOR_PASSING_ACCURACY_CHECK
             
             guardrail_result = GuardrailResult(
                 minute_version_id=minute_version_id,
@@ -185,7 +189,7 @@ class MinuteHandlerService:
             try:
                 accuracy_score = await cls.calculate_accuracy_score(
                     minute=html_content,
-                    transcript=minute_version.minute.transcription.dialogue_entries,
+                    transcript=dialogue_entries,
                 )
                 cls.save_guardrail_result(minute_version.id, accuracy_score)
                 logger.info("%s: Saved guardrail result: %s", minute_version.minute_id, accuracy_score)
@@ -203,7 +207,7 @@ class MinuteHandlerService:
             )
 
         except Exception as e:
-            print(f"DEBUG: Internal Error: {e}")
+            logger.debug(f"Internal error: {e}")
             cls.update_minute_version(minute_version.id, status=JobStatus.FAILED, error=str(e))
             raise MinuteGenerationFailedError from e
 
@@ -238,7 +242,7 @@ class MinuteHandlerService:
             try:
                 accuracy_score = await cls.calculate_accuracy_score(
                     minute=edited_string,
-                    transcript=source_minute_version.minute.transcription.dialogue_entries,
+                    transcript=transcript,
                 )
                 cls.save_guardrail_result(target_minute_version.id, accuracy_score)
                 logger.info("%s: Saved guardrail result for edit: %s", target_minute_version.minute_id, accuracy_score)

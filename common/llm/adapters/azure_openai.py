@@ -41,9 +41,12 @@ class OpenAIModelAdapter(ModelAdapter):
 
 
         endpoint = azure_endpoint.rstrip("/")
-        arguments_for_client["base_url"] = f"{endpoint}/deployments/{azure_deployment}"
-
-        self.async_azure_client = AsyncAzureOpenAI(**arguments_for_client)
+        base_url = f"{endpoint}/endpoint/deployments/{azure_deployment}"
+        self.async_azure_client = AsyncAzureOpenAI(
+            base_url=base_url,
+            api_version=api_version,
+            api_key=api_key,
+        )   
         self._kwargs = kwargs
 
     async def structured_chat(self, messages: list[dict[str, str]], response_format: type[T]) -> T:

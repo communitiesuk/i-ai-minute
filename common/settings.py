@@ -192,6 +192,10 @@ class Settings(BaseSettings):
         default=None,
         description="HuggingFace token required for Whisply speaker diarization",
     )
+    WHISPER_URL: str = Field(
+        default="http://localhost:11434/v1",
+        description="Base URL for faster-whisper-server providing OpenAI compatible API for transcription",
+    )
     OLLAMA_BASE_URL: str = Field(default="http://localhost:11434/v1")
 
     # use a dotenv file for local development

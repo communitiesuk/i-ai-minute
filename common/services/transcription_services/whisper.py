@@ -31,7 +31,8 @@ class WhisperAdapter(TranscriptionAdapter):
             # However, the manager logic for SYNCHRONOUS adapters currently calls start(file_path).
             # So this branch might not be hit if the manager logic is correct.
             # But adapting to the signature:
-             raise ValueError("WhisperAdapter requires a local file path")
+            msg = "LLM returned schema definition instead of actual values"
+            raise ValueError(msg)
 
         logger.info("Starting transcription for file: %s", path)
         
@@ -50,10 +51,10 @@ class WhisperAdapter(TranscriptionAdapter):
                     response = await client.post(url, files=files, data=data)
                     response.raise_for_status()
                 except httpx.RequestError as exc:
-                    logger.error(f"An error occurred while requesting {exc.request.url!r}.")
+                    logger.error("An error occurred while requesting %r.",  exc.request.url)
                     raise
                 except httpx.HTTPStatusError as exc:
-                    logger.error(f"Error response {exc.response.status_code} while requesting {exc.request.url!r}.")
+                    logger.error("Error response %s while requesting %r.", exc.response.status_code, exc.request.url)
                     raise
 
                 result = response.json()
@@ -63,7 +64,7 @@ class WhisperAdapter(TranscriptionAdapter):
                 # Our format (TranscriptionJobMessageData.transcript): list[DialogueEntry]
                 # DialogueEntry = TypedDict("DialogueEntry", {"start": float, "end": float, "text": str, "speaker": int})
                 
-                transcript_entries = []
+                transcript_entries: list[DialogueEntry] = []
                 for segment in result.get("segments", []):
                     transcript_entries.append({
                         "start": segment.get("start"),
@@ -74,7 +75,8 @@ class WhisperAdapter(TranscriptionAdapter):
 
                 return TranscriptionJobMessageData(
                     job_name=path.name,
-                    transcript=transcript_entries,
+                    transcription_service=cls.name,
+                    transcript=cast(list[DialogueEntry], transcript_entries)
                     # We can store raw response or other metadata if needed, but for now just the transcript
                 )
 

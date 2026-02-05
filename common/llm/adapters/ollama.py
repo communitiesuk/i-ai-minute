@@ -19,6 +19,7 @@ settings = get_settings()
 logger = logging.getLogger(__name__)
 
 
+
 class OllamaModelAdapter(ModelAdapter):
     def __init__(
         self,
@@ -54,7 +55,7 @@ class OllamaModelAdapter(ModelAdapter):
         # Get the full schema
         schema = response_format.model_json_schema()
 
-        def parse_schema(s):
+        def parse_schema(s: Any) -> str:
             if "type" not in s:
                 if "anyOf" in s:
                     return " | ".join([parse_schema(x) for x in s["anyOf"]])
@@ -81,7 +82,7 @@ class OllamaModelAdapter(ModelAdapter):
             return type_
 
         # Resolve $defs if present
-        def resolve_refs(s, root_schema):
+        def resolve_refs(s: dict[str, Any], root_schema: dict[str, Any]) -> Any:
             if isinstance(s, dict):
                 if "$ref" in s:
                     ref_path = s["$ref"].split("/")

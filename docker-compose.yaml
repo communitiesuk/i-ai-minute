@@ -157,6 +157,8 @@ services:
     container_name: minute-ollama
     ports:
       - "11434:11434"
+    environment:
+      - OLLAMA_HOST=0.0.0.0
     volumes:
       - ollama_data:/root/.ollama
     entrypoint: /bin/sh -c "ollama serve & sleep 5 && ollama pull llama3.2 && wait"

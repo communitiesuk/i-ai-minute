@@ -1,3 +1,4 @@
+from typing import Any
 import uuid
 from datetime import UTC, datetime
 
@@ -30,7 +31,7 @@ llm_queue_service = get_queue_service(
 minutes_router = APIRouter(tags=["Minutes"])
 
 
-def get_minute_version_options():
+def get_minute_version_options() -> list[Any]:
     return [
         selectinload(MinuteVersion.guardrail_results),
         selectinload(MinuteVersion.hallucinations),

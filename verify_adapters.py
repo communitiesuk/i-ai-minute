@@ -5,7 +5,7 @@ from common.services.transcription_services.whisper import WhisperAdapter
 from common.llm.adapters.ollama import OllamaModelAdapter
 from common.types import TranscriptionJobMessageData
 
-async def test_whisper_adapter():
+async def test_whisper_adapter() -> None:
     print("Testing WhisperAdapter...")
     with patch("httpx.AsyncClient") as mock_client:
         mock_response = MagicMock()
@@ -39,14 +39,14 @@ async def test_whisper_adapter():
             assert WhisperAdapter.is_available() is True
             print("WhisperAdapter basic checks passed.")
 
-async def test_ollama_adapter():
+async def test_ollama_adapter() -> None:
     print("Testing OllamaModelAdapter...")
     adapter = OllamaModelAdapter(model="gemini-3-flash", base_url="http://localhost:11434/v1")
     assert adapter._model == "gemini-3-flash"
     assert adapter.async_client.base_url == "http://localhost:11434/v1/"
     print("OllamaModelAdapter basic checks passed.")
 
-async def main():
+async def main() -> None:
     await test_whisper_adapter()
     await test_ollama_adapter()
 
