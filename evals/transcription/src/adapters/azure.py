@@ -102,16 +102,13 @@ class AzureSTTAdapter(TranscriptionAdapter):
             logger.error(f"Azure Speech produced no transcription for {wav_path}")
             return "", (t1 - t0), {"error": "No phrases found", "diarization": []}
 
-        full_text = " ".join(phrase["text"] for phrase in phrases).strip()
-
         diarization = self._extract_diarization(full_response)
+        full_text = " ".join(phrase["text"] for phrase in phrases).strip()
 
         debug = {
             "mode": "post_api",
-            "recognized_segments": len(phrases),
-            "final_text_len_chars": len(full_text),
+            "phrases": phrases,
             "num_speakers": len(set(seg["speaker"] for seg in diarization)) if diarization else 0,
-            "num_segments": len(diarization) if diarization else 0,
             "diarization": diarization,
         }
 

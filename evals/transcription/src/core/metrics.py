@@ -11,15 +11,6 @@ _jiwer_transform = jiwer.Compose(
 )
 
 
-def normalise_text(s: str) -> str:
-    if not s:
-        return ""
-    result = _jiwer_transform(s)
-    if isinstance(result, list) and len(result) > 0:
-        return " ".join(result[0]) if isinstance(result[0], list) else " ".join(result)
-    return ""
-
-
 def compute_wer_metrics(refs: list[str], hyps: list[str]) -> dict:
     if not refs or not hyps:
         return {
