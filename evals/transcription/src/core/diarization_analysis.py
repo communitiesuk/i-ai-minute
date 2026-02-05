@@ -17,14 +17,6 @@ def compute_diarization_comparison(results: list) -> dict:
         hyp_samples = results[i]["samples"]
 
         per_sample_metrics = []
-        aggregated_metrics = {
-            "der": [],
-            "jer": [],
-            "miss": [],
-            "false_alarm": [],
-            "confusion": [],
-            "speaker_count_error": [],
-        }
 
         for ref_sample, hyp_sample in zip(ref_samples, hyp_samples):
             ref_diar = ref_sample.get("diarization", [])
@@ -34,7 +26,6 @@ def compute_diarization_comparison(results: list) -> dict:
                 continue
 
             metrics = compute_all_diarization_metrics(ref_diar, hyp_diar)
-
             per_sample_metrics.append(
                 {
                     "dataset_index": ref_sample["dataset_index"],
@@ -42,24 +33,27 @@ def compute_diarization_comparison(results: list) -> dict:
                 }
             )
 
-            aggregated_metrics["der"].append(metrics["der"]["der"])
-            aggregated_metrics["jer"].append(metrics["jer"]["jer"])
-            aggregated_metrics["miss"].append(metrics["component_breakdown"]["miss"])
-            aggregated_metrics["false_alarm"].append(metrics["component_breakdown"]["false_alarm"])
-            aggregated_metrics["confusion"].append(metrics["component_breakdown"]["confusion"])
-            aggregated_metrics["speaker_count_error"].append(
-                metrics["speaker_count"]["absolute_error"]
-            )
+        if not per_sample_metrics:
+            summary_metrics = {}
+        else:
+            metric_extractors = {
+                "der": lambda m: m["metrics"]["der"]["der"],
+                "jer": lambda m: m["metrics"]["jer"]["jer"],
+                "miss": lambda m: m["metrics"]["component_breakdown"]["miss"],
+                "false_alarm": lambda m: m["metrics"]["component_breakdown"]["false_alarm"],
+                "confusion": lambda m: m["metrics"]["component_breakdown"]["confusion"],
+                "speaker_count_error": lambda m: m["metrics"]["speaker_count"]["absolute_error"],
+            }
 
-        summary_metrics = {}
-        for metric_name, values in aggregated_metrics.items():
-            if values:
-                summary_metrics[metric_name] = {
-                    "mean": float(np.mean(values)),
+            summary_metrics = {
+                name: {
+                    "mean": float(np.mean(values := [extractor(m) for m in per_sample_metrics])),
                     "std": float(np.std(values)),
                     "min": float(np.min(values)),
                     "max": float(np.max(values)),
                 }
+                for name, extractor in metric_extractors.items()
+            }
 
         comparisons[f"{ref_engine}_vs_{hyp_engine}"] = {
             "reference_engine": ref_engine,
@@ -74,38 +68,30 @@ def compute_diarization_comparison(results: list) -> dict:
 
 def compute_adapter_diarization_metrics(results: list) -> dict:
     adapter_diarization_metrics = {}
+    
     for result in results:
         engine_name = result["summary"]["engine"]
         samples = result["samples"]
 
-        per_sample_metrics = []
-        for sample in samples:
-            ref_diar = sample.get("reference_diarization", [])
-            hyp_diar = sample.get("diarization", [])
-
-            if ref_diar and hyp_diar:
-                metrics = compute_all_diarization_metrics(ref_diar, hyp_diar)
-                per_sample_metrics.append(
-                    {
-                        "der": metrics["der"]["der"],
-                        "jer": metrics["jer"]["jer"],
-                        "miss": metrics["component_breakdown"]["miss"],
-                        "false_alarm": metrics["component_breakdown"]["false_alarm"],
-                        "confusion": metrics["component_breakdown"]["confusion"],
-                        "speaker_count_error": metrics["speaker_count"]["absolute_error"],
-                    }
-                )
+        per_sample_metrics = [
+            {
+                "der": (m := compute_all_diarization_metrics(
+                    sample["reference_diarization"], sample["diarization"]
+                ))["der"]["der"],
+                "jer": m["jer"]["jer"],
+                "miss": m["component_breakdown"]["miss"],
+                "false_alarm": m["component_breakdown"]["false_alarm"],
+                "confusion": m["component_breakdown"]["confusion"],
+                "speaker_count_error": m["speaker_count"]["absolute_error"],
+            }
+            for sample in samples
+            if sample.get("reference_diarization") and sample.get("diarization")
+        ]
 
         if per_sample_metrics:
             adapter_diarization_metrics[engine_name] = {
-                "der": float(np.mean([m["der"] for m in per_sample_metrics])),
-                "jer": float(np.mean([m["jer"] for m in per_sample_metrics])),
-                "miss": float(np.mean([m["miss"] for m in per_sample_metrics])),
-                "false_alarm": float(np.mean([m["false_alarm"] for m in per_sample_metrics])),
-                "confusion": float(np.mean([m["confusion"] for m in per_sample_metrics])),
-                "speaker_count_error": float(
-                    np.mean([m["speaker_count_error"] for m in per_sample_metrics])
-                ),
+                key: float(np.mean([m[key] for m in per_sample_metrics]))
+                for key in ["der", "jer", "miss", "false_alarm", "confusion", "speaker_count_error"]
             }
         else:
             adapter_diarization_metrics[engine_name] = None

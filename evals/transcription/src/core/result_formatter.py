@@ -2,7 +2,10 @@ import json
 import logging
 from pathlib import Path
 
-from .diarization_analysis import compute_adapter_diarization_metrics, compute_diarization_comparison
+from .diarization_analysis import (
+    compute_adapter_diarization_metrics,
+    compute_diarization_comparison,
+)
 from .diarization_metrics import compute_all_diarization_metrics
 
 logger = logging.getLogger(__name__)
@@ -57,10 +60,22 @@ def format_adapter_result(result: dict, adapter_diarization_metrics: dict) -> di
 
     entries = [format_entry(sample, adapter_diarization_metrics, engine_name) for sample in samples]
 
+    wer_metrics = summary.get("overall_wer_metrics", {})
+    wer_metrics_pct = {
+        "wer": wer_metrics.get("wer", 0.0) * 100.0,
+        "mer": wer_metrics.get("mer", 0.0) * 100.0,
+        "wil": wer_metrics.get("wil", 0.0) * 100.0,
+        "cer": wer_metrics.get("cer", 0.0) * 100.0,
+        "hits": wer_metrics.get("hits", 0),
+        "substitutions": wer_metrics.get("substitutions", 0),
+        "deletions": wer_metrics.get("deletions", 0),
+        "insertions": wer_metrics.get("insertions", 0),
+    }
+
     overall_results = {
         "num_samples": summary["num_samples"],
         "overall_wer_pct": summary["overall_wer_pct"],
-        "overall_wer_metrics": summary.get("overall_wer_metrics", {}),
+        "overall_wer_metrics": wer_metrics_pct,
         "per_sample_wer_min": summary["per_sample_wer_min"],
         "per_sample_wer_max": summary["per_sample_wer_max"],
         "per_sample_wer_mean": summary["per_sample_wer_mean"],

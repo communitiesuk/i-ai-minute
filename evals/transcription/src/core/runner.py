@@ -6,7 +6,6 @@ import numpy as np
 from tqdm import tqdm
 
 from .metrics import TimingAccumulator, compute_wer_metrics, compute_wer_pct
-from .result_formatter import save_results
 
 logger = logging.getLogger(__name__)
 
@@ -167,5 +166,3 @@ def run_engines_parallel(adapters_config, indices, *, dataset, wav_write_fn, dur
         output_results.append({"summary": summary, "samples": rows})
 
     return output_results
-
-

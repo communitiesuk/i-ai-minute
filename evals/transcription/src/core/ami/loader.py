@@ -1,3 +1,4 @@
+import json
 import logging
 from collections import defaultdict
 from pathlib import Path
@@ -147,14 +148,15 @@ class AMIDatasetLoader:
         mixed_audio = cache.load_audio(paths.wav)
         text = cache.load_transcript(paths.transcript)
 
-        # Load reference diarization from cache if available
         diarization_path = paths.wav.parent / f"{paths.wav.stem}_ref_diarization.json"
-        reference_diarization = []
-        if diarization_path.exists():
-            import json
+        if not diarization_path.exists():
+            raise FileNotFoundError(
+                f"Reference diarization file missing: {diarization_path}. "
+                "Cache entry exists but diarization transcript is missing."
+            )
 
-            with diarization_path.open("r") as f:
-                reference_diarization = json.load(f)
+        with diarization_path.open("r") as f:
+            reference_diarization = json.load(f)
 
         sample = _build_sample(mixed_audio, text, segment, idx, paths.wav, len(text.split()))
         sample["reference_diarization"] = reference_diarization
@@ -178,7 +180,6 @@ class AMIDatasetLoader:
         utterances = _apply_cutoff(utterances, segment.utterance_cutoff_time)
         mixed_audio, text = audio.mix_utterances(utterances)
 
-        # Extract ground truth diarization from utterances
         reference_diarization = []
         for utt in utterances:
             speaker_id = utt.get("speaker_id", "UNKNOWN")
@@ -198,11 +199,7 @@ class AMIDatasetLoader:
 
         cache.save_audio(paths.wav, mixed_audio)
         cache.save_transcript(paths.transcript, text)
-
-        # Save reference diarization to cache
         diarization_path = paths.wav.parent / f"{paths.wav.stem}_ref_diarization.json"
-        import json
-
         with diarization_path.open("w") as f:
             json.dump(reference_diarization, f)
 

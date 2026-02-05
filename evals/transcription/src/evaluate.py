@@ -9,7 +9,8 @@ from core.config import (
     WORKDIR,
 )
 from core.dataset import audio_duration_seconds, load_benchmark_dataset, to_wav_16k_mono
-from core.runner import run_engines_parallel, save_results
+from core.result_formatter import save_results
+from core.runner import run_engines_parallel
 
 logger = logging.getLogger(__name__)
 

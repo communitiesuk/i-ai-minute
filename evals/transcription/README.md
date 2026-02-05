@@ -76,46 +76,25 @@ Results are saved to `results/evaluation_results_YYYYMMDD_HHMMSS.json` with time
 - Azure language settings (currently `en-GB`)
 - Add/remove transcription engines
 
-## Results Interpretation
+## Output Format
 
 Results are saved as JSON in `results/evaluation_results_YYYYMMDD_HHMMSS.json`.
 
-### Structure
-```json
-{
-  "adapters": [
-    {
-      "name": "Azure Speech-to-Text",
-      "overall_results": {
-        "num_samples": 1,
-        "overall_wer_pct": 18.24,
-        "per_sample_wer_min": 18.24,
-        "per_sample_wer_max": 18.24,
-        "per_sample_wer_mean": 18.24,
-        "per_sample_wer_std": 0.0,
-        "rtf": 0.055,
-        "process_sec": 29.77,
-        "audio_sec": 542.85,
-        "diarization": {
-          "der": 44.98,
-          "jer": 14.45,
-          "miss": 26.44,
-          "false_alarm": 18.54,
-          "confusion": 0.0,
-          "speaker_count_error": 0.0
-        }
-      },
-      "entries": [
-        {
-          "dataset_index": 0,
-          "results": { "wer_pct": 18.24, "rtf": 0.055, ... },
-          "debug": { "ref_raw": "...", "hyp_raw": "...", "diarization": [...] }
-        }
-      ]
-    }
-  ]
-}
-```
+**Structure:**
+- `adapters[]` - Array of results per transcription engine
+  - `name` - Engine identifier
+  - `overall_results` - Aggregated metrics across all samples
+    - `num_samples` - Sample count
+    - `overall_wer_pct` - Overall Word Error Rate (%)
+    - `overall_wer_metrics` - Detailed WER breakdown (wer, mer, wil, cer as %, plus counts)
+    - `per_sample_wer_min/max/mean/std` - WER statistics (%)
+    - `rtf` - Real-time factor (processing_time / audio_duration)
+    - `process_sec`, `audio_sec` - Timing totals
+    - `diarization` - Speaker metrics (der, jer, miss, false_alarm, confusion as %, speaker_count_error)
+  - `entries[]` - Per-sample detailed results
+    - `dataset_index` - Sample identifier
+    - `results` - Sample metrics (wer_pct, wer_metrics, rtf, diarization)
+    - `debug` - Raw data (ref_raw, hyp_raw, diarization segments, engine_debug)
 
 ### Metrics
 
