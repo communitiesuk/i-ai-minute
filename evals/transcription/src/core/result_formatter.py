@@ -2,10 +2,7 @@ import json
 import logging
 from pathlib import Path
 
-from .diarization_analysis import (
-    compute_adapter_diarization_metrics,
-    compute_diarization_comparison,
-)
+from .diarization_analysis import compute_adapter_diarization_metrics
 from .diarization_metrics import compute_all_diarization_metrics
 
 logger = logging.getLogger(__name__)
@@ -98,45 +95,10 @@ def format_adapter_result(result: dict, adapter_diarization_metrics: dict) -> di
     }
 
 
-def log_diarization_comparison(diarization_comparison: dict):
-    if not diarization_comparison:
-        return
-
-    logger.info("\n=== Diarization Comparison Metrics ===")
-    for comparison_name, comparison_data in diarization_comparison.items():
-        logger.info("\n%s:", comparison_name)
-        summary = comparison_data["summary_metrics"]
-        if "der" in summary:
-            logger.info("  DER: %.2f%% (±%.2f)", summary["der"]["mean"], summary["der"]["std"])
-            logger.info(
-                "    - Miss: %.2f%% (±%.2f)", summary["miss"]["mean"], summary["miss"]["std"]
-            )
-            logger.info(
-                "    - False Alarm: %.2f%% (±%.2f)",
-                summary["false_alarm"]["mean"],
-                summary["false_alarm"]["std"],
-            )
-            logger.info(
-                "    - Confusion: %.2f%% (±%.2f)",
-                summary["confusion"]["mean"],
-                summary["confusion"]["std"],
-            )
-        if "jer" in summary:
-            logger.info("  JER: %.2f%% (±%.2f)", summary["jer"]["mean"], summary["jer"]["std"])
-        if "speaker_count_error" in summary:
-            logger.info(
-                "  Speaker Count Error: %.2f (±%.2f)",
-                summary["speaker_count_error"]["mean"],
-                summary["speaker_count_error"]["std"],
-            )
-
-
 def save_results(results: list, output_path: Path):
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    diarization_comparison = compute_diarization_comparison(results)
     adapter_diarization_metrics = compute_adapter_diarization_metrics(results)
-
     adapters = [format_adapter_result(r, adapter_diarization_metrics) for r in results]
 
     combined = {"adapters": adapters}
@@ -145,4 +107,3 @@ def save_results(results: list, output_path: Path):
         json.dump(combined, f, indent=2, ensure_ascii=False)
 
     logger.info("Results saved to %s", output_path)
-    log_diarization_comparison(diarization_comparison)
