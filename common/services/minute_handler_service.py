@@ -8,10 +8,21 @@ from sqlalchemy.orm import selectinload
 
 from common.convert_american_to_british_spelling import convert_american_to_british_spelling
 from common.database.postgres_database import SessionLocal
-from common.database.postgres_models import DialogueEntry, Hallucination, JobStatus, Minute, MinuteVersion, UserTemplate
+# Ensure these imports match your actual file structure
+from common.database.postgres_models import (
+    DialogueEntry, 
+    GuardrailResult, 
+    GuardrailType, 
+    Hallucination, 
+    JobStatus, 
+    Minute, 
+    MinuteVersion, 
+    UserTemplate
+)
 from common.format_transcript import transcript_as_speaker_and_utterance
 from common.llm.client import FastOrBestLLM, create_default_chatbot
 from common.prompts import (
+    get_accuracy_check_messages,
     get_ai_edit_initial_messages,
     get_basic_minutes_prompt,
 )
@@ -19,6 +30,7 @@ from common.services.template_manager import TemplateManager
 from common.settings import get_settings
 from common.templates.user_template import generate_user_template
 from common.types import (
+    GuardrailScore,
     LLMHallucination,
     MeetingType,
     MinuteAndHallucinations,
@@ -45,6 +57,45 @@ class MinuteHandlerService:
             hallucination_type=llm_hallucination.hallucination_type,
             minute_version_id=minute_version_id,
         )
+
+    @staticmethod
+    def save_guardrail_result(
+        minute_version_id: UUID,
+        score: GuardrailScore,
+    ) -> None:
+        with SessionLocal() as session:
+            # Determine Pass/Fail based on a threshold (e.g. 0.7)
+            passed = score.score > 0.7
+            
+            guardrail_result = GuardrailResult(
+                minute_version_id=minute_version_id,
+                guardrail_type=GuardrailType.HALLUCINATION,
+                passed=passed,
+                score=score.score,
+                reasoning=score.reasoning,
+            )
+            session.add(guardrail_result)
+            session.commit()
+
+    @staticmethod
+    def save_guardrail_error(
+        minute_version_id: UUID,
+        error_message: str
+    ) -> None:
+        """
+        New helper to save system errors (Patryk's Request)
+        """
+        with SessionLocal() as session:
+            guardrail_result = GuardrailResult(
+                minute_version_id=minute_version_id,
+                guardrail_type=GuardrailType.HALLUCINATION,
+                passed=False,
+                score=0.0,
+                reasoning="System Error: Could not verify accuracy.",
+                error=error_message
+            )
+            session.add(guardrail_result)
+            session.commit()
 
     @staticmethod
     def update_minute_version(
@@ -128,13 +179,31 @@ class MinuteHandlerService:
             meeting_type = cls.predict_meeting(dialogue_entries)
             logger.info("%s: Predicted minute version %s", minute_version.minute_id, meeting_type)
             html_content, hallucinations = await cls.generate_minutes(meeting_type, minute_version.minute)
+            
+            # 1. Post-processing: Run Guardrail Check BEFORE marking as completed
+            # This ensures the frontend doesn't show the summary until guardrails are ready
+            try:
+                accuracy_score = await cls.calculate_accuracy_score(
+                    minute=html_content,
+                    transcript=minute_version.minute.transcription.dialogue_entries,
+                )
+                cls.save_guardrail_result(minute_version.id, accuracy_score)
+                logger.info("%s: Saved guardrail result: %s", minute_version.minute_id, accuracy_score)
+            except Exception as e:
+                # Catch system errors (Timeout, API fail) and save them to DB
+                logger.exception("%s: Failed to run guardrail check", minute_version.minute_id)
+                cls.save_guardrail_error(minute_version.id, str(e))
+
+            # 2. Update the Minute (Success) - Now it becomes available to the frontend
             cls.update_minute_version(
                 minute_version.id,
                 html_content=html_content,
                 hallucinations=hallucinations,
                 status=JobStatus.COMPLETED,
             )
+
         except Exception as e:
+            print(f"DEBUG: Internal Error: {e}")
             cls.update_minute_version(minute_version.id, status=JobStatus.FAILED, error=str(e))
             raise MinuteGenerationFailedError from e
 
@@ -164,6 +233,20 @@ class MinuteHandlerService:
                 edit_instructions=target_minute_version.ai_edit_instructions,
                 transcript=transcript,
             )
+            
+            # 1. Run Guardrails on the Edited Version BEFORE marking as completed
+            try:
+                accuracy_score = await cls.calculate_accuracy_score(
+                    minute=edited_string,
+                    transcript=source_minute_version.minute.transcription.dialogue_entries,
+                )
+                cls.save_guardrail_result(target_minute_version.id, accuracy_score)
+                logger.info("%s: Saved guardrail result for edit: %s", target_minute_version.minute_id, accuracy_score)
+            except Exception as e:
+                logger.exception("%s: Failed to run guardrail check for edit", target_minute_version.minute_id)
+                cls.save_guardrail_error(target_minute_version.id, str(e))
+
+            # 2. Update Minute (Success) - Now it becomes available to the frontend
             cls.update_minute_version(
                 minute_version_id=target_minute_version.id,
                 status=JobStatus.COMPLETED,
@@ -271,3 +354,18 @@ class MinuteHandlerService:
         hallucinations = await chatbot.hallucination_check()
 
         return edited_minutes, hallucinations
+
+    @classmethod
+    async def calculate_accuracy_score(
+        cls,
+        minute: str,
+        transcript: list[DialogueEntry],
+    ) -> GuardrailScore:
+        # Use FAST model (Gemini Flash / Llama 3) for speed
+        chatbot = create_default_chatbot(FastOrBestLLM.FAST)
+        
+        score = await chatbot.structured_chat(
+            messages=get_accuracy_check_messages(minute, transcript),
+            response_format=GuardrailScore,
+        )
+        return score

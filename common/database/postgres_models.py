@@ -3,7 +3,8 @@ from enum import StrEnum, auto
 from typing import TypedDict
 from uuid import UUID, uuid4
 
-from sqlalchemy import TIMESTAMP, Column
+
+from sqlalchemy import TIMESTAMP, Column, Enum 
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped
 from sqlalchemy.sql.functions import now
@@ -50,6 +51,15 @@ class ContentSource(StrEnum):
     INITIAL_GENERATION = auto()
 
 
+class GuardrailType(StrEnum):
+    HALLUCINATION = auto()
+    TOXICITY = auto()
+    COMPLETENESS = auto()
+
+
+
+   
+
 class MinuteVersion(BaseTableMixin, table=True):
     __tablename__ = "minute_version"
     created_datetime: datetime = Field(sa_column=created_datetime_column(), default=None)
@@ -58,6 +68,10 @@ class MinuteVersion(BaseTableMixin, table=True):
     minute: Mapped["Minute"] = Relationship(back_populates="minute_versions")
     hallucinations: list["Hallucination"] = Relationship(back_populates="minute_version", cascade_delete=True)
     html_content: str = Field(default="", sa_column_kwargs={"server_default": ""})
+    guardrail_results: list["GuardrailResult"] = Relationship(
+        back_populates="minute_version",
+        cascade_delete=True
+    )
     status: JobStatus = Field(
         default=JobStatus.AWAITING_START, sa_column_kwargs={"server_default": JobStatus.AWAITING_START.name}
     )
@@ -211,3 +225,16 @@ class UserTemplate(BaseTableMixin, table=True):
         passive_deletes="all",
         sa_relationship_kwargs={"order_by": TemplateQuestion.position},
     )
+
+
+class GuardrailResult(BaseTableMixin, table=True):
+    __tablename__ = "guardrail_result"
+    created_datetime: datetime = Field(sa_column=created_datetime_column(), default=None)
+    updated_datetime: datetime = Field(sa_column=updated_datetime_column(), default=None)
+    minute_version_id: UUID | None = Field(default=None, foreign_key="minute_version.id", ondelete="CASCADE")
+    minute_version: "MinuteVersion" = Relationship(back_populates="guardrail_results")
+    guardrail_type: GuardrailType = Field(sa_column=Column(Enum(GuardrailType)), description="Type of check")
+    passed: bool = Field(description="Whether the guardrail check passed")
+    score: float | None = Field(default=None, description="Confidence Score assigned by the guardrail check")
+    reasoning: str | None = Field(default=None, description="Reasoning behind the guardrail result")
+    error: str | None = Field(default=None, description="Error message if the guardrail check failed")

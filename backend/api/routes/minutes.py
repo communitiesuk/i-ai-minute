@@ -4,13 +4,10 @@ from datetime import UTC, datetime
 from fastapi import APIRouter, HTTPException
 from sqlalchemy.orm import selectinload
 from sqlmodel import col, select
-
-from backend.api.dependencies import SQLSessionDep, UserDep
-from common.database.postgres_models import JobStatus, Minute, MinuteVersion, Transcription
-from common.services.queue_services import get_queue_service
-from common.settings import get_settings
 from common.types import (
     EditMessageData,
+    GuardrailResultResponse,
+    LLMHallucination,
     MinuteListItem,
     MinutesCreateRequest,
     MinuteVersionCreateRequest,
@@ -19,6 +16,11 @@ from common.types import (
     WorkerMessage,
 )
 
+from backend.api.dependencies import SQLSessionDep, UserDep
+from common.database.postgres_models import JobStatus, Minute, MinuteVersion, Transcription
+from common.services.queue_services import get_queue_service
+from common.settings import get_settings
+
 settings = get_settings()
 
 llm_queue_service = get_queue_service(
@@ -26,6 +28,13 @@ llm_queue_service = get_queue_service(
 )
 
 minutes_router = APIRouter(tags=["Minutes"])
+
+
+def get_minute_version_options():
+    return [
+        selectinload(MinuteVersion.guardrail_results),
+        selectinload(MinuteVersion.hallucinations),
+    ]
 
 
 @minutes_router.get("/transcription/{transcription_id}/minutes")
@@ -97,11 +106,20 @@ async def list_minute_versions(
     result = await session.exec(
         select(Minute)
         .where(Minute.id == minute_id)
-        .options(selectinload(Minute.minute_versions), selectinload(Minute.transcription))
-    )
+        .options(
+            # Load all minute_versions and their related data in one go
+            selectinload(Minute.minute_versions).options(*get_minute_version_options()),
+            # Load transcription separately
+            selectinload(Minute.transcription),
+        )
+
+        )
+    
     minute = result.first()
     if not minute or not minute.transcription.user_id or minute.transcription.user_id != user.id:
         raise HTTPException(404)
+
+
 
     return [
         MinuteVersionResponse(
@@ -113,10 +131,28 @@ async def list_minute_versions(
             ai_edit_instructions=version.ai_edit_instructions,
             html_content=version.html_content,
             content_source=version.content_source,
+            guardrail_results=[
+                GuardrailResultResponse(
+                    id=gr.id,
+                    guardrail_type=str(gr.guardrail_type),
+                    passed=gr.passed, 
+                    score=gr.score,
+                    reasoning=gr.reasoning,
+                    error=gr.error
+                )
+                for gr in version.guardrail_results
+            ],
+            hallucinations=[
+                LLMHallucination(
+                    hallucination_type=h.hallucination_type,
+                    hallucination_text=h.hallucination_text,
+                    hallucination_reason=h.hallucination_reason,
+                )
+                for h in version.hallucinations
+            ],
         )
         for version in minute.minute_versions
     ]
-
 
 @minutes_router.post("/minutes/{minute_id}/versions")
 async def create_minute_version(
@@ -152,6 +188,8 @@ async def create_minute_version(
         ai_edit_instructions=minute_version.ai_edit_instructions,
         html_content=minute_version.html_content,
         content_source=minute_version.content_source,
+        guardrail_results=[],
+        hallucinations=[],
     )
 
 
@@ -160,7 +198,10 @@ async def get_minute_version(minute_version_id: uuid.UUID, session: SQLSessionDe
     query = (
         select(MinuteVersion)
         .where(MinuteVersion.id == minute_version_id)
-        .options(selectinload(MinuteVersion.minute).selectinload(Minute.transcription))
+        .options(
+            selectinload(MinuteVersion.minute).selectinload(Minute.transcription),
+            *get_minute_version_options(),
+        )
     )
     minute_version = (await session.exec(query)).first()
     if (

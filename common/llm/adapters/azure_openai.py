@@ -21,16 +21,29 @@ class OpenAIModelAdapter(ModelAdapter):
         api_key: str,
         azure_endpoint: str,
         azure_deployment: str,
-        api_version: str = "2024-08-01-preview",
+        api_version: str = "2024-10-21",
         **kwargs: Any,
+
     ) -> None:
+
         self._model = model
-        self.async_azure_client = AsyncAzureOpenAI(
-            azure_endpoint=azure_endpoint,
-            api_key=api_key,
-            api_version=api_version,
-            azure_deployment=azure_deployment,
-        )
+        
+ 
+        if not azure_endpoint:
+            raise ValueError("Azure Endpoint is required for Azure OpenAI")
+        if not azure_deployment:
+            raise ValueError("Azure Deployment name is required for Azure OpenAI")
+    
+        arguments_for_client = {
+            "api_key": api_key,
+            "api_version": api_version,
+        }
+
+
+        endpoint = azure_endpoint.rstrip("/")
+        arguments_for_client["base_url"] = f"{endpoint}/deployments/{azure_deployment}"
+
+        self.async_azure_client = AsyncAzureOpenAI(**arguments_for_client)
         self._kwargs = kwargs
 
     async def structured_chat(self, messages: list[dict[str, str]], response_format: type[T]) -> T:

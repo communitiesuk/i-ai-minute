@@ -1,9 +1,12 @@
 import logging
 from uuid import UUID
 
+from pathlib import Path
+import tempfile
 from sqlalchemy.orm import selectinload
 from sqlmodel import col, select
-
+from openai import OpenAI  # We use the OpenAI client to talk to Faster-Whisper
+import json
 from common.audio.speakers import process_speakers_and_dialogue_entries
 from common.database.postgres_database import SessionLocal
 from common.database.postgres_models import Chat, JobStatus, Minute, Transcription
@@ -11,6 +14,7 @@ from common.generate_meeting_title import generate_meeting_title
 from common.llm.client import FastOrBestLLM, create_default_chatbot
 from common.prompts import get_chat_with_transcript_system_message
 from common.services.exceptions import InteractionFailedError, TranscriptionFailedError
+from common.services.storage_services import get_storage_service
 from common.services.transcription_services.transcription_manager import TranscriptionServiceManager
 from common.settings import get_settings
 from common.templates.citations import combine_consecutive_citations
@@ -168,6 +172,7 @@ class TranscriptionHandlerService:
             else:
                 # it's a new transcription job
                 cls.update_transcription(transcription.id, JobStatus.IN_PROGRESS)
+
                 transcription_job = await transcription_manager.perform_transcription_steps(transcription=transcription)
 
             if transcription_job.transcript:
