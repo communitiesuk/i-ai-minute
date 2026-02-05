@@ -5,6 +5,7 @@ venv
 .env
 .env.example
 .env.copy.example
+.env.local
 .git
 .venv
 __pycache__/
@@ -115,3 +116,5 @@ config/google-credentials.json
 /playwright/.cache/
 
 .whisply_temp/
+.env
+.env.local
