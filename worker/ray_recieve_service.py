@@ -3,13 +3,15 @@ import logging
 from typing import Any
 
 import ray
+from azure.servicebus import ServiceBusReceivedMessage
+from ray.actor import ActorClass, ActorHandle
 
 from common.services.exceptions import InteractionFailedError, TranscriptionFailedError
 from common.services.minute_handler_service import MinuteGenerationFailedError, MinuteHandlerService
 from common.services.queue_services.base import QueueService
 from common.services.transcription_handler_service import TranscriptionHandlerService
 from common.settings import get_settings
-from common.types import TaskType, WorkerMessage
+from common.types import EditMessageData, TaskType, TranscriptionJobMessageData, WorkerMessage
 from worker.healthcheck import HEARTBEAT_DIR
 
 logger = logging.getLogger(__name__)
@@ -18,23 +20,27 @@ ray_logger.setLevel(logging.WARNING)
 settings = get_settings()
 
 
-@ray.remote
-class HasBeenStopped:
-    def __init__(self):
+ReceiptHandle = str | ServiceBusReceivedMessage
+
+
+class _HasBeenStopped:
+    def __init__(self) -> None:
         self.stopped = False
 
-    def get(self):
+    def get(self) -> bool:
         return self.stopped
 
-    def set(self):
+    def set(self) -> None:
         self.stopped = True
 
 
+HasBeenStopped: ActorClass = ray.remote(_HasBeenStopped)
+
+
 # restart indefinitely, try each task only once
-@ray.remote(max_restarts=-1, max_task_retries=0)
-class RayTranscriptionService:
+class _RayTranscriptionService:
     def __init__(
-        self, transcription_queue_service: QueueService, llm_queue_service: QueueService, stopped: HasBeenStopped
+        self, transcription_queue_service: QueueService[Any], llm_queue_service: QueueService[Any], stopped: ActorHandle
     ) -> None:
         self.stopped = stopped
         self.transcription_queue_service = transcription_queue_service
@@ -51,9 +57,8 @@ class RayTranscriptionService:
             for message, receipt_handle in messages:
                 try:
                     logger.info("Received minute id for transcription: %s", message.id)
-                    transcription_job = await TranscriptionHandlerService.process_transcription(
-                        message.id, message.data
-                    )
+                    data = message.data if isinstance(message.data, TranscriptionJobMessageData) else None
+                    transcription_job = await TranscriptionHandlerService.process_transcription(message.id, data)
                 except TranscriptionFailedError:
                     logger.exception("Transcription failed for minute id: %s", message.id)
                 else:
@@ -75,9 +80,11 @@ class RayTranscriptionService:
             self.heartbeat_path.touch()
 
 
-@ray.remote(max_restarts=-1, max_task_retries=0)
-class RayLlmService:
-    def __init__(self, queue_service: QueueService, stopped: HasBeenStopped) -> None:
+RayTranscriptionService: ActorClass = ray.remote(max_restarts=-1, max_task_retries=0)(_RayTranscriptionService)
+
+
+class _RayLlmService:
+    def __init__(self, queue_service: QueueService[Any], stopped: ActorHandle) -> None:
         self.stopped = stopped
         self.queue_service = queue_service
         actor_id = ray.get_runtime_context().get_actor_id()
@@ -112,7 +119,7 @@ class RayLlmService:
 
             self.heartbeat_path.touch()
 
-    async def process_minute_task(self, message: WorkerMessage, receipt_handle: Any) -> None:
+    async def process_minute_task(self, message: WorkerMessage, receipt_handle: ReceiptHandle) -> None:
         try:
             logger.info("Received minute generation message for MinuteVersion id %s", message.id)
 
@@ -127,9 +134,13 @@ class RayLlmService:
             # If no error then complete the message
             self.queue_service.complete_message(receipt_handle)
 
-    async def process_edit_task(self, message: WorkerMessage, receipt_handle: Any) -> None:
+    async def process_edit_task(self, message: WorkerMessage, receipt_handle: ReceiptHandle) -> None:
         try:
             logger.info("Received minute edit message for minute id %s", message.id)
+            if not isinstance(message.data, EditMessageData):
+                logger.error("Invalid data type for edit message: %s", type(message.data))
+                self.queue_service.deadletter_message(message, receipt_handle)
+                return
             await MinuteHandlerService.process_minute_edit_message(
                 target_minute_version_id=message.id, source_minute_version_id=message.data.source_id
             )
@@ -141,7 +152,7 @@ class RayLlmService:
         else:
             self.queue_service.complete_message(receipt_handle=receipt_handle)
 
-    async def process_interactive_task(self, message: WorkerMessage, receipt_handle: Any) -> None:
+    async def process_interactive_task(self, message: WorkerMessage, receipt_handle: ReceiptHandle) -> None:
         try:
             logger.info("Received interactive mode message for chat id %s", message.id)
             await TranscriptionHandlerService.process_interactive_message(message.id)
@@ -151,3 +162,6 @@ class RayLlmService:
             self.queue_service.complete_message(receipt_handle=receipt_handle)
         else:
             self.queue_service.complete_message(receipt_handle=receipt_handle)
+
+
+RayLlmService: ActorClass = ray.remote(max_restarts=-1, max_task_retries=0)(_RayLlmService)

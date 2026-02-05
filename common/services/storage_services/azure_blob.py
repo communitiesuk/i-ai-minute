@@ -1,10 +1,11 @@
 import datetime
 import logging
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 import aiofiles
-from azure.storage.blob import ContainerSasPermissions, generate_blob_sas
+from azure.storage.blob import BlobSasPermissions, generate_blob_sas
 from azure.storage.blob.aio import ContainerClient
 
 from common.services.storage_services.base import StorageService
@@ -15,7 +16,13 @@ logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
-async def get_client():
+async def get_client() -> AsyncGenerator[ContainerClient, None]:
+    if not settings.AZURE_BLOB_CONNECTION_STRING:
+        msg = "AZURE_BLOB_CONNECTION_STRING must be set"
+        raise ValueError(msg)
+    if not settings.AZURE_UPLOADS_CONTAINER_NAME:
+        msg = "AZURE_UPLOADS_CONTAINER_NAME must be set"
+        raise ValueError(msg)
     async with ContainerClient.from_connection_string(
         settings.AZURE_BLOB_CONNECTION_STRING, settings.AZURE_UPLOADS_CONTAINER_NAME
     ) as container_client:
@@ -40,7 +47,7 @@ class AzureBlobStorageService(StorageService):
             await file.write(data)
 
     @classmethod
-    async def generate_presigned_url_put_object(cls, key: str, expiry_seconds: int):
+    async def generate_presigned_url_put_object(cls, key: str, expiry_seconds: int) -> str:
         async with get_client() as container_client:
             start_time = datetime.datetime.now(datetime.UTC)
             expiry_time = start_time + datetime.timedelta(seconds=expiry_seconds)
@@ -49,7 +56,7 @@ class AzureBlobStorageService(StorageService):
                 account_name=container_client.account_name,
                 container_name=container_client.container_name,
                 account_key=container_client.credential.account_key,
-                permission=ContainerSasPermissions(read=True, write=True, list=True),
+                permission=BlobSasPermissions(read=True, write=True, list=True),
                 expiry=expiry_time,
             )
             return f"{container_client.url}/{key}?{sas_token}"
@@ -64,7 +71,7 @@ class AzureBlobStorageService(StorageService):
                 account_name=container_client.account_name,
                 container_name=container_client.container_name,
                 account_key=container_client.credential.account_key,
-                permission=ContainerSasPermissions(read=True, write=True, list=True),
+                permission=BlobSasPermissions(read=True, write=True, list=True),
                 expiry=expiry_time,
                 content_disposition=f"attachment; filename={filename}",
             )
@@ -74,7 +81,8 @@ class AzureBlobStorageService(StorageService):
     async def check_object_exists(cls, key: str) -> bool:
         async with get_client() as container_client:
             blob_client = container_client.get_blob_client(blob=key)
-            return await blob_client.exists()
+            exists: bool = await blob_client.exists()
+            return exists
 
     @classmethod
     async def delete(cls, key: str) -> None:

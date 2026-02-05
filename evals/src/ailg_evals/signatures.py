@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 import dspy
@@ -37,4 +36,3 @@ class JudgeRatingSignature(dspy.Signature):
 
     rating: int = dspy.OutputField(desc="Integer 1-5")
     reason: str = dspy.OutputField(desc="Short explanation")
-

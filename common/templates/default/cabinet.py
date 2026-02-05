@@ -186,6 +186,9 @@ The transcript for the item you are contributing to is:
 
     @classmethod
     async def sections(cls, transcript: list[DialogueEntry] | None, agenda: str | None) -> list[str]:
+        if not transcript:
+            msg = "Cannot generate sections without transcript"
+            raise ValueError(msg)
         if not agenda:
             chatbot = create_default_chatbot(FastOrBestLLM.FAST)
             messages = get_sections_from_transcript_prompt(transcript=transcript)

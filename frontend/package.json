@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "next lint",
     "openapi-ts": "openapi-ts",
-    "prettier:fix": "prettier --write ."
+    "prettier:fix": "prettier --write .",
+    "prettier:check": "prettier --check ."
   },
   "dependencies": {
     "@hey-api/client-next": "^0.5.1",

@@ -1,5 +1,7 @@
 import logging
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from typing import Any
 
 import sentry_sdk
 import uvicorn
@@ -16,7 +18,7 @@ log = logging.getLogger("uvicorn")
 
 
 @asynccontextmanager
-async def lifespan(app_: FastAPI):  # noqa: ARG001
+async def lifespan(app_: FastAPI) -> AsyncGenerator[None, None]:  # noqa: ARG001
     log.info("Starting up...")
 
     await init_cleanup_scheduler()
@@ -29,7 +31,7 @@ async def lifespan(app_: FastAPI):  # noqa: ARG001
 # init sentry, if used
 if settings.SENTRY_DSN:
     if settings.ENVIRONMENT == "prod":
-        sentry_init_opts = {"traces_sample_rate": 1.0, "profile_session_sample_rate": 0.2}
+        sentry_init_opts: dict[str, Any] = {"traces_sample_rate": 1.0, "profile_session_sample_rate": 0.2}
     else:
         sentry_init_opts = {
             "send_default_pii": True,

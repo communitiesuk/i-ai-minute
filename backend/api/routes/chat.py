@@ -90,6 +90,8 @@ async def get_chat(
         raise HTTPException(status_code=404, detail="Transcription not found")
 
     chat = await session.get(Chat, chat_id)
+    if not chat:
+        raise HTTPException(status_code=404, detail="Chat not found")
     return ChatGetResponse(
         id=chat.id,
         created_datetime=chat.created_datetime,
@@ -101,7 +103,9 @@ async def get_chat(
 
 
 @chat_router.delete("/transcriptions/{transcription_id}/chat/{chat_id}", status_code=204)
-async def delete_chat(transcription_id: uuid.UUID, chat_id: uuid.UUID, session: SQLSessionDep, current_user: UserDep):
+async def delete_chat(
+    transcription_id: uuid.UUID, chat_id: uuid.UUID, session: SQLSessionDep, current_user: UserDep
+) -> None:
     """Delete a specific transcription by ID."""
     # First check if the transcription exists and belongs to the user
     transcription = await session.get(Transcription, transcription_id)
@@ -114,12 +118,12 @@ async def delete_chat(transcription_id: uuid.UUID, chat_id: uuid.UUID, session: 
 
 
 @chat_router.delete("/transcriptions/{transcription_id}/chat", status_code=204)
-async def delete_chats(transcription_id: uuid.UUID, session: SQLSessionDep, current_user: UserDep):
+async def delete_chats(transcription_id: uuid.UUID, session: SQLSessionDep, current_user: UserDep) -> None:
     # First check if the transcription exists and belongs to the user
     transcription = await session.get(Transcription, transcription_id)
     if not transcription or transcription.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Transcription not found")
-    await session.execute(delete(Chat).where(Chat.transcription_id == transcription_id))
+    await session.exec(delete(Chat).where(col(Chat.transcription_id == transcription_id)))
 
     # Delete the transcription
     await session.commit()
