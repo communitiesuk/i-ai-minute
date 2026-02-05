@@ -55,7 +55,6 @@ jobs:
           echo "docker-build-args=\"--build-arg NEXT_PUBLIC_SENTRY_DSN=${SENTRY_DSN} --build-arg NEXT_PUBLIC_POSTHOG_API_KEY=${POSTHOG_API_KEY}\"" >> $GITHUB_OUTPUT
 
   start-runner:
-    if: false # TODO: JIRA-241 Re-enable when AWS secrets, SENTRY_DSN, and POSTHOG_API_KEY are configured (also re-enable build.yml frontend job)
     uses: i-dot-ai/i-dot-ai-core-github-actions/.github/workflows/start-runner.yml@main
     needs: set-vars
     permissions: write-all
