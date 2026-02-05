@@ -33,7 +33,6 @@ on:
 
 jobs:
   backend_tests:
-   
     uses: ./.github/workflows/backend-tests.yml
     with:
       python_version: "3.12"
