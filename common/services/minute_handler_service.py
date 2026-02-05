@@ -203,6 +203,7 @@ class MinuteHandlerService:
             )
 
         except Exception as e:
+            print(f"DEBUG: Internal Error: {e}")
             cls.update_minute_version(minute_version.id, status=JobStatus.FAILED, error=str(e))
             raise MinuteGenerationFailedError from e
 
