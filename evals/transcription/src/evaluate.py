@@ -34,6 +34,13 @@ def run_evaluation(
         logger.info("Audio files cached in: %s", WORKDIR / "cache" / "processed")
         return
 
+    if not AZURE_SPEECH_KEY or not AZURE_SPEECH_REGION:
+        raise ValueError(
+            "Azure credentials not found. Please set AZURE_SPEECH_KEY and AZURE_SPEECH_REGION "
+            "environment variables to run transcription evaluation."
+        )
+
+    logger.info("Initializing Azure Speech-to-Text adapter...")
     azure_adapter = AzureSTTAdapter(
         speech_key=AZURE_SPEECH_KEY,
         speech_region=AZURE_SPEECH_REGION,
