@@ -1,52 +1,88 @@
-import re
-from difflib import SequenceMatcher
+import jiwer
 
-from jiwer import wer
-
-_unicode_replacements = [
-    ("'", "'"),
-    ("'", "'"),
-    (
-        """, '"'),
-    (""",
-        '"',
-    ),
-    ("–", " "),
-    ("—", " "),
-    ("…", " "),
-]
-
-_non_word = re.compile(r"[^\w\s']+", re.UNICODE)
-_ws = re.compile(r"\s+", re.UNICODE)
+_jiwer_transform = jiwer.Compose(
+    [
+        jiwer.ToLowerCase(),
+        jiwer.RemoveWhiteSpace(replace_by_space=True),
+        jiwer.RemoveMultipleSpaces(),
+        jiwer.RemovePunctuation(),
+        jiwer.ReduceToListOfListOfWords(),
+    ]
+)
 
 
 def normalise_text(s: str) -> str:
-    s = (s or "").strip().lower()
-    for old, new in _unicode_replacements:
-        s = s.replace(old, new)
-    s = _non_word.sub(" ", s)
-    return _ws.sub(" ", s).strip()
+    if not s:
+        return ""
+    result = _jiwer_transform(s)
+    if isinstance(result, list) and len(result) > 0:
+        return " ".join(result[0]) if isinstance(result[0], list) else " ".join(result)
+    return ""
 
 
-def compute_wer_pct(refs: list[str], hyps: list[str]) -> float:
-    return 100.0 * wer([normalise_text(r) for r in refs], [normalise_text(h) for h in hyps])
+def compute_wer_metrics(refs: list[str], hyps: list[str]) -> dict:
+    if not refs or not hyps:
+        return {
+            "wer": 0.0,
+            "mer": 0.0,
+            "wil": 0.0,
+            "cer": 0.0,
+            "hits": 0,
+            "substitutions": 0,
+            "deletions": 0,
+            "insertions": 0,
+        }
+
+    word_output = jiwer.process_words(
+        refs,
+        hyps,
+        reference_transform=_jiwer_transform,
+        hypothesis_transform=_jiwer_transform,
+    )
+
+    char_output = jiwer.process_characters(
+        refs,
+        hyps,
+        reference_transform=_jiwer_transform,
+        hypothesis_transform=_jiwer_transform,
+    )
+
+    return {
+        "wer": float(word_output.wer),
+        "mer": float(word_output.mer),
+        "wil": float(word_output.wil),
+        "cer": float(char_output.cer),
+        "hits": int(word_output.hits),
+        "substitutions": int(word_output.substitutions),
+        "deletions": int(word_output.deletions),
+        "insertions": int(word_output.insertions),
+    }
+
+
+def compute_wer_pct(refs: list[str], hyps: list[str], return_ops: bool = False):
+    metrics = compute_wer_metrics(refs, hyps)
+    wer_pct = metrics["wer"] * 100.0
+
+    if return_ops:
+        ops = {
+            "equal": metrics["hits"],
+            "replace": metrics["substitutions"],
+            "delete": metrics["deletions"],
+            "insert": metrics["insertions"],
+        }
+        return wer_pct, ops
+
+    return wer_pct
 
 
 def token_ops(a: str, b: str) -> dict:
-    a = (a or "").split()
-    b = (b or "").split()
-    sm = SequenceMatcher(a=a, b=b)
-    ops = {"equal": 0, "replace": 0, "delete": 0, "insert": 0}
-    for tag, i1, i2, j1, j2 in sm.get_opcodes():
-        if tag == "equal":
-            ops["equal"] += i2 - i1
-        elif tag == "replace":
-            ops["replace"] += max(i2 - i1, j2 - j1)
-        elif tag == "delete":
-            ops["delete"] += i2 - i1
-        elif tag == "insert":
-            ops["insert"] += j2 - j1
-    return ops
+    metrics = compute_wer_metrics([a], [b])
+    return {
+        "equal": metrics["hits"],
+        "replace": metrics["substitutions"],
+        "delete": metrics["deletions"],
+        "insert": metrics["insertions"],
+    }
 
 
 class TimingAccumulator:
