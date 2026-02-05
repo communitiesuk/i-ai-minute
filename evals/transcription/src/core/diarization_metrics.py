@@ -29,11 +29,11 @@ def compute_der(
     der_value = metric(ref_annotation, hyp_annotation)
     components = metric.compute_components(ref_annotation, hyp_annotation)
 
-    total = components['total']
+    total = components["total"]
     if total > 0:
-        miss_pct = (components['missed detection'] / total) * 100.0
-        fa_pct = (components['false alarm'] / total) * 100.0
-        confusion_pct = (components['confusion'] / total) * 100.0
+        miss_pct = (components["missed detection"] / total) * 100.0
+        fa_pct = (components["false alarm"] / total) * 100.0
+        confusion_pct = (components["confusion"] / total) * 100.0
     else:
         miss_pct = fa_pct = confusion_pct = 0.0
 

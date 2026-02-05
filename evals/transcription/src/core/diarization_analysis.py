@@ -5,16 +5,18 @@ from .diarization_metrics import compute_all_diarization_metrics
 
 def compute_adapter_diarization_metrics(results: list) -> dict:
     adapter_diarization_metrics = {}
-    
+
     for result in results:
         engine_name = result["summary"]["engine"]
         samples = result["samples"]
 
         per_sample_metrics = [
             {
-                "der": (m := compute_all_diarization_metrics(
-                    sample["reference_diarization"], sample["diarization"]
-                ))["der"]["der"],
+                "der": (
+                    m := compute_all_diarization_metrics(
+                        sample["reference_diarization"], sample["diarization"]
+                    )
+                )["der"]["der"],
                 "jer": m["jer"]["jer"],
                 "miss": m["component_breakdown"]["miss"],
                 "false_alarm": m["component_breakdown"]["false_alarm"],
