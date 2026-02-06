@@ -1,8 +1,6 @@
 import logging
 from pathlib import Path
 
-from common.audio.ffmpeg import get_duration
-
 from .ami import AMIDatasetLoader
 
 logger = logging.getLogger(__name__)
@@ -49,5 +47,3 @@ def _validate_dataset_contract(sample: dict):
     logger.debug("Sampling rate: %d", sampling_rate)
 
 
-def audio_duration_seconds(wav_path: str) -> float:
-    return get_duration(Path(wav_path))
