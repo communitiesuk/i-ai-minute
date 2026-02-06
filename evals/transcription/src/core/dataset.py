@@ -6,7 +6,7 @@ from typing import Any
 import ffmpeg
 import soundfile as sf
 
-from .ami_dataset import audio_duration_seconds as ami_audio_duration
+from common.audio.ffmpeg import get_duration
 from .ami_dataset import load_ami_dataset
 from ..constants import AUDIO_DIR, CACHE_DIR, STEREO_CHANNELS, TARGET_SAMPLE_RATE
 
@@ -62,4 +62,4 @@ def to_wav_16k_mono(example: dict[str, Any], idx: int) -> str:
 
 
 def audio_duration_seconds(wav_path: str) -> float:
-    return ami_audio_duration(wav_path)
+    return get_duration(Path(wav_path))
