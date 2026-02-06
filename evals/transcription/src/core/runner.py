@@ -23,7 +23,7 @@ def run_engine(adapter, indices, label, *, dataset, wav_write_fn, duration_fn):
         ref_raw = ex["text"]
         aud_sec = float(duration_fn(wav_path))
 
-        hyp_raw, proc_sec, dbg = adapter.transcribe_with_debug(wav_path)
+        hyp_raw, proc_sec, dbg = adapter.transcribe(wav_path)
 
         proc_sec = float(proc_sec)
         timing.add(aud_sec, proc_sec)
@@ -85,7 +85,7 @@ def run_engines_parallel(adapters_config, indices, *, dataset, wav_write_fn, dur
         ref_raw = ex["text"]
         aud_sec = float(duration_fn(wav_path))
 
-        hyp_raw, proc_sec, dbg = adapter.transcribe_with_debug(wav_path)
+        hyp_raw, proc_sec, dbg = adapter.transcribe(wav_path)
 
         proc_sec = float(proc_sec)
         ref_n = normalise_text(ref_raw)

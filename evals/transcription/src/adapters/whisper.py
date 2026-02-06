@@ -1,62 +1,35 @@
+import asyncio
 import logging
 import time
+from pathlib import Path
 
-import torch
-import whisper
+from common.services.transcription_services.whisply_local import WhisplyLocalAdapter
 
 from .base import TranscriptionAdapter
 
 logger = logging.getLogger(__name__)
 
 
-def _get_device():
-    if torch.cuda.is_available():
-        device = "cuda"
-        logger.info("Using CUDA for Whisper acceleration")
-    elif torch.backends.mps.is_available():
-        device = "mps"
-        logger.info("Using MPS (Apple Silicon) for Whisper acceleration")
-    else:
-        device = "cpu"
-        logger.info("Using CPU for Whisper (no GPU acceleration available)")
-    return device
-
-
 class WhisperAdapter(TranscriptionAdapter):
-    def __init__(self, model_name: str = "base", language: str = "en"):
+    def __init__(self, model_name: str = "large-v3-turbo", language: str = "en"):
         self.model_name = model_name
         self.language = language
-        self.device = _get_device()
-        self.model = whisper.load_model(model_name, device=self.device)
-        logger.info("Whisper model '%s' loaded on device: %s", model_name, self.device)
+        logger.info("Whisply adapter initialized with model: %s", model_name)
 
     def transcribe(self, wav_path: str):
         t0 = time.time()
-        out = self.model.transcribe(
-            wav_path,
-            language=self.language,
-            fp16=False,
-        )
-        t1 = time.time()
 
-        text = out.get("text", "") or ""
-        return text, (t1 - t0)
+        try:
+            result = asyncio.run(WhisplyLocalAdapter.start(Path(wav_path)))
+            t1 = time.time()
 
-    def transcribe_with_debug(self, wav_path: str):
-        t0 = time.time()
-        out = self.model.transcribe(
-            wav_path,
-            language=self.language,
-            fp16=False,
-        )
-        t1 = time.time()
+            dialogue_entries = result.transcript
+            full_text = " ".join(entry["text"] for entry in dialogue_entries).strip()
 
-        debug = {
-            "model": self.model_name,
-            "language": self.language,
-            "device": self.device,
-            "segments": len(out.get("segments", [])),
-        }
+            debug = {"model": self.model_name, "segments": len(dialogue_entries)}
+            return full_text, (t1 - t0), debug
 
-        text = out.get("text", "") or ""
-        return text, (t1 - t0), debug
+        except Exception as e:
+            logger.error(f"Whisply transcription failed: {e}")
+            t1 = time.time()
+            return "", (t1 - t0), {"error": str(e)}

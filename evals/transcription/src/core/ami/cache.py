@@ -1,6 +1,8 @@
 import logging
+import tempfile
 from pathlib import Path
 
+import ffmpeg
 import numpy as np
 import soundfile as sf
 
@@ -37,7 +39,26 @@ def load_audio(path: Path) -> np.ndarray:
 
 
 def save_audio(path: Path, audio: np.ndarray, sr: int = TARGET_SAMPLE_RATE) -> None:
-    sf.write(path, audio, sr, subtype="PCM_16")
+    if sr == TARGET_SAMPLE_RATE:
+        sf.write(path, audio, sr, subtype="PCM_16")
+    else:
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
+            temp_path = Path(temp_file.name)
+            sf.write(temp_path, audio, sr, subtype="PCM_16")
+
+        try:
+            input_stream = ffmpeg.input(str(temp_path))
+            output_stream = ffmpeg.output(
+                input_stream,
+                str(path),
+                acodec="pcm_s16le",
+                ar=TARGET_SAMPLE_RATE,
+                ac=1,
+                loglevel="error",
+            )
+            ffmpeg.run(output_stream, overwrite_output=True, quiet=True)
+        finally:
+            temp_path.unlink(missing_ok=True)
 
 
 def load_transcript(path: Path) -> str:

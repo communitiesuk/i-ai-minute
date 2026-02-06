@@ -1,11 +1,19 @@
 import argparse
 import logging
 from datetime import datetime
+from pathlib import Path
 
-from adapters import AzureSTTAdapter, WhisperAdapter
-from core.config import AZURE_SPEECH_KEY, AZURE_SPEECH_REGION, WORKDIR
-from core.dataset import audio_duration_seconds, load_benchmark_dataset, to_wav_16k_mono
-from core.runner import run_engines_parallel, save_results
+from common.settings import get_settings
+from evals.transcription.src.adapters import AzureSTTAdapter, WhisperAdapter
+from evals.transcription.src.core.dataset import (
+    audio_duration_seconds,
+    load_benchmark_dataset,
+    to_wav_16k_mono,
+)
+from evals.transcription.src.core.runner import run_engines_parallel, save_results
+
+settings = get_settings()
+WORKDIR = Path(__file__).resolve().parent.parent
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +42,7 @@ def run_evaluation(
         logger.info("Audio files cached in: %s", WORKDIR / "cache" / "processed")
         return
 
-    if not AZURE_SPEECH_KEY or not AZURE_SPEECH_REGION:
+    if not settings.AZURE_SPEECH_KEY or not settings.AZURE_SPEECH_REGION:
         raise ValueError(
             "Azure credentials not found. Please set AZURE_SPEECH_KEY and AZURE_SPEECH_REGION "
             "environment variables to run transcription evaluation."
@@ -42,13 +50,13 @@ def run_evaluation(
 
     logger.info("Initializing Azure Speech-to-Text adapter...")
     azure_adapter = AzureSTTAdapter(
-        speech_key=AZURE_SPEECH_KEY,
-        speech_region=AZURE_SPEECH_REGION,
+        speech_key=settings.AZURE_SPEECH_KEY,
+        speech_region=settings.AZURE_SPEECH_REGION,
         language="en-GB",
     )
 
     whisper_adapter = WhisperAdapter(
-        model_name="large-v3",
+        model_name="small",
         language="en",
     )
 

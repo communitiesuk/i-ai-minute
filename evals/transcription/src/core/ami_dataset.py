@@ -1,7 +1,7 @@
 import logging
 from pathlib import Path
 
-import librosa
+from common.audio.ffmpeg import get_duration
 
 from .ami import AMIDatasetLoader
 
@@ -50,5 +50,4 @@ def _validate_dataset_contract(sample: dict):
 
 
 def audio_duration_seconds(wav_path: str) -> float:
-    y, sr = librosa.load(wav_path, sr=None, mono=True)
-    return float(len(y) / sr)
+    return get_duration(Path(wav_path))
