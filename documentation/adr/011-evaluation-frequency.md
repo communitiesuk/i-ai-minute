@@ -12,38 +12,16 @@ When should evaluations run throughout the development and deployment lifecycle?
 
 ## Considered Options
 
-* Local checks with production models
-* Local checks with local models
 * Commit checks
 * Pre-deployment checks
-* Scheduled production monitoring
-* Combination of multiple stages
+* Scheduled live regression monitoring
+* Scheduled alternate provider comparison monitoring
 
 ## Decision Outcome
 
-Combination of multiple stages, because it balances early detection with comprehensive validation, addresses different failure modes across the lifecycle, and enables rapid iteration while maintaining quality.
+All options except commit checks, to be re-evaluated based on costs associated with the datasets we secure. This approach addresses different failure modes across the lifecycle while maintaining quality, though the final implementation will depend on resource constraints.
 
 ## Pros and Cons of the Options
-
-### Local checks with production models
-
-Run evaluations on the developer's local machine using the same models as production, requiring direct access to the AI infrastructure.
-
-* Good, because it faciliates issues being spotted extremely early.
-* Good, because results are directly comparable with production.
-* Bad, because requires environment separation or dedicated service.
-* Bad, because increases AI API costs.
-* Bad, because it's harder to facilitate an enforcement mechanism.
-
-### Local checks with local models
-
-Run evaluations on the developer's local machine using locally-hosted models instead of production models.
-
-* Good, because it faciliates issues being spotted extremely early.
-* Good, because avoids additional AI API costs.
-* Bad, because requires hardware capable of running AI models.
-* Bad, because results not comparable with production, which hinders regression tracking.
-* Bad, because it's harder to facilitate an enforcement mechanism.
 
 ### Commit checks
 
@@ -51,23 +29,26 @@ Run evaluations when a pull request is created or updated, before code is merged
 
 * Good, because makes reverting easier than post-merge fixes.
 * Good, because provides clear quality gate before integration.
-* Good, because balances thoroughness with resource efficiency.
-* Bad, because adds strain on CI/CD infrastructure.
+* Bad, because adds significant strain on CI/CD infrastructure.
 * Bad, because may significantly slow down PR reviews.
+* Bad, because increases API costs for every PR iteration.
+* Bad, because creates friction in development workflow.
 
 ### Pre-deployment checks
 
-Run thorough evaluations before changes are deployed to production, after code has been merged.
+Run thorough evaluations before changes are deployed to production, after code has been merged. Can be made optional if costs are substantial, with strategic decisions on whether specific deployments affect AI-related code that would warrant evaluation.
 
 * Good, because prevents regressions from reaching production.
 * Good, because can run comprehensive evaluations without blocking development.
 * Good, because catches issues specific to production-like environments.
+* Good, because can be selectively applied based on code changes.
 * Bad, because issues require more effort to fix than earlier detection.
 * Bad, because may delay deployments.
+* Bad, because determining when to run requires judgment about AI code impact.
 
-### Scheduled production monitoring
+### Scheduled live regression monitoring
 
-Run evaluations on a regular cadence (e.g., daily, weekly) against the production system without any code changes.
+Run evaluations on a regular cadence (e.g., daily, weekly) against the live system without any code changes.
 
 * Good, because detects regressions from upstream provider changes.
 * Good, because establishes reference points for quality over time.
@@ -75,41 +56,24 @@ Run evaluations on a regular cadence (e.g., daily, weekly) against the productio
 * Bad, because detects issues after they may have affected users.
 * Bad, because incurs ongoing resource costs.
 
-### Combination of multiple stages
+### Scheduled alternate provider comparison monitoring
 
-Implement evaluations at multiple stages with different levels of thoroughness: local checks for rapid iteration, commit checks for quality gates, pre-deployment checks for final validation, and scheduled monitoring for production health. It's potentially beneficial to not use local-models in this options so that comparisons are more direct.
+Run evaluations at a less frequent cadence (e.g., monthly, quarterly) comparing current provider against alternative providers to assess whether model choices remain competitive.
 
-* Good, because balances early detection with comprehensive validation.
-* Good, because addresses different failure modes across the lifecycle.
-* Good, because enables different evaluation strategies per stage.
-* Good, because enables rapid iteration while maintaining quality.
-* Bad, because increases system complexity significantly.
-* Bad, because it has by far the largest AI API cost.
+* Good, because prevents falling behind with outdated models.
+* Good, because informs strategic decisions about provider selection.
+* Good, because lower cadence reduces costs compared to frequent monitoring.
+* Bad, because incurs additional API costs across multiple providers.
+* Bad, because determining best providers to compare against is challenging.
+* Bad, because cost and data governance may make comprehensive provider coverage infeasible.
 
-## Sign-off Required
+## Appendix
 
-### Local checks with production models
+### Ad-hoc local checks with production models
 
-Enabling local evaluation checks with production models requires sign-off for:
+While not a frequency-based consideration, developers should be able to run ad-hoc local evaluations using production models to verify changes before deployment, particularly when working on AI-related system components.
 
-* Increased API usage and direct access: Costs increase proportional to developers running evaluations locally.
-* Environment separation or dedicated service: Requires environment separation or dedicated service for evaluation requests.
-
-### Local checks with local models
-
-Enabling local evaluation checks with local models requires sign-off for:
-
-* Hardware requirements: All developers need capable hardware; may require upgrades.
-
-### CI/CD evaluation stages (commit-level, pre-deployment)
-
-Finer-grained evaluation stages incur higher costs and require sign-off for:
-
-* Increased API usage: Each stage runs evaluations, multiplying costs.
-* CI/CD resource usage: Additional pipeline stages consume runner time.
-
-### Scheduled production monitoring
-
-Regular production monitoring requires sign-off for:
-
-* Ongoing API costs: Evaluations run continuously regardless of changes.
+* Good, because enables developers to validate changes early.
+* Good, because results are directly comparable with production.
+* Bad, because requires environment separation or dedicated service.
+* Bad, because increases AI API costs based on usage.
