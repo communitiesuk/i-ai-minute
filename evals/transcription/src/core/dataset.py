@@ -5,10 +5,10 @@ from typing import Any
 
 import ffmpeg
 import soundfile as sf
-
 from common.audio.ffmpeg import get_duration
+
+from transcription.src.constants import AUDIO_DIR, CACHE_DIR, STEREO_CHANNELS, TARGET_SAMPLE_RATE
 from .ami_dataset import load_ami_dataset
-from ..constants import AUDIO_DIR, CACHE_DIR, STEREO_CHANNELS, TARGET_SAMPLE_RATE
 
 logger = logging.getLogger(__name__)
 

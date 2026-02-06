@@ -3,8 +3,7 @@ import logging
 from collections import defaultdict
 from pathlib import Path
 from typing import TypedDict
-
-from ...constants import TARGET_SAMPLE_RATE
+from datasets import load_dataset
 
 from .types import MeetingId
 

@@ -4,8 +4,8 @@ from pathlib import Path
 
 from datasets import load_dataset
 
+from transcription.src.constants import TARGET_SAMPLE_RATE
 from . import audio, cache
-from ...constants import TARGET_SAMPLE_RATE
 from .metadata import load_or_build_metadata
 from .selection import MeetingSegment, select_segments
 from .types import Sample

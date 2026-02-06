@@ -66,6 +66,7 @@ frontend/.env.sentry-build-plugin
 frontend/coverage
 coverage.xml
 .coverage
+errors.txt
 
 # next.js
 frontend/.next/
