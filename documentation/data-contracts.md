@@ -1,0 +1,478 @@
+# Data Contracts
+
+This document defines the system data contracts for processing, storage, and evaluation outputs.
+
+All contracts are described in an SQL table-like format. Where the runtime system stores structured payloads inside `JSONB` columns, the contract includes both:
+
+- The **physical** storage table/column (what is actually stored today)
+- A **logical** table view describing the expected shape of the nested payload
+
+## Logical schema diagrams
+
+### Input -> transcription -> summary
+
+```mermaid
+erDiagram
+  user {
+    UUID id PK
+    TIMESTAMPTZ created_datetime
+    TIMESTAMPTZ updated_datetime
+    TEXT email
+    INT data_retention_days
+  }
+
+  recording {
+    UUID id PK
+    TIMESTAMPTZ created_datetime
+    UUID user_id FK
+    TEXT s3_file_key
+    UUID transcription_id FK
+  }
+
+  transcription {
+    UUID id PK
+    TIMESTAMPTZ created_datetime
+    TIMESTAMPTZ updated_datetime
+    TEXT title
+    JSONB dialogue_entries
+    TEXT status
+    TEXT error
+    UUID user_id FK
+  }
+
+  minute {
+    UUID id PK
+    TIMESTAMPTZ created_datetime
+    TIMESTAMPTZ updated_datetime
+    UUID transcription_id FK
+    TEXT template_name
+    UUID user_template_id FK
+    TEXT agenda
+  }
+
+  user_template {
+    UUID id PK
+    TIMESTAMPTZ created_datetime
+    TIMESTAMPTZ updated_datetime
+    TEXT name
+    TEXT content
+    TEXT description
+    TEXT type
+    UUID user_id FK
+  }
+
+  minute_version {
+    UUID id PK
+    TIMESTAMPTZ created_datetime
+    TIMESTAMPTZ updated_datetime
+    UUID minute_id FK
+    TEXT html_content
+    TEXT status
+    TEXT error
+    TEXT ai_edit_instructions
+    TEXT content_source
+  }
+
+  hallucination {
+    UUID id PK
+    TIMESTAMPTZ created_datetime
+    TIMESTAMPTZ updated_datetime
+    UUID minute_version_id FK
+    TEXT hallucination_type
+    TEXT hallucination_text
+    TEXT hallucination_reason
+  }
+
+  transcription_dialogue_entry {
+    UUID transcription_id FK
+    TEXT speaker
+    TEXT text
+    DOUBLE start_time
+    DOUBLE end_time
+    INT position
+  }
+
+  user ||--o{ recording : has
+  user ||--o{ transcription : has
+  recording }o--|| transcription : links
+
+  transcription ||--o{ minute : creates
+  user_template ||--o{ minute : configures
+
+  minute ||--o{ minute_version : versions
+  minute_version ||--o{ hallucination : flags
+
+  transcription ||--o{ transcription_dialogue_entry : contains
+```
+
+### Evals
+
+```mermaid
+erDiagram
+
+  transcription_eval_record {
+    TEXT run_id PK
+    TIMESTAMPTZ timestamp
+    TEXT example_id PK
+    UUID recording_id
+    TEXT s3_file_key
+    TEXT reference_transcript
+    TEXT candidate_transcript
+    JSONB candidate_dialogue_entries
+    DOUBLE wer
+    DOUBLE cer
+    DOUBLE sa_wer
+    DOUBLE diarization_error_rate
+    DOUBLE speaker_confusion_rate
+    INT speaker_count_pred
+    INT speaker_count_ref
+    JSONB latency_ms
+    JSONB error
+  }
+
+  transcription_eval_run_summary {
+    TEXT run_id PK
+    TIMESTAMPTZ timestamp
+    TEXT dataset_version
+    TEXT model_version
+    TEXT split
+    INT n_examples
+    DOUBLE overall_score
+    JSONB metrics
+    JSONB latency_ms
+  }
+
+  summary_eval_record {
+    TEXT run_id PK
+    TIMESTAMPTZ timestamp
+    TEXT example_id PK
+    TEXT dialogue
+    TEXT reference_summary
+    TEXT candidate_summary
+    TEXT candidate_model
+    TEXT prompt_version
+    JSONB generation_config
+    JSONB metrics
+    JSONB latency_ms
+    JSONB error
+  }
+
+  summary_eval_metric_result {
+    TEXT run_id PK
+    TEXT example_id PK
+    TEXT metric_name PK
+    DOUBLE score
+    TEXT reason
+  }
+
+  summary_eval_run_summary {
+    TEXT run_id PK
+    TEXT dataset_version
+    TEXT model_version
+    TEXT prompt_version
+    TEXT split
+    INT n_examples
+    DOUBLE overall
+    JSONB metrics
+    JSONB latency_ms
+  }
+
+  transcription_eval_record }o--|| transcription_eval_run_summary : aggregates
+
+  summary_eval_record ||--o{ summary_eval_metric_result : metrics
+  summary_eval_record }o--|| summary_eval_run_summary : aggregates
+```
+
+---
+
+## 1. Transcription data contract (inputs + output)
+
+### 1.1 Input: audio asset (recording)
+
+```sql
+CREATE TABLE recording (
+  id                 UUID PRIMARY KEY,
+  created_datetime    TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+  user_id            UUID NOT NULL REFERENCES "user"(id),
+  s3_file_key        TEXT NOT NULL,
+
+  transcription_id   UUID NULL REFERENCES transcription(id) ON DELETE SET NULL
+);
+```
+
+### 1.2 Input/processing context: transcription job lifecycle
+
+```sql
+CREATE TABLE transcription (
+  id                   UUID PRIMARY KEY,
+  created_datetime      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_datetime      TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+  title                TEXT NULL,
+
+  dialogue_entries     JSONB NULL,
+
+  status               TEXT NOT NULL DEFAULT 'AWAITING_START',
+  error                TEXT NULL,
+
+  user_id              UUID NULL REFERENCES "user"(id)
+);
+```
+
+### 1.3 Output: transcription with diarization (segment-level)
+
+`transcription.dialogue_entries` stores an array of diarized segments with the following shape.
+
+```sql
+-- Logical contract view (stored physically as transcription.dialogue_entries JSONB)
+CREATE TABLE transcription_dialogue_entry (
+  transcription_id   UUID NOT NULL REFERENCES transcription(id) ON DELETE CASCADE,
+
+  speaker            TEXT NOT NULL,
+  text               TEXT NOT NULL,
+  start_time         DOUBLE PRECISION NOT NULL,
+  end_time           DOUBLE PRECISION NOT NULL,
+
+  position           INTEGER NULL,
+
+  PRIMARY KEY (transcription_id, speaker, start_time, end_time)
+);
+```
+
+---
+
+## 2. Summary data contract (inputs + output)
+
+In the current schema, the summarisation/minute output is represented by `minute` + `minute_version` + `hallucination`, linked to a `transcription` and optionally to a `user_template`.
+
+### 2.1 Inputs: summary request context
+
+```sql
+CREATE TABLE minute (
+  id                 UUID PRIMARY KEY,
+  created_datetime    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_datetime    TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+  transcription_id   UUID NOT NULL REFERENCES transcription(id) ON DELETE CASCADE,
+
+  template_name      TEXT NOT NULL DEFAULT 'General',
+  user_template_id   UUID NULL REFERENCES user_template(id) ON DELETE SET NULL,
+
+  agenda             TEXT NULL
+);
+```
+
+### 2.2 Output: minute generation versions (primary summary output)
+
+```sql
+CREATE TABLE minute_version (
+  id                   UUID PRIMARY KEY,
+  created_datetime      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_datetime      TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+  minute_id             UUID NOT NULL REFERENCES minute(id) ON DELETE CASCADE,
+
+  html_content          TEXT NOT NULL DEFAULT '',
+
+  status               TEXT NOT NULL DEFAULT 'AWAITING_START',
+  error                TEXT NULL,
+
+  ai_edit_instructions  TEXT NULL,
+
+  content_source        TEXT NOT NULL DEFAULT 'INITIAL_GENERATION'
+);
+```
+
+### 2.3 Output: hallucination annotations (quality/safety output)
+
+```sql
+CREATE TABLE hallucination (
+  id                   UUID PRIMARY KEY,
+  created_datetime      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_datetime      TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+  minute_version_id     UUID NOT NULL REFERENCES minute_version(id) ON DELETE CASCADE,
+
+  hallucination_type    TEXT NOT NULL DEFAULT 'OTHER',
+  hallucination_text    TEXT NULL,
+  hallucination_reason  TEXT NULL
+);
+```
+
+### 2.4 Input: user template (selected structure)
+
+```sql
+CREATE TABLE user_template (
+  id                 UUID PRIMARY KEY,
+  created_datetime    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_datetime    TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+  name               TEXT NOT NULL,
+  content            TEXT NOT NULL,
+  description        TEXT NOT NULL DEFAULT '',
+
+  type               TEXT NOT NULL DEFAULT 'DOCUMENT',
+
+  user_id            UUID NULL REFERENCES "user"(id)
+);
+```
+
+Optional template questions (used when `user_template.type = 'FORM'`):
+
+```sql
+CREATE TABLE template_question (
+  id                 UUID PRIMARY KEY,
+
+  position           INTEGER NOT NULL,
+  title              TEXT NOT NULL,
+  description        TEXT NOT NULL,
+
+  user_template_id   UUID NOT NULL REFERENCES user_template(id) ON DELETE CASCADE
+);
+```
+
+---
+
+## 3. Transcription data eval output contract
+
+This repository contains an ADR describing transcription evaluation goals and metrics, but does not currently define a concrete eval output schema for transcription runs (unlike summarisation evals).
+
+The following contract defines the **expected eval outputs** for transcription evaluation so results can be stored/transported consistently.
+
+### 3.1 Detailed report: example-level transcription eval record
+
+```sql
+-- Proposed contract for per-example transcription evaluation output
+CREATE TABLE transcription_eval_record (
+  run_id               TEXT NOT NULL,
+  timestamp            TIMESTAMPTZ NOT NULL,
+
+  -- Example identity
+  example_id           TEXT NOT NULL,
+
+  -- Example input pointers (at least one should be present)
+  recording_id         UUID NULL,
+  s3_file_key          TEXT NULL,
+
+  -- Ground truth (when available)
+  reference_transcript TEXT NULL,
+
+  -- Candidate output under test
+  candidate_transcript TEXT NOT NULL,
+
+  -- Optional: diarization-aware candidate (e.g., flattening dialogue_entries)
+  candidate_dialogue_entries JSONB NULL,
+
+  -- Metrics (common choices per ADR-007)
+  wer                  DOUBLE PRECISION NULL,
+  cer                  DOUBLE PRECISION NULL,
+  sa_wer               DOUBLE PRECISION NULL,
+
+  -- Diarization sanity / quality (choose what you compute)
+  diarization_error_rate DOUBLE PRECISION NULL,
+  speaker_confusion_rate DOUBLE PRECISION NULL,
+  speaker_count_pred    INTEGER NULL,
+  speaker_count_ref     INTEGER NULL,
+
+  -- Latency and errors
+  latency_ms            JSONB NOT NULL,   -- e.g., {"preprocess": 123, "transcribe": 456}
+  error                 JSONB NULL,       -- e.g., {"stage": "transcribe", "message": "..."}
+
+  PRIMARY KEY (run_id, example_id)
+);
+```
+
+### 3.2 Summary output: run-level transcription eval summary
+
+```sql
+-- Proposed contract for run-level summary aggregation
+CREATE TABLE transcription_eval_run_summary (
+  run_id               TEXT PRIMARY KEY,
+  timestamp            TIMESTAMPTZ NOT NULL,
+
+  dataset_version      TEXT NOT NULL,
+  model_version        TEXT NOT NULL,
+
+  split                TEXT NULL,
+  n_examples           INTEGER NOT NULL,
+
+  overall_score        DOUBLE PRECISION NULL,
+
+  metrics              JSONB NOT NULL,    -- e.g., {"wer": {"mean": 0.12, "p50": 0.10}, ...}
+  latency_ms           JSONB NOT NULL     -- e.g., {"transcribe_p50": 4500, ...}
+);
+```
+
+---
+
+## 4. Summary data eval output contract
+
+This contract is aligned with `evals/src/ailg_evals/schemas.py`.
+
+### 4.1 Detailed report: example-level eval record
+
+```sql
+-- Mirrors EvalRecord (Pydantic) structure
+CREATE TABLE summary_eval_record (
+  run_id               TEXT NOT NULL,
+  timestamp            TIMESTAMPTZ NOT NULL,
+
+  example_id           TEXT NOT NULL,
+  dialogue             TEXT NOT NULL,
+  reference_summary    TEXT NULL,
+
+  candidate_summary    TEXT NOT NULL,
+  candidate_model      TEXT NOT NULL,
+  prompt_version       TEXT NOT NULL,
+  generation_config    JSONB NOT NULL,  -- {"temperature": ..., "max_tokens": ...}
+
+  metrics              JSONB NOT NULL,  -- map metric_name -> {"score": 0..1, "reason": "..."}
+  latency_ms           JSONB NOT NULL,  -- e.g., {"summarize": 1234, "judge": 567}
+
+  error                JSONB NULL,
+
+  PRIMARY KEY (run_id, example_id)
+);
+```
+
+### 4.2 Optional normalization: metric results (metric_name as a row)
+
+If you want metric results queryable in SQL, normalize `metrics` like this:
+
+```sql
+CREATE TABLE summary_eval_metric_result (
+  run_id               TEXT NOT NULL,
+  example_id           TEXT NOT NULL,
+
+  metric_name          TEXT NOT NULL,
+  score                DOUBLE PRECISION NOT NULL CHECK (score >= 0.0 AND score <= 1.0),
+  reason               TEXT NOT NULL,
+
+  PRIMARY KEY (run_id, example_id, metric_name),
+  FOREIGN KEY (run_id, example_id) REFERENCES summary_eval_record(run_id, example_id) ON DELETE CASCADE
+);
+```
+
+### 4.3 Summary output: run-level summary JSON
+
+The current runner writes a `summary.json` with the following contract:
+
+```sql
+-- Mirrors evals/src/ailg_evals/runner.py summary dict
+CREATE TABLE summary_eval_run_summary (
+  run_id               TEXT PRIMARY KEY,
+
+  dataset_version      TEXT NOT NULL,
+  model_version        TEXT NOT NULL,
+  prompt_version       TEXT NOT NULL,
+
+  split                TEXT NOT NULL,
+  n_examples           INTEGER NOT NULL,
+
+  overall              DOUBLE PRECISION NULL,
+
+  metrics              JSONB NOT NULL,  -- {metric_name: {"mean": number}}
+  latency_ms           JSONB NOT NULL   -- {"summarize_p50": int, "judge_p50": int}
+);
+```
