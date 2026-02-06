@@ -4,7 +4,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import TypedDict
 
-from datasets import load_dataset
+from ...constants import TARGET_SAMPLE_RATE
 
 from .types import MeetingId
 

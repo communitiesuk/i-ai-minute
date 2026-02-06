@@ -8,17 +8,9 @@ import soundfile as sf
 
 from .ami_dataset import audio_duration_seconds as ami_audio_duration
 from .ami_dataset import load_ami_dataset
+from ..constants import AUDIO_DIR, CACHE_DIR, STEREO_CHANNELS, TARGET_SAMPLE_RATE
 
 logger = logging.getLogger(__name__)
-
-TARGET_SAMPLE_RATE = 16000
-STEREO_CHANNELS = 2
-
-WORKDIR = Path(__file__).resolve().parent.parent.parent
-CACHE_DIR = WORKDIR / "cache"
-CACHE_DIR.mkdir(exist_ok=True)
-AUDIO_DIR = WORKDIR / "audio"
-AUDIO_DIR.mkdir(exist_ok=True)
 
 
 def load_benchmark_dataset(num_samples: int | None, sample_duration_fraction: float | None = None):
