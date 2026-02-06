@@ -64,6 +64,8 @@ frontend/.env.sentry-build-plugin
 
 # testing
 frontend/coverage
+coverage.xml
+.coverage
 
 # next.js
 frontend/.next/
@@ -111,3 +113,5 @@ config/google-credentials.json
 /playwright/.cache/
 
 .whisply_temp/
+
+

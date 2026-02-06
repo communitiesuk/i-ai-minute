@@ -1,0 +1,12 @@
+evals/src/ailg_evals/jsonl.py:6: error: Cannot find implementation or library stub for module named "orjson"  [import-not-found]
+evals/src/ailg_evals/jsonl.py:6: note: See https://mypy.readthedocs.io/en/stable/running_mypy.html#missing-imports
+evals/src/ailg_evals/metric.py:5: error: Cannot find implementation or library stub for module named "dspy"  [import-not-found]
+evals/src/ailg_evals/runner.py:9: error: Cannot find implementation or library stub for module named "dspy"  [import-not-found]
+evals/src/ailg_evals/runner.py:10: error: Cannot find implementation or library stub for module named "orjson"  [import-not-found]
+evals/src/ailg_evals/runner.py:12: error: Cannot find implementation or library stub for module named "dspy.evaluate"  [import-not-found]
+evals/src/ailg_evals/runner.py:13: error: Cannot find implementation or library stub for module named "langchain_core.prompts"  [import-not-found]
+evals/src/ailg_evals/runner.py:14: error: Cannot find implementation or library stub for module named "langchain_openai"  [import-not-found]
+evals/src/ailg_evals/signatures.py:3: error: Cannot find implementation or library stub for module named "dspy"  [import-not-found]
+
+evals/transcription/src/core/dataset.py: error: Source file found twice under different module names: "core.dataset" and "evals.transcription.src.core.dataset"
+Found 9 errors in 5 files (errors prevented further checking)
