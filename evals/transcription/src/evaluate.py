@@ -66,11 +66,22 @@ def run_evaluation(
 
     logger.info("=== Evaluation Complete ===")
     for result in results:
-        logger.info(
-            "%s WER: %.2f%%",
-            result["summary"]["engine"],
-            result["summary"]["overall_wer_pct"],
-        )
+        engine = result["summary"]["engine"]
+        m = result["summary"]["aggregated_metrics"]
+
+        logger.info("%s:", engine)
+        if "wer_wer" in m:
+            logger.info("  WER:  %.4f", m["wer_wer"]["mean"])
+        if "jaccard_wer_jaccard_wer" in m:
+            logger.info("  Jaccard WER: %.4f", m["jaccard_wer_jaccard_wer"]["mean"])
+        if "wder_wder" in m:
+            logger.info("  WDER: %.4f", m["wder_wder"]["mean"])
+        if "speaker_count_speaker_count_accuracy" in m:
+            logger.info(
+                "  Speaker Count Accuracy: %.4f",
+                m["speaker_count_speaker_count_accuracy"]["mean"],
+            )
+
     logger.info("Results saved to: %s", output_path)
 
 

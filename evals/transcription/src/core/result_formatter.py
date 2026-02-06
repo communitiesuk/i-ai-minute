@@ -2,106 +2,97 @@ import json
 import logging
 from pathlib import Path
 
-from .diarization_analysis import compute_adapter_diarization_metrics
-from .diarization_metrics import compute_all_diarization_metrics
-
 logger = logging.getLogger(__name__)
 
 
-def format_entry(sample: dict, adapter_diarization_metrics: dict, engine_name: str) -> dict:
-    ref_diar = sample.get("reference_diarization", [])
-    hyp_diar = sample.get("diarization", [])
-    entry_diarization_metrics = None
-
-    if ref_diar and hyp_diar:
-        metrics = compute_all_diarization_metrics(ref_diar, hyp_diar)
-        entry_diarization_metrics = {
-            "der": metrics["der"]["der"],
-            "jer": metrics["jer"]["jer"],
-            "miss": metrics["component_breakdown"]["miss"],
-            "false_alarm": metrics["component_breakdown"]["false_alarm"],
-            "confusion": metrics["component_breakdown"]["confusion"],
-            "speaker_count_error": metrics["speaker_count"]["absolute_error"],
-        }
-
-    results_section = {
-        "wav_path": sample["wav_path"],
-        "audio_sec": sample["audio_sec"],
-        "process_sec": sample["process_sec"],
-        "rtf": sample["rtf"],
-        "wer_pct": sample["wer_pct"],
-        "wer_metrics": sample.get("wer_metrics", {}),
-        "diff_ops": sample["diff_ops"],
-    }
-
-    if entry_diarization_metrics:
-        results_section["diarization"] = entry_diarization_metrics
-
-    entry = {
-        "dataset_index": sample["dataset_index"],
-        "results": results_section,
-        "debug": {
-            "ref_raw": sample["ref_raw"],
-            "hyp_raw": sample["hyp_raw"],
-            "diarization": sample.get("diarization", []),
-            "engine_debug": sample.get("engine_debug", {}),
-        },
-    }
-    return entry
+def _format_segments_with_speakers(segments: list[dict], speaker_map: dict = None) -> str:
+    parts = []
+    for seg in segments:
+        text = seg.get("text", "")
+        if not text:
+            continue
+        speaker = seg.get("speaker", "UNKNOWN")
+        if speaker_map:
+            speaker = speaker_map.get(speaker, speaker)
+        parts.append(f"[{speaker}] {text}")
+    return " ".join(parts)
 
 
-def format_adapter_result(result: dict, adapter_diarization_metrics: dict) -> dict:
-    summary = result["summary"]
-    samples = result["samples"]
-    engine_name = summary["engine"]
-
-    entries = [format_entry(sample, adapter_diarization_metrics, engine_name) for sample in samples]
-
-    wer_metrics = summary.get("overall_wer_metrics", {})
-    wer_metrics_pct = {
-        "wer": wer_metrics.get("wer", 0.0) * 100.0,
-        "mer": wer_metrics.get("mer", 0.0) * 100.0,
-        "wil": wer_metrics.get("wil", 0.0) * 100.0,
-        "cer": wer_metrics.get("cer", 0.0) * 100.0,
-        "hits": wer_metrics.get("hits", 0),
-        "substitutions": wer_metrics.get("substitutions", 0),
-        "deletions": wer_metrics.get("deletions", 0),
-        "insertions": wer_metrics.get("insertions", 0),
-    }
-
-    overall_results = {
-        "num_samples": summary["num_samples"],
-        "overall_wer_pct": summary["overall_wer_pct"],
-        "overall_wer_metrics": wer_metrics_pct,
-        "per_sample_wer_min": summary["per_sample_wer_min"],
-        "per_sample_wer_max": summary["per_sample_wer_max"],
-        "per_sample_wer_mean": summary["per_sample_wer_mean"],
-        "per_sample_wer_std": summary.get("per_sample_wer_std"),
-        "rtf": summary["rtf"],
-        "process_sec": summary["process_sec"],
-        "audio_sec": summary["audio_sec"],
-    }
-
-    if (
-        engine_name in adapter_diarization_metrics
-        and adapter_diarization_metrics[engine_name] is not None
-    ):
-        overall_results["diarization"] = adapter_diarization_metrics[engine_name]
+def format_entry(sample: dict) -> dict:
+    m = sample.get("metrics", {})
+    ref_segments = sample.get("reference_diarization", [])
+    hyp_segments = sample.get("diarization", [])
+    
+    ref_speaker_ids = sorted({seg.get("speaker") for seg in ref_segments if seg.get("text")})
+    ref_speaker_map = {spk: f"Speaker_{i+1}" for i, spk in enumerate(ref_speaker_ids)}
 
     return {
-        "name": engine_name,
-        "overall_results": overall_results,
-        "entries": entries,
+        "dataset_index": sample["dataset_index"],
+        "wer": m.get("wer", {}),
+        "jaccard_wer": m.get("jaccard_wer", {}),
+        "wder": m.get("wder", {}),
+        "speaker_count": m.get("speaker_count", {}),
+        "debug": {
+            "ref_with_speakers": _format_segments_with_speakers(ref_segments, ref_speaker_map),
+            "hyp_with_speakers": _format_segments_with_speakers(hyp_segments),
+        }
+    }
+
+
+def _sum_metric(samples: list[dict], *keys) -> int:
+    return sum(
+        s.get("metrics", {}).get(keys[0], {}).get(keys[1], 0) 
+        for s in samples
+    )
+
+
+def _format_metric_stats(agg: dict, key: str, precision: int = 4) -> dict:
+    stats = agg[key]
+    return {
+        "mean": round(stats["mean"], precision),
+        "min": round(stats["min"], precision),
+        "max": round(stats["max"], precision),
+        "std": round(stats["std"], precision),
+    }
+
+
+def format_adapter_result(result: dict) -> dict:
+    summary = result["summary"]
+    samples = result["samples"]
+    agg = summary["aggregated_metrics"]
+
+    total_misses = sum(
+        1 for s in samples 
+        if s.get("metrics", {}).get("speaker_count", {}).get("speaker_count_accuracy", 1.0) == 0.0
+    )
+
+    return {
+        "engine": summary["engine"],
+        "processing_time_ratio": round(summary["rtf"], 3),
+        "word_metrics": {
+            "hits": _sum_metric(samples, "wer", "hits"),
+            "substitutions": _sum_metric(samples, "wer", "substitutions"),
+            "deletions": _sum_metric(samples, "wer", "deletions"),
+            "insertions": _sum_metric(samples, "wer", "insertions"),
+            "speaker_confusions": _sum_metric(samples, "wder", "speaker_errors"),
+            "total_words": _sum_metric(samples, "wder", "total_words"),
+        },
+        "wer": _format_metric_stats(agg, "wer_wer"),
+        "jaccard_wer": _format_metric_stats(agg, "jaccard_wer_jaccard_wer"),
+        "wder": _format_metric_stats(agg, "wder_wder"),
+        "speaker_count_accuracy": {
+            "accuracy": round(agg["speaker_count_speaker_count_accuracy"]["mean"] * 100, 1),
+            "total_misses": total_misses,
+        },
+        "samples": [format_entry(s) for s in samples],
     }
 
 
 def save_results(results: list, output_path: Path):
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    adapter_diarization_metrics = compute_adapter_diarization_metrics(results)
-    adapters = [format_adapter_result(r, adapter_diarization_metrics) for r in results]
-
-    combined = {"adapters": adapters}
+    engines = [format_adapter_result(r) for r in results]
+    combined = {"engines": engines}
 
     with output_path.open("w", encoding="utf-8") as f:
         json.dump(combined, f, indent=2, ensure_ascii=False)

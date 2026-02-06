@@ -2,10 +2,9 @@ import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from threading import Lock
 
-import numpy as np
 from tqdm import tqdm
 
-from .metrics import TimingAccumulator, compute_wer_metrics, compute_wer_pct
+from .metrics import TimingAccumulator, aggregate_metrics, compute_all_metrics
 
 logger = logging.getLogger(__name__)
 
@@ -25,11 +24,15 @@ def run_engine(adapter, indices, label, *, dataset, wav_write_fn, duration_fn):
         proc_sec = float(proc_sec)
         timing.add(aud_sec, proc_sec)
 
-        per_wer, ops = compute_wer_pct([ref_raw], [hyp_raw], return_ops=True)
-        wer_metrics = compute_wer_metrics([ref_raw], [hyp_raw])
-
         diarization = dbg.get("diarization", []) if isinstance(dbg, dict) else []
         reference_diarization = ex.get("reference_diarization", [])
+
+        metrics = compute_all_metrics(
+            ref_text=ref_raw,
+            hyp_text=hyp_raw,
+            ref_segments=reference_diarization if reference_diarization else None,
+            hyp_segments=diarization if diarization else None,
+        )
 
         row = {
             "engine": label,
@@ -38,9 +41,7 @@ def run_engine(adapter, indices, label, *, dataset, wav_write_fn, duration_fn):
             "audio_sec": aud_sec,
             "process_sec": proc_sec,
             "rtf": (proc_sec / aud_sec) if aud_sec else None,
-            "wer_pct": float(per_wer),
-            "wer_metrics": wer_metrics,
-            "diff_ops": ops,
+            "metrics": metrics,
             "ref_raw": ref_raw,
             "hyp_raw": hyp_raw,
             "engine_debug": dbg,
@@ -49,24 +50,15 @@ def run_engine(adapter, indices, label, *, dataset, wav_write_fn, duration_fn):
         }
         rows.append(row)
 
-    overall_wer = compute_wer_pct([r["ref_raw"] for r in rows], [r["hyp_raw"] for r in rows])
-    overall_metrics = compute_wer_metrics(
-        [r["ref_raw"] for r in rows], [r["hyp_raw"] for r in rows]
-    )
-    per_wers = [r["wer_pct"] for r in rows]
+    aggregated = aggregate_metrics([r["metrics"] for r in rows])
 
     summary = {
         "engine": label,
         "num_samples": len(indices),
-        "overall_wer_pct": float(overall_wer),
-        "overall_wer_metrics": overall_metrics,
+        "aggregated_metrics": aggregated,
         "rtf": float(timing.rtf),
         "process_sec": float(timing.process_sec),
         "audio_sec": float(timing.audio_sec),
-        "per_sample_wer_min": float(np.min(per_wers)) if per_wers else None,
-        "per_sample_wer_max": float(np.max(per_wers)) if per_wers else None,
-        "per_sample_wer_mean": float(np.mean(per_wers)) if per_wers else None,
-        "per_sample_wer_std": float(np.std(per_wers)) if per_wers else None,
     }
 
     return {"summary": summary, "samples": rows}
@@ -91,11 +83,16 @@ def run_engines_parallel(adapters_config, indices, *, dataset, wav_write_fn, dur
         hyp_raw, proc_sec, dbg = adapter.transcribe_with_debug(wav_path)
 
         proc_sec = float(proc_sec)
-        per_wer, ops = compute_wer_pct([ref_raw], [hyp_raw], return_ops=True)
-        wer_metrics = compute_wer_metrics([ref_raw], [hyp_raw])
 
         diarization = dbg.get("diarization", []) if isinstance(dbg, dict) else []
         reference_diarization = ex.get("reference_diarization", [])
+
+        metrics = compute_all_metrics(
+            ref_text=ref_raw,
+            hyp_text=hyp_raw,
+            ref_segments=reference_diarization if reference_diarization else None,
+            hyp_segments=diarization if diarization else None,
+        )
 
         row = {
             "engine": label,
@@ -104,9 +101,7 @@ def run_engines_parallel(adapters_config, indices, *, dataset, wav_write_fn, dur
             "audio_sec": aud_sec,
             "process_sec": proc_sec,
             "rtf": (proc_sec / aud_sec) if aud_sec else None,
-            "wer_pct": float(per_wer),
-            "wer_metrics": wer_metrics,
-            "diff_ops": ops,
+            "metrics": metrics,
             "ref_raw": ref_raw,
             "hyp_raw": hyp_raw,
             "engine_debug": dbg,
@@ -143,24 +138,15 @@ def run_engines_parallel(adapters_config, indices, *, dataset, wav_write_fn, dur
         rows = sorted(results[label]["rows"], key=lambda x: x["dataset_index"])
         timing = results[label]["timing"]
 
-        overall_wer = compute_wer_pct([r["ref_raw"] for r in rows], [r["hyp_raw"] for r in rows])
-        overall_metrics = compute_wer_metrics(
-            [r["ref_raw"] for r in rows], [r["hyp_raw"] for r in rows]
-        )
-        per_wers = [r["wer_pct"] for r in rows]
+        aggregated = aggregate_metrics([r["metrics"] for r in rows])
 
         summary = {
             "engine": label,
             "num_samples": len(indices),
-            "overall_wer_pct": float(overall_wer),
-            "overall_wer_metrics": overall_metrics,
+            "aggregated_metrics": aggregated,
             "rtf": float(timing.rtf),
             "process_sec": float(timing.process_sec),
             "audio_sec": float(timing.audio_sec),
-            "per_sample_wer_min": float(np.min(per_wers)) if per_wers else None,
-            "per_sample_wer_max": float(np.max(per_wers)) if per_wers else None,
-            "per_sample_wer_mean": float(np.mean(per_wers)) if per_wers else None,
-            "per_sample_wer_std": float(np.std(per_wers)) if per_wers else None,
         }
 
         output_results.append({"summary": summary, "samples": rows})

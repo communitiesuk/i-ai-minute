@@ -80,41 +80,78 @@ Results are saved to `results/evaluation_results_YYYYMMDD_HHMMSS.json` with time
 
 Results are saved as JSON in `results/evaluation_results_YYYYMMDD_HHMMSS.json`.
 
-**Structure:**
-- `adapters[]` - Array of results per transcription engine
-  - `name` - Engine identifier
-  - `overall_results` - Aggregated metrics across all samples
-    - `num_samples` - Sample count
-    - `overall_wer_pct` - Overall Word Error Rate (%)
-    - `overall_wer_metrics` - Detailed WER breakdown (wer, mer, wil, cer as %, plus counts)
-    - `per_sample_wer_min/max/mean/std` - WER statistics (%)
-    - `rtf` - Real-time factor (processing_time / audio_duration)
-    - `process_sec`, `audio_sec` - Timing totals
-    - `diarization` - Speaker metrics (der, jer, miss, false_alarm, confusion as %, speaker_count_error)
-  - `entries[]` - Per-sample detailed results
-    - `dataset_index` - Sample identifier
-    - `results` - Sample metrics (wer_pct, wer_metrics, rtf, diarization)
-    - `debug` - Raw data (ref_raw, hyp_raw, diarization segments, engine_debug)
+### Top-Level Structure
+
+```json
+{
+  "engines": [...]  // Array of engine results
+}
+```
+
+### Engine-Level Fields
+
+Each engine result contains:
+
+- **`engine`** (string): Engine name (e.g., "Azure Speech-to-Text")
+- **`processing_time_ratio`** (float): Real-time factor (processing_time / audio_duration)
+- **`word_metrics`** (object): Aggregated word-level counts across all samples
+  - `hits` (int): Total correct words
+  - `substitutions` (int): Total word substitutions
+  - `deletions` (int): Total word deletions
+  - `insertions` (int): Total word insertions
+  - `speaker_confusions` (int): Total speaker attribution errors
+  - `total_words` (int): Total reference words
+- **`wer`** (object): Word Error Rate statistics (decimal format, e.g., 0.2218 = 22.18%)
+  - `mean`, `min`, `max`, `std` (float)
+- **`jaccard_wer`** (object): Jaccard Word Error Rate statistics (decimal format)
+  - `mean`, `min`, `max`, `std` (float)
+- **`wder`** (object): Word-level Diarization Error Rate statistics (decimal format)
+  - `mean`, `min`, `max`, `std` (float)
+- **`speaker_count_accuracy`** (object): Speaker identification accuracy
+  - `accuracy` (float): Percentage of samples with correct speaker count
+  - `total_misses` (int): Number of samples with incorrect speaker count
+- **`samples`** (array): Per-sample detailed results
+
+### Sample-Level Fields
+
+Each sample contains:
+
+- **`dataset_index`** (int): Sample identifier
+- **`wer`** (object): Word Error Rate metrics
+  - `wer` (float): Error rate (decimal)
+  - `hits`, `substitutions`, `deletions`, `insertions` (int): Word-level counts
+- **`jaccard_wer`** (object): Jaccard Word Error Rate
+  - `jaccard_wer` (float): Error rate (decimal)
+- **`wder`** (object): Word-level Diarization Error Rate
+  - `wder` (float): Error rate (decimal)
+  - `speaker_errors` (int): Number of words with wrong speaker attribution
+  - `total_words` (int): Total reference words
+  - `confusion_count` (int): Number of speakers with attribution errors
+- **`speaker_count`** (object): Speaker count metrics
+  - `ref_speaker_count` (int): Number of speakers in reference
+  - `hyp_speaker_count` (int): Number of speakers in hypothesis
+  - `absolute_error` (int): Absolute difference
+  - `speaker_count_accuracy` (float): 1.0 if correct, 0.0 if incorrect
+- **`debug`** (object): Human-readable debug information
+  - `ref_with_speakers` (string): Reference transcript with normalized speaker labels
+  - `hyp_with_speakers` (string): Hypothesis transcript with speaker labels
 
 ### Metrics
 
-**Transcription:**
-- `overall_wer_pct`: Word Error Rate - text accuracy only, doesn't include diarization (mean across samples)
-- `per_sample_wer_min/max/mean/std`: WER distribution statistics
-- `rtf`: Real-Time Factor - processing speed, <1.0 = faster than real-time (mean across samples)
+All metrics computed using `jiwer` and `pyannote-metrics`. Aggregated with mean, max, std.
 
-**Diarization:**
-- `der`: Diarization Error Rate - time-based total error = miss + false_alarm + confusion (mean across samples)
-  - Standard NIST metric, measures temporal accuracy of speaker segments
-  - Can exceed 100% if hypothesis has much more speech time than reference
-- `jer`: Jaccard Error Rate - IoU-based per-speaker overlap quality (mean across samples)
-  - More stable than DER with overlapping speech
-  - Measures speaker boundary alignment independent of timing errors
-- `miss`: DER component - reference speech not detected, % of total time (mean)
-- `false_alarm`: DER component - detected speech where there's no reference, % of total time (mean)
-- `confusion`: DER component - wrong speaker assignment, % of total time (mean)
-- `speaker_count_error`: Absolute difference from correct speaker count (mean of |predicted - actual|)
+#### Transcription Quality
+| Metric | What It Measures |
+|--------|------------------|
+| **WER** | How accurate is the transcribed text, word by word? |
+| **JWER** | How well does the vocabulary match? |
 
-**Per-Sample Data:**
-- `entries[].results`: WER, RTF, timing, diarization metrics (DER, JER, miss, false_alarm, confusion, speaker_count_error)
-- `entries[].debug`: Full transcripts and diarization segments
+#### Speaker Attribution Quality
+| Metric | What It Measures |
+|--------|------------------|
+| **WDER** | How often are words assigned to the wrong speaker? |
+
+#### Speaker Identification
+| Metric | What It Measures |
+|--------|------------------|
+| **Speaker Count Accuracy** | Did we identify the correct number of speakers? |
