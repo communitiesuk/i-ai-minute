@@ -2,10 +2,15 @@ import argparse
 import logging
 from datetime import datetime
 
-from adapters import AzureSTTAdapter, WhisperAdapter
-from core.config import AZURE_SPEECH_KEY, AZURE_SPEECH_REGION, WORKDIR
+from adapters import AzureSTTAdapter
+from core.config import (
+    AZURE_SPEECH_KEY,
+    AZURE_SPEECH_REGION,
+    WORKDIR,
+)
 from core.dataset import audio_duration_seconds, load_benchmark_dataset, to_wav_16k_mono
-from core.runner import run_engines_parallel, save_results
+from core.result_formatter import save_results
+from core.runner import run_engines_parallel
 
 logger = logging.getLogger(__name__)
 
@@ -47,14 +52,8 @@ def run_evaluation(
         language="en-GB",
     )
 
-    whisper_adapter = WhisperAdapter(
-        model_name="large-v3",
-        language="en",
-    )
-
     adapters_config = [
         {"adapter": azure_adapter, "label": "Azure Speech-to-Text"},
-        {"adapter": whisper_adapter, "label": "Whisper"},
     ]
 
     logger.info(
@@ -74,11 +73,22 @@ def run_evaluation(
 
     logger.info("=== Evaluation Complete ===")
     for result in results:
-        logger.info(
-            "%s WER: %.2f%%",
-            result["summary"]["engine"],
-            result["summary"]["overall_wer_pct"],
-        )
+        engine = result["summary"]["engine"]
+        m = result["summary"]["aggregated_metrics"]
+
+        logger.info("%s:", engine)
+        if "wer_wer" in m:
+            logger.info("  WER:  %.4f", m["wer_wer"]["mean"])
+        if "jaccard_wer_jaccard_wer" in m:
+            logger.info("  Jaccard WER: %.4f", m["jaccard_wer_jaccard_wer"]["mean"])
+        if "wder_wder" in m:
+            logger.info("  WDER: %.4f", m["wder_wder"]["mean"])
+        if "speaker_count_speaker_count_accuracy" in m:
+            logger.info(
+                "  Speaker Count Accuracy: %.4f",
+                m["speaker_count_speaker_count_accuracy"]["mean"],
+            )
+
     logger.info("Results saved to: %s", output_path)
 
 

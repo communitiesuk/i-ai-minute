@@ -73,6 +73,85 @@ Results are saved to `results/evaluation_results_YYYYMMDD_HHMMSS.json` with time
 - Cached in `cache/processed/` for reuse
 
 **Adapters**: Modify `src/evaluate.py` to change:
-- Whisper model size (currently `large-v3`)
-- Azure language settings (currently `en-US`)
+- Azure language settings (currently `en-GB`)
 - Add/remove transcription engines
+
+## Output Format
+
+Results are saved as JSON in `results/evaluation_results_YYYYMMDD_HHMMSS.json`.
+
+### Top-Level Structure
+
+```json
+{
+  "engines": [...]  // Array of engine results
+}
+```
+
+### Engine-Level Fields
+
+Each engine result contains:
+
+- **`engine`** (string): Engine name (e.g., "Azure Speech-to-Text")
+- **`processing_time_ratio`** (float): Real-time factor (processing_time / audio_duration)
+- **`word_metrics`** (object): Aggregated word-level counts across all samples
+  - `hits` (int): Total correct words
+  - `substitutions` (int): Total word substitutions
+  - `deletions` (int): Total word deletions
+  - `insertions` (int): Total word insertions
+  - `speaker_confusions` (int): Total speaker attribution errors
+  - `total_words` (int): Total reference words
+- **`wer`** (object): Word Error Rate statistics (decimal format, e.g., 0.2218 = 22.18%)
+  - `mean`, `min`, `max`, `std` (float)
+- **`jaccard_wer`** (object): Jaccard Word Error Rate statistics (decimal format)
+  - `mean`, `min`, `max`, `std` (float)
+- **`wder`** (object): Word-level Diarization Error Rate statistics (decimal format)
+  - `mean`, `min`, `max`, `std` (float)
+- **`speaker_count_accuracy`** (object): Speaker identification accuracy
+  - `accuracy` (float): Percentage of samples with correct speaker count
+  - `total_misses` (int): Number of samples with incorrect speaker count
+- **`samples`** (array): Per-sample detailed results
+
+### Sample-Level Fields
+
+Each sample contains:
+
+- **`dataset_index`** (int): Sample identifier
+- **`wer`** (object): Word Error Rate metrics
+  - `wer` (float): Error rate (decimal)
+  - `hits`, `substitutions`, `deletions`, `insertions` (int): Word-level counts
+- **`jaccard_wer`** (object): Jaccard Word Error Rate
+  - `jaccard_wer` (float): Error rate (decimal)
+- **`wder`** (object): Word-level Diarization Error Rate
+  - `wder` (float): Error rate (decimal)
+  - `speaker_errors` (int): Number of words with wrong speaker attribution
+  - `total_words` (int): Total reference words
+  - `confusion_count` (int): Number of speakers with attribution errors
+- **`speaker_count`** (object): Speaker count metrics
+  - `ref_speaker_count` (int): Number of speakers in reference
+  - `hyp_speaker_count` (int): Number of speakers in hypothesis
+  - `absolute_error` (int): Absolute difference
+  - `speaker_count_accuracy` (float): 1.0 if correct, 0.0 if incorrect
+- **`debug`** (object): Human-readable debug information
+  - `ref_with_speakers` (string): Reference transcript with normalized speaker labels
+  - `hyp_with_speakers` (string): Hypothesis transcript with speaker labels
+
+### Metrics
+
+All metrics computed using `jiwer` and `pyannote-metrics`. Aggregated with mean, max, std.
+
+#### Transcription Quality
+| Metric | What It Measures |
+|--------|------------------|
+| **WER** | How accurate is the transcribed text, word by word? |
+| **JWER** | How well does the vocabulary match? |
+
+#### Speaker Attribution Quality
+| Metric | What It Measures |
+|--------|------------------|
+| **WDER** | How often are words assigned to the wrong speaker? |
+
+#### Speaker Identification
+| Metric | What It Measures |
+|--------|------------------|
+| **Speaker Count Accuracy** | Did we identify the correct number of speakers? |
