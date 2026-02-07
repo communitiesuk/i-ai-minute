@@ -1,11 +1,10 @@
 from unittest.mock import AsyncMock, MagicMock, patch
-
+from uuid import uuid4
 import pytest
-
 from common.database.postgres_models import GuardrailResult, JobStatus
 from common.services.minute_handler_service import MinuteHandlerService
 from common.types import GuardrailScore, MeetingType
-from uuid import uuid4
+
 
 
 
