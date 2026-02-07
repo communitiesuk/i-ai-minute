@@ -45,7 +45,7 @@ Brewfile.lock.json
 *.docx
 
 # Rendered presentations
-frontend/**/*.html
+*.html
 *_files/
 
 # Docker cache
