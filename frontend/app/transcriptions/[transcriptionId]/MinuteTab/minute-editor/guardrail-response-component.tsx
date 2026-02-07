@@ -85,7 +85,7 @@ export function GuardrailResponseComponent({
   if (!guardrailResults.length && !hasHallucinations) return null
 
   return (
-    <>
+    <div>
       {/* 1. Hallucinations (Highest Priority) */}
       {hasHallucinations && (
         <StatusSection
@@ -107,7 +107,8 @@ export function GuardrailResponseComponent({
               {h.hallucination_reason && (
                 <p className="text-xs text-red-700">
                   Reason: {h.hallucination_reason}
-                </p>}
+                </p>
+              )}
             </div>
           ))}
         </StatusSection>
@@ -136,18 +137,19 @@ export function GuardrailResponseComponent({
                   <span className={`font-medium capitalize ${isHardFail ? 'text-red-800' : 'text-yellow-800'}`}>
                     {formatLabel(result.guardrail_type)}:
                   </span>
-
                   <span
-                   className={`rounded border px-1 text-xs font-bold uppercase ${
-                    isHardFail
-                      ? 'border-red-600  bg-red-100 text-red-700'
-                      : 'border-yellow-600 bg-yellow-100 text-yellow-800'
-                  }`}
+                    className={`rounded border px-1 text-xs font-bold uppercase ${
+                      isHardFail
+                        ? 'border-red-600 bg-red-100 text-red-700'
+                        : 'border-yellow-600 bg-yellow-100 text-yellow-800'
+                    }`}
                   >
+                    {isHardFail ? 'FAILED' : 'WARNING'}
                   </span>
                 </div>
                 {result.reasoning && (
-                  <p className="italic opacity-90">"{result.reasoning}"</p>}
+                  <p className="italic opacity-90">"{result.reasoning}"</p>
+                )}
                 {result.score !== null && (
                   <p className="ml-6 text-xs opacity-75">
                     Confidence: {(result.score * 100).toFixed(0)}%
@@ -178,6 +180,6 @@ export function GuardrailResponseComponent({
           </div>
         </StatusSection>
       )}
-    </>
+    </div>
   )
 }
