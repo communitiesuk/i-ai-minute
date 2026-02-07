@@ -27,10 +27,11 @@ class OpenAIModelAdapter(ModelAdapter):
         self._model = model
 
         if not azure_endpoint:
-            raise ValueError("Azure Endpoint is required for Azure OpenAI")
+            msg = "Azure Endpoint is required for Azure OpenAI"
+            raise ValueError(msg)
         if not azure_deployment:
-            raise ValueError("Azure Deployment name is required for Azure OpenAI")
-
+            msg = "Azure Deployment name is required for Azure OpenAI"  
+            raise ValueError(msg)
         endpoint = azure_endpoint.rstrip("/")
         base_url = f"{endpoint}/endpoint/deployments/{azure_deployment}"
         self.async_azure_client = AsyncAzureOpenAI(

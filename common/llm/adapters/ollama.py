@@ -50,11 +50,11 @@ class OllamaModelAdapter(ModelAdapter):
             error_msg = f"Invalid role: {role}"
             raise ValueError(error_msg)
 
-    async def structured_chat(self, messages: list[dict[str, str]], response_format: type[T]) -> T:
+    async def structured_chat(self, messages: list[dict[str, str]], response_format: type[T]) -> T: # noqa: PLR0915
         # Get the full schema
         schema = response_format.model_json_schema()
 
-        def parse_schema(s: Any) -> str:
+        def parse_schema(s: Any) -> str: # noqa: PLR0915
             if "type" not in s:
                 if "anyOf" in s:
                     return " | ".join([parse_schema(x) for x in s["anyOf"]])
@@ -140,8 +140,8 @@ Provide actual values for each field, not the type definitions or placeholders l
             # Check if the LLM returned the schema instead of actual data
             if "properties" in json_data and "type" in json_data:
                 logger.error("Ollama returned JSON schema instead of data. Raw content: %s", content)
-                messasge = "LLM returned schema definition instead of actual values. This may indicate an issue with how the response_format is defined or a problem with the LLM's understanding of the prompt."
-                raise ValueError(messasge)
+                message = "LLM returned schema definition instead of actual values"
+                raise ValueError(message)
             return response_format.model_validate(json_data)
         except Exception as e:
             logger.error("Ollama JSON parsing/validation failed: %s: %s", type(e).__name__, str(e))
