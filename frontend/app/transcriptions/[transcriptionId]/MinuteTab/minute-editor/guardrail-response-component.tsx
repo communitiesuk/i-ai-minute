@@ -137,7 +137,7 @@ export function GuardrailResponseComponent({
                   {isHardFail ? (
                     <XCircle className="h-4 w-4 text-red-600" />
                    ) : (
-                     <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                    <AlertTriangle className="h-4 w-4 text-yellow-600" />
                   )}
                   <span
                     className={`font-medium capitalize ${isHardFail ? 'text-red-800' : 'text-yellow-800'}`}
