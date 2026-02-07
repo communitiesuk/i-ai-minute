@@ -68,7 +68,7 @@ jobs:
       AWS_GITHUBRUNNER_PAT: ${{ secrets.AWS_GITHUBRUNNER_PAT}}
       AWS_REGION: ${{ secrets.AWS_REGION }}
       AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-  
+
   build-image:
     needs:
       - set-vars
@@ -81,17 +81,17 @@ jobs:
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
-      
+
       - name: AWS Authentication
         uses: i-dot-ai/i-dot-ai-core-github-actions/.github/actions/authenticate-aws@main
         with:
-            APP_NAME: ${{ needs.set-vars.outputs.app-name }}
-            USE_OIDC: true
-            ENVIRONMENT: prod # Looks like it use to default to this anyway
-            AWS_REGION: ${{ secrets.AWS_REGION }}
-            AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-            AWS_GITHUBRUNNER_USER_ACCESS_KEY: ${{ secrets.AWS_GITHUBRUNNER_USER_ACCESS_KEY }}
-            AWS_GITHUBRUNNER_USER_SECRET_ID: ${{ secrets.AWS_GITHUBRUNNER_USER_SECRET_ID }}
+          APP_NAME: ${{ needs.set-vars.outputs.app-name }}
+          USE_OIDC: true
+          ENVIRONMENT: prod # Looks like it use to default to this anyway
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+          AWS_GITHUBRUNNER_USER_ACCESS_KEY: ${{ secrets.AWS_GITHUBRUNNER_USER_ACCESS_KEY }}
+          AWS_GITHUBRUNNER_USER_SECRET_ID: ${{ secrets.AWS_GITHUBRUNNER_USER_SECRET_ID }}
 
       - name: Login to Amazon ECR (Private)
         run: |
@@ -113,8 +113,8 @@ jobs:
       - name: Export EFS_MOUNT_PATH
         uses: i-dot-ai/i-dot-ai-core-github-actions/.github/actions/export-parameter@main
         with:
-            PARAMETER_STORE_VAR_NAME: /github-runner-prod/efs-mount-path # defaults to prod??
-            ENVIRONMENT_VAR_NAME: EFS_MOUNT_PATH
+          PARAMETER_STORE_VAR_NAME: /github-runner-prod/efs-mount-path # defaults to prod??
+          ENVIRONMENT_VAR_NAME: EFS_MOUNT_PATH
 
       - name: Build
         uses: docker/build-push-action@v6

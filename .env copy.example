@@ -22,13 +22,6 @@ AZURE_OPENAI_ENDPOINT=<>
 AZURE_DEPLOYMENT=<>
 AZURE_API_VERSION=<>
 
-# === Azure APIM LLM config ===
-AZURE_APIM_URL=<>
-AZURE_APIM_DEPLOYMENT=<>
-AZURE_APIM_API_VERSION=<>
-AZURE_APIM_ACCESS_TOKEN=<>
-AZURE_APIM_SUBSCRIPTION_KEY=<>
-
 # === select transcription services ===
 TRANSCRIPTION_SERVICES=["azure_stt_synchronous", "azure_stt_batch"]
 
@@ -63,13 +56,10 @@ REPO=minute
 AUTH_API_URL=<auth_api_url>
 
 # === other ===
-SENTRY_DSN= # blank placeholder
+SENTRY_DSN=placeholder
 POSTHOG_API_KEY=<>
 
 
 DISABLE_AUTH_SIGNATURE_VERIFICATION=true # Only ever set to true in local environments
 
 
-
-# === Guardrails ===
-NEXT_PUBLIC_GUARDRAIL_THRESHOLD=0.8

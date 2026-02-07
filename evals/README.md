@@ -4,13 +4,13 @@ Config-driven LangChain eval runner for DialogSum-style conversational summariza
 
 ## Quickstart
 
-1) Create environment and install deps:
+1. Create environment and install deps:
 
 ```bash
 uv sync
 ```
 
-1) Run eval:
+1. Run eval:
 
 ```bash
 uv run ailg-evals --config configs/default.yaml --split test --limit 50

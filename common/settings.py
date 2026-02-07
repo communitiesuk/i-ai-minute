@@ -72,6 +72,7 @@ class Settings(BaseSettings):
     AZURE_OPENAI_API_KEY: str | None = Field(description="Azure API key for openAI", default=None)
     AZURE_OPENAI_ENDPOINT: str | None = Field(description="Azure OpenAI service endpoint URL", default=None)
     AZURE_OPENAI_API_VERSION: str | None = Field(description="Azure OpenAI API version", default=None)
+    AZURE_AUDIO_DEPLOYMENT: str | None = Field(description="Azure deployment for audio (Whisper)", default=None)
 
     # if using Azure APIM
     AZURE_APIM_URL: str | None = Field(description="Base URL for Azure APIM LLM.", default=None)
@@ -190,6 +191,10 @@ class Settings(BaseSettings):
     WHISPLY_HF_TOKEN: str | None = Field(
         default=None,
         description="HuggingFace token required for Whisply speaker diarization",
+    )
+    WHISPER_URL: str = Field(
+        default="http://localhost:11434/v1",
+        description="Base URL for faster-whisper-server providing OpenAI compatible API for transcription",
     )
     OLLAMA_BASE_URL: str = Field(default="http://localhost:11434/v1")
 

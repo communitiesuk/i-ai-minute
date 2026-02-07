@@ -21,15 +21,23 @@ class OpenAIModelAdapter(ModelAdapter):
         api_key: str,
         azure_endpoint: str,
         azure_deployment: str,
-        api_version: str = "2024-08-01-preview",
+        api_version: str = "2024-10-21",
         **kwargs: Any,
     ) -> None:
         self._model = model
+
+        if not azure_endpoint:
+            msg = "Azure Endpoint is required for Azure OpenAI"
+            raise ValueError(msg)
+        if not azure_deployment:
+            msg = "Azure Deployment name is required for Azure OpenAI"
+            raise ValueError(msg)
+        endpoint = azure_endpoint.rstrip("/")
+        base_url = f"{endpoint}/endpoint/deployments/{azure_deployment}"
         self.async_azure_client = AsyncAzureOpenAI(
-            azure_endpoint=azure_endpoint,
-            api_key=api_key,
+            base_url=base_url,
             api_version=api_version,
-            azure_deployment=azure_deployment,
+            api_key=api_key,
         )
         self._kwargs = kwargs
 

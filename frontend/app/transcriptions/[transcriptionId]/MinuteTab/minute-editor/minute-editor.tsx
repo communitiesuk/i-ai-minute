@@ -3,6 +3,7 @@
 import SimpleEditor from '@/app/transcriptions/[transcriptionId]/MinuteTab/components/editor/tiptap-editor'
 import { RatingButton } from '@/app/transcriptions/[transcriptionId]/MinuteTab/components/rating-dialog/rating-dialog'
 import { AiEditPopover } from '@/app/transcriptions/[transcriptionId]/MinuteTab/minute-editor/ai-edit-popover'
+import { GuardrailResponseComponent } from '@/app/transcriptions/[transcriptionId]/MinuteTab/minute-editor/guardrail-response-component'
 import { MinuteVersionSelect } from '@/app/transcriptions/[transcriptionId]/MinuteTab/minute-editor/minute-version-select'
 import { NewMinuteDialog } from '@/app/transcriptions/[transcriptionId]/MinuteTab/NewMinuteDialog'
 import { Button } from '@/components/ui/button'
@@ -292,6 +293,18 @@ export function MinuteEditor({
           />
         </div>
       </div>
+
+
+      {!minuteVersion.html_content?.includes(
+        'Short meeting detected. Minutes not available.'
+      ) && (
+        <>
+          <GuardrailResponseComponent
+            guardrailResults={minuteVersion.guardrail_results}
+            hallucinations={minuteVersion.hallucinations}
+          />
+        </>
+      )}
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <Controller
           control={form.control}

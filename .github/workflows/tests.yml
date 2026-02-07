@@ -4,8 +4,8 @@ name: tests
 
 env:
   DOCKER_BUILDKIT: 1
-  PYTHON_VERSION: "3.12"
-  POETRY_VERSION: "2.3.2"
+  PYTHON_VERSION: '3.12'
+  POETRY_VERSION: '2.3.2'
 
 on:
   push:
@@ -17,19 +17,19 @@ on:
       - .github/workflows/*.yaml
 
     branches:
-      - "main"
-      - "feature/**"
-      - "chore/**"
-      - "bugfix/**"
-      - "hotfix/**"
-      - "development/**"
-      - "dependabot/**"
-      - "security/**"
+      - 'main'
+      - 'feature/**'
+      - 'chore/**'
+      - 'bugfix/**'
+      - 'hotfix/**'
+      - 'development/**'
+      - 'dependabot/**'
+      - 'security/**'
 
-  pull_request: 
-    branches: 
+  pull_request:
+    branches:
       - development
-      
+
   workflow_dispatch:
 
 jobs:
@@ -39,7 +39,7 @@ jobs:
     environment: release
 
     steps:
-      - uses: actions/checkout@v3 
+      - uses: actions/checkout@v3
 
       - name: Set up Python
         uses: actions/setup-python@v3
@@ -74,11 +74,11 @@ jobs:
       - name: Run tests
         run: |
           make test
-      
-      - name: Set up Node 
-        uses: actions/setup-node@v3 
-        with: 
-            node-version: 20 
+
+      - name: Set up Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
 
       - name: Install frontend dependencies
         working-directory: frontend

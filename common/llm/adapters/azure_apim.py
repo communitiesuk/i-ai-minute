@@ -37,8 +37,9 @@ class AzureAPIMModelAdapter(ModelAdapter):
             messages=cast(list[ChatCompletionMessageParam], messages),
             response_format=response_format,
         )
-
-        parsed = response.choices[0].message.parsed
+        choice = response.choices[0]
+        self.choice_incomplete(choice, response)
+        parsed = choice.message.parsed
         if parsed is None:
             msg = "Azure APIM response.parsed is None"
             raise ValueError(msg)

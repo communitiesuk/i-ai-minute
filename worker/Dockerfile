@@ -9,6 +9,7 @@ ENV PYTHONUNBUFFERED=1
 RUN apt-get update && apt-get install -y ffmpeg curl && rm -rf /var/lib/apt/lists/*
 RUN pip install --no-cache-dir poetry
 
+
 WORKDIR /app
 
 # Copy only requirements to cache them in docker layer
