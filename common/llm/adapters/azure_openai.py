@@ -30,7 +30,7 @@ class OpenAIModelAdapter(ModelAdapter):
             msg = "Azure Endpoint is required for Azure OpenAI"
             raise ValueError(msg)
         if not azure_deployment:
-            msg = "Azure Deployment name is required for Azure OpenAI"  
+            msg = "Azure Deployment name is required for Azure OpenAI"
             raise ValueError(msg)
         endpoint = azure_endpoint.rstrip("/")
         base_url = f"{endpoint}/endpoint/deployments/{azure_deployment}"

@@ -54,7 +54,7 @@ class OllamaModelAdapter(ModelAdapter):
         # Get the full schema
         schema = response_format.model_json_schema()
 
-        def parse_schema(s: Any) -> str: # noqa: PLR0915
+        def parse_schema(s: Any) -> str:  
             if "type" not in s:
                 if "anyOf" in s:
                     return " | ".join([parse_schema(x) for x in s["anyOf"]])

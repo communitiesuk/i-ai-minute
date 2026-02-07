@@ -299,7 +299,6 @@ export function MinuteEditor({
         'Short meeting detected. Minutes not available.'
       ) && (
           <>
-
             <GuardrailResponseComponent
               guardrailResults={minuteVersion.guardrail_results}
               hallucinations={minuteVersion.hallucinations}

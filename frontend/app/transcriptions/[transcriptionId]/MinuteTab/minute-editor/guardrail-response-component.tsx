@@ -26,21 +26,23 @@ const StatusSection = ({
   title, 
   icon: Icon, 
   variant, 
-  children 
+  children, 
 }: { 
-  title: string, 
-  icon: LucideIcon, 
-  variant: 'error' | 'warning' | 'success', 
+  title: string 
+  icon: LucideIcon 
+  variant: 'error' | 'warning' | 'success' 
   children: React.ReactNode 
 }) => {
   const styles = {
     error: "bg-red-50 border-red-200 text-red-800",
     warning: "bg-yellow-50 border-yellow-200 text-yellow-800",
-    success: "bg-green-50 border-green-200 text-green-800"
+    success: "bg-green-50 border-green-200 text-green-800",
   }
 
   return (
-    <div className={`flex flex-col gap-2 p-4 border rounded-md mb-4 ${styles[variant]}`}>
+    <div
+      className={`flex flex-col gap-2 p-4 border rounded-md mb-4 ${styles[variant]}`}
+    >
       <div className="flex items-center gap-2 font-semibold">
         <Icon className="h-5 w-5" />
         <span>{title}</span>
@@ -63,7 +65,10 @@ export function GuardrailResponseComponent({
     const p: GuardrailResultResponse[] = []
 
     guardrailResults.forEach((r) => {
-      const isLowScore = r.score !== null && r.score !== undefined && r.score < GUARDRAIL_THRESHOLD
+      const isLowScore =
+        r.score !== null &&
+        r.score !== undefined &&
+        r.score < GUARDRAIL_THRESHOLD
       if (r.passed === false || isLowScore) {
         w.push(r)
       } else {
@@ -83,12 +88,26 @@ export function GuardrailResponseComponent({
     <>
       {/* 1. Hallucinations (Highest Priority) */}
       {hasHallucinations && (
-        <StatusSection title="Hallucinations Detected" icon={XCircle} variant="error">
+        <StatusSection
+          title="Hallucinations Detected"
+          icon={XCircle}
+          variant="error"
+        >
           {hallucinations?.map((h, i) => (
-            <div key={i} className="flex flex-col gap-1 text-sm p-2 rounded border bg-white/50 border-red-100">
-              <span className="font-medium capitalize">{formatLabel(h.hallucination_type)}:</span>
-              {h.hallucination_text && <p className="italic text-red-900">"{h.hallucination_text}"</p>}
-              {h.hallucination_reason && <p className="text-xs text-red-700">Reason: {h.hallucination_reason}</p>}
+            <div
+              key={i}
+              className="flex flex-col gap-1 rounded border border-red-100 bg-white/50 p-2 text-sm"
+            >
+              <span className="font-medium capitalize">
+                {formatLabel(h.hallucination_type)}:
+              </span>
+              {h.hallucination_text && (
+                <p className="text-red-900 italic">"{h.hallucination_text}"</p>
+              )}
+              {h.hallucination_reason && (
+                <p className="text-xs text-red-700">
+                  Reason: {h.hallucination_reason}
+                </p>}
             </div>
           ))}
         </StatusSection>
@@ -96,14 +115,20 @@ export function GuardrailResponseComponent({
 
       {/* 2. Warnings / Hard Fails */}
       {hasWarnings && (
-        <StatusSection title="Guardrail Warnings" icon={AlertTriangle} variant="warning">
+        <StatusSection
+          title="Guardrail Warnings"
+          icon={AlertTriangle}
+          variant="warning"
+        >
           {warnings.map((result) => {
             const isHardFail = result.passed === false
             return (
               <div 
                 key={result.id} 
-                className={`flex flex-col gap-1 text-sm p-2 rounded border ${
-                  isHardFail ? 'bg-red-50 border-red-100' : 'bg-white/50 border-yellow-100'
+                className={`flex flex-col gap-1 rounded border p-2 text-sm ${
+                  isHardFail
+                    ? 'border-red-100 bg-red-50'
+                    : 'border-yellow-100 bg-white/50'
                 }`}
               >
                 <div className="flex items-center gap-2">
@@ -111,13 +136,18 @@ export function GuardrailResponseComponent({
                   <span className={`font-medium capitalize ${isHardFail ? 'text-red-800' : 'text-yellow-800'}`}>
                     {formatLabel(result.guardrail_type)}:
                   </span>
-                  <span className={`uppercase text-xs font-bold border px-1 rounded ${
-                    isHardFail ? 'border-red-600 text-red-700 bg-red-100' : 'border-yellow-600 text-yellow-800 bg-yellow-100'
-                  }`}>
-                    {result.passed ? 'LOW SCORE' : 'FAILED'}
+
+                  <span
+                   className={`rounded border px-1 text-xs font-bold uppercase ${
+                    isHardFail
+                      ? 'border-red-600  bg-red-100 text-red-700'
+                      : 'border-yellow-600 bg-yellow-100 text-yellow-800'
+                  }`}
+                  >
                   </span>
                 </div>
-                {result.reasoning && <p className="italic opacity-90">"{result.reasoning}"</p>}
+                {result.reasoning && (
+                  <p className="italic opacity-90">"{result.reasoning}"</p>}
                 {result.score !== null && (
                   <p className="ml-6 text-xs opacity-75">
                     Confidence: {(result.score * 100).toFixed(0)}%
@@ -134,8 +164,13 @@ export function GuardrailResponseComponent({
         <StatusSection title="AI Verified" icon={CheckCircle} variant="success">
           <div className="flex flex-col gap-1 pl-7">
             {passes.map((result) => (
-              <div key={result.id} className="text-xs flex items-center gap-2 opacity-90">
-                <span className="capitalize">{formatLabel(result.guardrail_type)}</span>
+              <div
+                key={result.id}
+                className="text-xs flex items-center gap-2 opacity-90"
+              >
+                <span className="capitalize">
+                  {formatLabel(result.guardrail_type)}
+                </span>
                 <span className="opacity-50">•</span>
                 <span>Pass</span>
               </div>

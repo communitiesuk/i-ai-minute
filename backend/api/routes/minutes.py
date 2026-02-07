@@ -12,11 +12,11 @@ from common.services.queue_services import get_queue_service
 from common.settings import get_settings
 from common.types import (
     EditMessageData,
+    GuardrailResultResponse,
     MinuteListItem,
     MinutesCreateRequest,
     MinuteVersionCreateRequest,
     MinuteVersionResponse,
-    GuardrailResultResponse,
     TaskType,
     WorkerMessage,
 )
