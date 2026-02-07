@@ -170,4 +170,3 @@ Provide actual values for each field, not the type definitions or placeholders l
         except Exception as e:
             logger.error("Ollama chat failed: %s: %s", type(e).__name__, str(e))
             raise
-        

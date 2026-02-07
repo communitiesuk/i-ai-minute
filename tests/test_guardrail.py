@@ -8,8 +8,6 @@ from common.services.minute_handler_service import MinuteHandlerService
 from common.types import GuardrailScore, MeetingType
 
 
-
-
 @pytest.mark.asyncio
 async def test_calculate_accuracy_score():
     # Mock the chatbot and its response
