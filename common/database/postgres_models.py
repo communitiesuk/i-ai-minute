@@ -66,9 +66,9 @@ class MinuteVersion(BaseTableMixin, table=True):
     updated_datetime: datetime = Field(sa_column=updated_datetime_column(), default=None)
     minute_id: UUID = Field(foreign_key="minute.id", ondelete="CASCADE")
     minute: Mapped["Minute"] = Relationship(back_populates="minute_versions")
-    hallucinations: list["Hallucination"] = Relationship(back_populates="minute_version", cascade_delete=True)
+    hallucinations: Mapped[list["Hallucination"]] = Relationship(back_populates="minute_version", cascade_delete=True)
     html_content: str = Field(default="", sa_column_kwargs={"server_default": ""})
-    guardrail_results: list["GuardrailResult"] = Relationship(
+    guardrail_results: Mapped[list["GuardrailResult"]] = Relationship(  # Add Mapped here
         back_populates="minute_version",
         cascade_delete=True
     )
@@ -84,7 +84,6 @@ class MinuteVersion(BaseTableMixin, table=True):
         default=ContentSource.INITIAL_GENERATION,
         sa_column_kwargs={"server_default": ContentSource.INITIAL_GENERATION.name},
     )
-
 
 class Minute(BaseTableMixin, table=True):
     __tablename__ = "minute"

@@ -61,8 +61,8 @@ class OllamaModelAdapter(ModelAdapter):
                     return " | ".join([parse_schema(x) for x in s["anyOf"]])
                 return "any"
 
-            type_ = s["type"]
-            if type_ == "object":
+            schema_type = s["type"]  # Changed from type_ to schema_type
+            if schema_type == "object":
                 props = s.get("properties", {})
                 obj_repr = "{\n"
                 for name, info in props.items():
@@ -70,18 +70,18 @@ class OllamaModelAdapter(ModelAdapter):
                     obj_repr += f'  "{name}": {parse_schema(info)},{desc}\n'
                 obj_repr += "}"
                 return obj_repr
-            elif type_ == "array":
+            elif schema_type == "array":
                 items = s.get("items", {})
                 return f"[{parse_schema(items)}]"
-            elif type_ == "string":
+            elif schema_type == "string":
                 return '"string"'
-            elif type_ == "integer" or type_ == "number":
+            elif schema_type == "integer" or schema_type == "number":
                 return "number"
-            elif type_ == "boolean":
+            elif schema_type == "boolean":
                 return "boolean"
-            return type_
+            return str(schema_type) 
 
-        # Resolve $defs if present
+
         def resolve_refs(s: dict[str, Any], root_schema: dict[str, Any]) -> Any:
             if isinstance(s, dict):
                 if "$ref" in s:

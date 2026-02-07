@@ -1,7 +1,7 @@
 import uuid
 from datetime import UTC, datetime
 
-from requests import session
+
 
 from fastapi import APIRouter, HTTPException
 from sqlalchemy.orm import selectinload
@@ -17,6 +17,7 @@ from common.types import (
     MinutesCreateRequest,
     MinuteVersionCreateRequest,
     MinuteVersionResponse,
+    GuardrailResultResponse,
     TaskType,
     WorkerMessage,
 )
@@ -102,8 +103,8 @@ async def list_minute_versions(
         .options(
             selectinload(Minute.minute_versions).selectinload(MinuteVersion.guardrail_results),
             selectinload(Minute.transcription)
-            )
         )
+    )
     minute = result.first()
     if not minute or not minute.transcription.user_id or minute.transcription.user_id != user.id:
         raise HTTPException(404)
@@ -119,16 +120,16 @@ async def list_minute_versions(
             html_content=version.html_content,
             content_source=version.content_source,
             guardrail_results=[
-                {
-                    "id": result.id,
-                    "guardrail_type": result.guardrail_type,
-                    "passed": result.passed,
-                    "score": result.score,
-                    "reasoning": result.reasoning,
-                    "error": result.error,
-                }
-                for result in version.guardrail_results
-            ],
+                GuardrailResultResponse(
+                    id=result.id,
+                    guardrail_type=result.guardrail_type,
+                    passed=result.passed,
+                    score=result.score,
+                    reasoning=result.reasoning,
+                    error=result.error,
+                )
+        for result in version.guardrail_results
+    ],
         )
         for version in minute.minute_versions
     ]
@@ -169,14 +170,14 @@ async def create_minute_version(
         html_content=minute_version.html_content,
         content_source=minute_version.content_source,
         guardrail_results=[
-            {
-                "id": result.id,
-                "guardrail_type": result.guardrail_type,
-                "result": result.result,
-                "score": result.score,
-                "reasoning": result.reasoning,
-                "error": result.error,
-            }
+            GuardrailResultResponse(
+                id=result.id,
+                guardrail_type=result.guardrail_type,
+                passed=result.passed,  # Also fix this from "result"
+                score=result.score,
+                reasoning=result.reasoning,
+                error=result.error,
+            )
             for result in minute_version.guardrail_results
         ],
     )
