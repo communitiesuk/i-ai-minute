@@ -17,7 +17,8 @@ interface GuardrailProps {
 
 // --- Constants & Helpers ---
 
-const GUARDRAIL_THRESHOLD = Number(process.env.NEXT_PUBLIC_GUARDRAIL_THRESHOLD) || 0.8
+const GUARDRAIL_THRESHOLD =
+  Number(process.env.NEXT_PUBLIC_GUARDRAIL_THRESHOLD) || 0.8
 const formatLabel = (str: string) => str.replace(/_/g, ' ')
 
 // --- Reusable Sub-component ---
@@ -34,14 +35,14 @@ const StatusSection = ({
   children: React.ReactNode 
 }) => {
   const styles = {
-    error: "bg-red-50 border-red-200 text-red-800",
-    warning: "bg-yellow-50 border-yellow-200 text-yellow-800",
-    success: "bg-green-50 border-green-200 text-green-800",
+    error: 'bg-red-50 border-red-200 text-red-800',
+    warning: 'bg-yellow-50 border-yellow-200 text-yellow-800',
+    success: 'bg-green-50 border-green-200 text-green-800',
   }
 
   return (
     <div
-      className={`flex flex-col gap-2 p-4 border rounded-md mb-4 ${styles[variant]}`}
+      className={`mb-4 flex flex-col gap-2 rounded-md border p-4 ${styles[variant]}`}
     >
       <div className="flex items-center gap-2 font-semibold">
         <Icon className="h-5 w-5" />
@@ -133,8 +134,14 @@ export function GuardrailResponseComponent({
                 }`}
               >
                 <div className="flex items-center gap-2">
-                  {isHardFail ? <XCircle className="h-4 w-4 text-red-600" /> : <AlertTriangle className="h-4 w-4 text-yellow-600" />}
-                  <span className={`font-medium capitalize ${isHardFail ? 'text-red-800' : 'text-yellow-800'}`}>
+                  {isHardFail ? (
+                    <XCircle className="h-4 w-4 text-red-600" />
+                   ) : (
+                     <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                  )}
+                  <span
+                    className={`font-medium capitalize ${isHardFail ? 'text-red-800' : 'text-yellow-800'}`}
+                  >
                     {formatLabel(result.guardrail_type)}:
                   </span>
                   <span
@@ -168,7 +175,7 @@ export function GuardrailResponseComponent({
             {passes.map((result) => (
               <div
                 key={result.id}
-                className="text-xs flex items-center gap-2 opacity-90"
+                className="flex items-center gap-2 text-xs opacity-90"
               >
                 <span className="capitalize">
                   {formatLabel(result.guardrail_type)}
