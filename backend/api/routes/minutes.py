@@ -1,8 +1,10 @@
 import uuid
 from datetime import UTC, datetime
+
 from fastapi import APIRouter, HTTPException
 from sqlalchemy.orm import selectinload
 from sqlmodel import col, select
+
 from backend.api.dependencies import SQLSessionDep, UserDep
 from common.database.postgres_models import JobStatus, Minute, MinuteVersion, Transcription
 from common.services.queue_services import get_queue_service
