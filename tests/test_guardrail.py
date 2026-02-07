@@ -86,7 +86,10 @@ async def test_process_minute_generation_runs_guardrails():
     # Setup mocks
     mock_minute_version = MagicMock()
     mock_minute_version.id = uuid4()
-    mock_minute_version.minute.transcription.dialogue_entries = []
+    # Provide actual dialogue entries instead of empty list
+    mock_minute_version.minute.transcription.dialogue_entries = [
+        {"speaker": "A", "text": "Hello", "start_time": 0.0, "end_time": 1.0}
+    ]
 
     with patch("common.services.minute_handler_service.MinuteHandlerService.get_minute_version", new_callable=AsyncMock) as mock_get_mv, \
          patch("common.services.minute_handler_service.MinuteHandlerService.predict_meeting") as mock_predict, \
@@ -121,7 +124,10 @@ async def test_process_minute_generation_handles_guardrail_failure():
     # Setup mocks
     mock_minute_version = MagicMock()
     mock_minute_version.id = uuid4()
-    mock_minute_version.minute.transcription.dialogue_entries = []
+    # Provide actual dialogue entries instead of empty list
+    mock_minute_version.minute.transcription.dialogue_entries = [
+        {"speaker": "A", "text": "Hello", "start_time": 0.0, "end_time": 1.0}
+    ]
     
     with patch("common.services.minute_handler_service.MinuteHandlerService.get_minute_version", new_callable=AsyncMock) as mock_get_mv, \
          patch("common.services.minute_handler_service.MinuteHandlerService.predict_meeting") as mock_predict, \
@@ -133,23 +139,22 @@ async def test_process_minute_generation_handles_guardrail_failure():
         
         mock_get_mv.return_value = mock_minute_version
         mock_predict.return_value = MeetingType.standard
-        with patch.object(MinuteHandlerService, 'save_guardrail_error', mock_save_error):
-             mock_gen_minutes.return_value = ("<html>Minutes</html>", [])
-             
-             # Guardrail check raises exception
-             mock_calc_score.side_effect = Exception("Guardrail failed")
+        mock_gen_minutes.return_value = ("<html>Minutes</html>", [])
+        
+        # Guardrail check raises exception
+        mock_calc_score.side_effect = Exception("Guardrail failed")
 
-             # Execute
-             await MinuteHandlerService.process_minute_generation_message(mock_minute_version.id)
+        # Execute
+        await MinuteHandlerService.process_minute_generation_message(mock_minute_version.id)
 
-             # Verify
-             mock_calc_score.assert_called_once()
-             mock_save_result.assert_not_called()
-             mock_save_error.assert_called_once()
-             # Should still complete effectively
-             mock_update_mv.assert_called_with(
-                 mock_minute_version.id, 
-                 html_content="<html>Minutes</html>", 
-                 hallucinations=[], 
-                 status=JobStatus.COMPLETED
-             )
+        # Verify
+        mock_calc_score.assert_called_once()
+        mock_save_result.assert_not_called()
+        mock_save_error.assert_called_once()
+        # Should still complete effectively
+        mock_update_mv.assert_called_with(
+            mock_minute_version.id, 
+            html_content="<html>Minutes</html>", 
+            hallucinations=[], 
+            status=JobStatus.COMPLETED
+        )
