@@ -2,36 +2,37 @@ import { GuardrailResultResponse } from '@/lib/client'
 import { AlertTriangle, CheckCircle, XCircle } from 'lucide-react'
 
 export type LLMHallucination = {
-    hallucination_type: string
-    hallucination_text: string
-    hallucination_reason: string
+  hallucination_type: string
+  hallucination_text: string
+  hallucination_reason: string
 }
 
 export function GuardrailResponseComponent({
-    guardrailResults,
-    hallucinations,
+  guardrailResults,
+  hallucinations,
 }: {
-    guardrailResults: GuardrailResultResponse[]
-    hallucinations?: LLMHallucination[] | null
+  guardrailResults: GuardrailResultResponse[]
+  hallucinations?: LLMHallucination[] | null
 }) {
-    const GUARDRAIL_THRESHOLD = Number(process.env.NEXT_PUBLIC_GUARDRAIL_THRESHOLD) || 0.8;
+  const GUARDRAIL_THRESHOLD =
+    Number(process.env.NEXT_PUBLIC_GUARDRAIL_THRESHOLD) || 0.8;
 
 
-    const hasGuardrails = guardrailResults && guardrailResults.length > 0
-    const hasHallucinations = hallucinations && hallucinations.length > 0
+  const hasGuardrails = guardrailResults && guardrailResults.length > 0
+  const hasHallucinations = hallucinations && hallucinations.length > 0
 
 
-    if (!hasGuardrails && !hasHallucinations) {
-        return null
+  if (!hasGuardrails && !hasHallucinations) {
+      return null
     }
 
 
 
     // 2. Robust Filter Logic (Handles 'FAIL', 'Fail', 'fail')
-    const warnings = guardrailResults.filter((r) => {
-        return (
-            r.passed === false ||
-            (r.score !== null && r.score !== undefined && r.score < GUARDRAIL_THRESHOLD)
+  const warnings = guardrailResults.filter((r) => {
+      return (
+          r.passed === false ||
+          (r.score !== null && r.score !== undefined && r.score < GUARDRAIL_THRESHOLD)
         )
     })
 
@@ -46,14 +47,14 @@ export function GuardrailResponseComponent({
     return (
         <>
             {/* Render Hallucinations */}
-            {hasHallucinations && hallucinations && (
-                <div className="flex flex-col gap-2 p-4 bg-red-50 border border-red-200 rounded-md mb-4">
-                    <div className="flex items-center gap-2 font-semibold text-red-800">
-                        <XCircle className="h-5 w-5" />
-                        <span>Hallucinations Detected</span>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                        {hallucinations.map((h, i) => (
+          {hasHallucinations && hallucinations && (
+              <div className="flex flex-col gap-2 p-4 bg-red-50 border border-red-200 rounded-md mb-4">
+                  <div className="flex items-center gap-2 font-semibold text-red-800">
+                      <XCircle className="h-5 w-5" />
+                      <span>Hallucinations Detected</span>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                      {hallucinations.map((h, i) => (
                             <div key={i} className="flex flex-col gap-1 text-sm p-2 rounded border bg-white/50 border-red-100">
                                 <div className="flex items-center gap-2">
                                     <span className="font-medium capitalize text-red-800">

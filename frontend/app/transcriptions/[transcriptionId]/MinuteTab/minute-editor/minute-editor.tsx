@@ -57,10 +57,10 @@ export function MinuteEditor({
     }),
     refetchInterval: (query) =>
       query.state.data &&
-        query.state.data.length > 0 &&
-        ['awaiting_start', 'in_progress'].includes(
-          query.state.data[version].status
-        )
+      query.state.data.length > 0 &&
+      ['awaiting_start', 'in_progress'].includes(
+        query.state.data[version].status
+      )
         ? 1000
         : false,
   })
@@ -93,7 +93,7 @@ export function MinuteEditor({
   const hasCitations = useMemo(() => {
     return !!htmlContent?.match(citationRegex)
   }, [htmlContent])
-  useEffect(() => { }, [htmlContent])
+  useEffect(() => {}, [htmlContent])
   const { mutate: saveEdit } = useMutation({
     ...createMinuteVersionMinutesMinuteIdVersionsPostMutation(),
   })

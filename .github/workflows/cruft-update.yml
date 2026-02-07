@@ -1,4 +1,4 @@
-# 
+#
 name: Update repository from Cookiecutter
 
 permissions:
@@ -8,7 +8,7 @@ permissions:
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 9 * * *" # Every day at 9am
+    - cron: '0 9 * * *' # Every day at 9am
 
 jobs:
   check_for_update:
