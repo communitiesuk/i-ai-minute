@@ -50,11 +50,11 @@ class OllamaModelAdapter(ModelAdapter):
             error_msg = f"Invalid role: {role}"
             raise ValueError(error_msg)
 
-    async def structured_chat(self, messages: list[dict[str, str]], response_format: type[T]) -> T: # noqa: PLR0915
+    async def structured_chat(self, messages: list[dict[str, str]], response_format: type[T]) -> T:  # noqa: PLR0915
         # Get the full schema
         schema = response_format.model_json_schema()
 
-        def parse_schema(s: Any) -> str:  
+        def parse_schema(s: Any) -> str:
             if "type" not in s:
                 if "anyOf" in s:
                     return " | ".join([parse_schema(x) for x in s["anyOf"]])

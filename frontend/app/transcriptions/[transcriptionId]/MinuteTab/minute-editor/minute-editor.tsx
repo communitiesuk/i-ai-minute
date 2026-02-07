@@ -298,13 +298,13 @@ export function MinuteEditor({
       {!minuteVersion.html_content?.includes(
         'Short meeting detected. Minutes not available.'
       ) && (
-          <>
-            <GuardrailResponseComponent
-              guardrailResults={minuteVersion.guardrail_results}
-              hallucinations={minuteVersion.hallucinations}
-            />
-          </>
-        )}
+        <>
+          <GuardrailResponseComponent
+            guardrailResults={minuteVersion.guardrail_results}
+            hallucinations={minuteVersion.hallucinations}
+          />
+        </>
+      )}
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <Controller
           control={form.control}
