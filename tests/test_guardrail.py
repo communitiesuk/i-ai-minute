@@ -12,7 +12,7 @@ from uuid import uuid4
 async def test_calculate_accuracy_score():
     # Mock the chatbot and its response
     mock_score = GuardrailScore(score=0.95, reasoning="Excellent summary")
-    
+
     with patch("common.services.minute_handler_service.create_default_chatbot") as mock_create_chatbot:
         mock_chatbot = MagicMock()
         mock_chatbot.structured_chat = AsyncMock(return_value=mock_score)
@@ -29,7 +29,7 @@ async def test_calculate_accuracy_score():
         assert result == mock_score
         assert result.score == 0.95
         assert result.reasoning == "Excellent summary"
-        
+
         # Verify LLM called correctly
         mock_chatbot.structured_chat.assert_called_once()
         args, kwargs = mock_chatbot.structured_chat.call_args
@@ -38,16 +38,17 @@ async def test_calculate_accuracy_score():
         assert kwargs["messages"][0]["role"] == "system"
         assert "Quality Assurance auditor" in kwargs["messages"][0]["content"]
 
+
 @patch("common.services.minute_handler_service.SessionLocal")
 def test_save_guardrail_result(mock_session_local):
     mock_session = MagicMock()
     mock_session_local.return_value.__enter__.return_value = mock_session
-    
+
     minute_version_id = "123e4567-e89b-12d3-a456-426614174000"
     score = GuardrailScore(score=0.8, reasoning="Good")
-    
+
     MinuteHandlerService.save_guardrail_result(minute_version_id, score)
-    
+
     # Verify DB interaction
     mock_session.add.assert_called_once()
     saved_obj = mock_session.add.call_args[0][0]
@@ -56,7 +57,7 @@ def test_save_guardrail_result(mock_session_local):
     assert saved_obj.score == 0.8
     assert saved_obj.reasoning == "Good"
     assert saved_obj.passed is True
-    
+
     mock_session.commit.assert_called_once()
 
 
@@ -64,12 +65,12 @@ def test_save_guardrail_result(mock_session_local):
 def test_save_guardrail_error(mock_session_local):
     mock_session = MagicMock()
     mock_session_local.return_value.__enter__.return_value = mock_session
-    
+
     minute_version_id = "123e4567-e89b-12d3-a456-426614174000"
     error_msg = "Test error"
-    
+
     MinuteHandlerService.save_guardrail_error(minute_version_id, error_msg)
-    
+
     # Verify DB interaction
     mock_session.add.assert_called_once()
     saved_obj = mock_session.add.call_args[0][0]
@@ -77,7 +78,7 @@ def test_save_guardrail_error(mock_session_local):
     assert str(saved_obj.minute_version_id) == minute_version_id
     assert saved_obj.passed is False
     assert saved_obj.error == error_msg
-    
+
     mock_session.commit.assert_called_once()
 
 
@@ -91,17 +92,25 @@ async def test_process_minute_generation_runs_guardrails():
         {"speaker": "A", "text": "Hello", "start_time": 0.0, "end_time": 1.0}
     ]
 
-    with patch("common.services.minute_handler_service.MinuteHandlerService.get_minute_version", new_callable=AsyncMock) as mock_get_mv, \
-         patch("common.services.minute_handler_service.MinuteHandlerService.predict_meeting") as mock_predict, \
-         patch("common.services.minute_handler_service.MinuteHandlerService.generate_minutes", new_callable=AsyncMock) as mock_gen_minutes, \
-         patch("common.services.minute_handler_service.MinuteHandlerService.calculate_accuracy_score", new_callable=AsyncMock) as mock_calc_score, \
-         patch("common.services.minute_handler_service.MinuteHandlerService.save_guardrail_result") as mock_save_result, \
-         patch("common.services.minute_handler_service.MinuteHandlerService.update_minute_version") as mock_update_mv:
-        
+    with (
+        patch(
+            "common.services.minute_handler_service.MinuteHandlerService.get_minute_version", new_callable=AsyncMock
+        ) as mock_get_mv,
+        patch("common.services.minute_handler_service.MinuteHandlerService.predict_meeting") as mock_predict,
+        patch(
+            "common.services.minute_handler_service.MinuteHandlerService.generate_minutes", new_callable=AsyncMock
+        ) as mock_gen_minutes,
+        patch(
+            "common.services.minute_handler_service.MinuteHandlerService.calculate_accuracy_score",
+            new_callable=AsyncMock,
+        ) as mock_calc_score,
+        patch("common.services.minute_handler_service.MinuteHandlerService.save_guardrail_result") as mock_save_result,
+        patch("common.services.minute_handler_service.MinuteHandlerService.update_minute_version") as mock_update_mv,
+    ):
         mock_get_mv.return_value = mock_minute_version
         mock_predict.return_value = MeetingType.standard
         mock_gen_minutes.return_value = ("<html>Minutes</html>", [])
-        
+
         mock_score = GuardrailScore(score=0.9, reasoning="Good")
         mock_calc_score.return_value = mock_score
 
@@ -112,10 +121,7 @@ async def test_process_minute_generation_runs_guardrails():
         mock_calc_score.assert_called_once()
         mock_save_result.assert_called_once_with(mock_minute_version.id, mock_score)
         mock_update_mv.assert_called_with(
-            mock_minute_version.id, 
-            html_content="<html>Minutes</html>", 
-            hallucinations=[], 
-            status=JobStatus.COMPLETED
+            mock_minute_version.id, html_content="<html>Minutes</html>", hallucinations=[], status=JobStatus.COMPLETED
         )
 
 
@@ -128,19 +134,27 @@ async def test_process_minute_generation_handles_guardrail_failure():
     mock_minute_version.minute.transcription.dialogue_entries = [
         {"speaker": "A", "text": "Hello", "start_time": 0.0, "end_time": 1.0}
     ]
-    
-    with patch("common.services.minute_handler_service.MinuteHandlerService.get_minute_version", new_callable=AsyncMock) as mock_get_mv, \
-         patch("common.services.minute_handler_service.MinuteHandlerService.predict_meeting") as mock_predict, \
-         patch("common.services.minute_handler_service.MinuteHandlerService.generate_minutes", new_callable=AsyncMock) as mock_gen_minutes, \
-         patch("common.services.minute_handler_service.MinuteHandlerService.calculate_accuracy_score", new_callable=AsyncMock) as mock_calc_score, \
-         patch("common.services.minute_handler_service.MinuteHandlerService.save_guardrail_result") as mock_save_result, \
-         patch("common.services.minute_handler_service.MinuteHandlerService.save_guardrail_error") as mock_save_error, \
-         patch("common.services.minute_handler_service.MinuteHandlerService.update_minute_version") as mock_update_mv:
-        
+
+    with (
+        patch(
+            "common.services.minute_handler_service.MinuteHandlerService.get_minute_version", new_callable=AsyncMock
+        ) as mock_get_mv,
+        patch("common.services.minute_handler_service.MinuteHandlerService.predict_meeting") as mock_predict,
+        patch(
+            "common.services.minute_handler_service.MinuteHandlerService.generate_minutes", new_callable=AsyncMock
+        ) as mock_gen_minutes,
+        patch(
+            "common.services.minute_handler_service.MinuteHandlerService.calculate_accuracy_score",
+            new_callable=AsyncMock,
+        ) as mock_calc_score,
+        patch("common.services.minute_handler_service.MinuteHandlerService.save_guardrail_result") as mock_save_result,
+        patch("common.services.minute_handler_service.MinuteHandlerService.save_guardrail_error") as mock_save_error,
+        patch("common.services.minute_handler_service.MinuteHandlerService.update_minute_version") as mock_update_mv,
+    ):
         mock_get_mv.return_value = mock_minute_version
         mock_predict.return_value = MeetingType.standard
         mock_gen_minutes.return_value = ("<html>Minutes</html>", [])
-        
+
         # Guardrail check raises exception
         mock_calc_score.side_effect = Exception("Guardrail failed")
 
@@ -153,8 +167,5 @@ async def test_process_minute_generation_handles_guardrail_failure():
         mock_save_error.assert_called_once()
         # Should still complete effectively
         mock_update_mv.assert_called_with(
-            mock_minute_version.id, 
-            html_content="<html>Minutes</html>", 
-            hallucinations=[], 
-            status=JobStatus.COMPLETED
+            mock_minute_version.id, html_content="<html>Minutes</html>", hallucinations=[], status=JobStatus.COMPLETED
         )

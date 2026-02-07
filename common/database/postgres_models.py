@@ -3,8 +3,7 @@ from enum import StrEnum, auto
 from typing import TypedDict
 from uuid import UUID, uuid4
 
-
-from sqlalchemy import TIMESTAMP, Column, Enum 
+from sqlalchemy import TIMESTAMP, Column, Enum
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped
 from sqlalchemy.sql.functions import now
@@ -57,9 +56,6 @@ class GuardrailType(StrEnum):
     COMPLETENESS = auto()
 
 
-
-   
-
 class MinuteVersion(BaseTableMixin, table=True):
     __tablename__ = "minute_version"
     created_datetime: datetime = Field(sa_column=created_datetime_column(), default=None)
@@ -69,8 +65,7 @@ class MinuteVersion(BaseTableMixin, table=True):
     hallucinations: Mapped[list["Hallucination"]] = Relationship(back_populates="minute_version", cascade_delete=True)
     html_content: str = Field(default="", sa_column_kwargs={"server_default": ""})
     guardrail_results: Mapped[list["GuardrailResult"]] = Relationship(  # Add Mapped here
-        back_populates="minute_version",
-        cascade_delete=True
+        back_populates="minute_version", cascade_delete=True
     )
     status: JobStatus = Field(
         default=JobStatus.AWAITING_START, sa_column_kwargs={"server_default": JobStatus.AWAITING_START.name}
@@ -84,6 +79,7 @@ class MinuteVersion(BaseTableMixin, table=True):
         default=ContentSource.INITIAL_GENERATION,
         sa_column_kwargs={"server_default": ContentSource.INITIAL_GENERATION.name},
     )
+
 
 class Minute(BaseTableMixin, table=True):
     __tablename__ = "minute"

@@ -19,7 +19,6 @@ settings = get_settings()
 logger = logging.getLogger(__name__)
 
 
-
 class OllamaModelAdapter(ModelAdapter):
     def __init__(
         self,
@@ -75,12 +74,11 @@ class OllamaModelAdapter(ModelAdapter):
                 return f"[{parse_schema(items)}]"
             elif schema_type == "string":
                 return '"string"'
-            elif schema_type == "integer" or schema_type == "number":
+            elif schema_type in ("integer", "number"):
                 return "number"
             elif schema_type == "boolean":
                 return "boolean"
-            return str(schema_type) 
-
+            return str(schema_type)
 
         def resolve_refs(s: dict[str, Any], root_schema: dict[str, Any]) -> Any:
             if isinstance(s, dict):
@@ -113,7 +111,6 @@ Provide actual values for each field, not the type definitions or placeholders l
 
         openai_messages = [self._convert_to_openai_message(msg) for msg in modified_messages]
 
-
         response = await self.async_client.chat.completions.create(
             model=self._model,
             messages=openai_messages,
@@ -139,12 +136,12 @@ Provide actual values for each field, not the type definitions or placeholders l
 
         try:
             json_data = json.loads(content)
-            
+
             # Check if the LLM returned the schema instead of actual data
             if "properties" in json_data and "type" in json_data:
                 logger.error("Ollama returned JSON schema instead of data. Raw content: %s", content)
-                raise ValueError("LLM returned schema definition instead of actual values")
-            
+                messasge = "LLM returned schema definition instead of actual values. This may indicate an issue with how the response_format is defined or a problem with the LLM's understanding of the prompt."
+                raise ValueError(messasge)
             return response_format.model_validate(json_data)
         except Exception as e:
             logger.error("Ollama JSON parsing/validation failed: %s: %s", type(e).__name__, str(e))

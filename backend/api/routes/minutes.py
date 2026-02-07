@@ -2,7 +2,6 @@ import uuid
 from datetime import UTC, datetime
 
 
-
 from fastapi import APIRouter, HTTPException
 from sqlalchemy.orm import selectinload
 from sqlmodel import col, select
@@ -102,7 +101,7 @@ async def list_minute_versions(
         .where(Minute.id == minute_id)
         .options(
             selectinload(Minute.minute_versions).selectinload(MinuteVersion.guardrail_results),
-            selectinload(Minute.transcription)
+            selectinload(Minute.transcription),
         )
     )
     minute = result.first()
@@ -128,8 +127,8 @@ async def list_minute_versions(
                     reasoning=result.reasoning,
                     error=result.error,
                 )
-        for result in version.guardrail_results
-    ],
+                for result in version.guardrail_results
+            ],
         )
         for version in minute.minute_versions
     ]

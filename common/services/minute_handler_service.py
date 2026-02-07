@@ -8,16 +8,17 @@ from sqlalchemy.orm import selectinload
 
 from common.convert_american_to_british_spelling import convert_american_to_british_spelling
 from common.database.postgres_database import SessionLocal
+
 # Ensure these imports match your actual file structure
 from common.database.postgres_models import (
-    DialogueEntry, 
-    GuardrailResult, 
-    GuardrailType, 
-    Hallucination, 
-    JobStatus, 
-    Minute, 
-    MinuteVersion, 
-    UserTemplate
+    DialogueEntry,
+    GuardrailResult,
+    GuardrailType,
+    Hallucination,
+    JobStatus,
+    Minute,
+    MinuteVersion,
+    UserTemplate,
 )
 from common.format_transcript import transcript_as_speaker_and_utterance
 from common.llm.client import FastOrBestLLM, create_default_chatbot
@@ -37,7 +38,6 @@ from common.types import (
 )
 
 settings = get_settings()
-
 
 
 logger = logging.getLogger(__name__)
@@ -70,7 +70,7 @@ class MinuteHandlerService:
         with SessionLocal() as session:
             # Determine Pass/Fail based on a threshold (e.g. 0.7)
             passed = score.score > THRESHOLD_FOR_PASSING_ACCURACY_CHECK
-            
+
             guardrail_result = GuardrailResult(
                 minute_version_id=minute_version_id,
                 guardrail_type=GuardrailType.HALLUCINATION,
@@ -82,10 +82,7 @@ class MinuteHandlerService:
             session.commit()
 
     @staticmethod
-    def save_guardrail_error(
-        minute_version_id: UUID,
-        error_message: str
-    ) -> None:
+    def save_guardrail_error(minute_version_id: UUID, error_message: str) -> None:
         """
         New helper to save system errors (Patryk's Request)
         """
@@ -96,7 +93,7 @@ class MinuteHandlerService:
                 passed=False,
                 score=0.0,
                 reasoning="System Error: Could not verify accuracy.",
-                error=error_message
+                error=error_message,
             )
             session.add(guardrail_result)
             session.commit()
@@ -183,7 +180,7 @@ class MinuteHandlerService:
             meeting_type = cls.predict_meeting(dialogue_entries)
             logger.info("%s: Predicted minute version %s", minute_version.minute_id, meeting_type)
             html_content, hallucinations = await cls.generate_minutes(meeting_type, minute_version.minute)
-            
+
             # 1. Post-processing: Run Guardrail Check BEFORE marking as completed
             # This ensures the frontend doesn't show the summary until guardrails are ready
             try:
@@ -207,7 +204,7 @@ class MinuteHandlerService:
             )
 
         except Exception as e:
-            logger.debug(f"Internal error: {e}")
+            logger.debug("Internal error: %s", e)
             cls.update_minute_version(minute_version.id, status=JobStatus.FAILED, error=str(e))
             raise MinuteGenerationFailedError from e
 
@@ -237,7 +234,7 @@ class MinuteHandlerService:
                 edit_instructions=target_minute_version.ai_edit_instructions,
                 transcript=transcript,
             )
-            
+
             # 1. Run Guardrails on the Edited Version BEFORE marking as completed
             try:
                 accuracy_score = await cls.calculate_accuracy_score(
@@ -367,9 +364,8 @@ class MinuteHandlerService:
     ) -> GuardrailScore:
         # Use FAST model (Gemini Flash / Llama 3) for speed
         chatbot = create_default_chatbot(FastOrBestLLM.FAST)
-        
-        score = await chatbot.structured_chat(
+
+        return await chatbot.structured_chat(
             messages=get_accuracy_check_messages(minute, transcript),
             response_format=GuardrailScore,
         )
-        return score

@@ -155,6 +155,7 @@ def create_chatbot(model_type: str, model_name: str, temperature: float) -> Chat
         )
     elif model_type == "ollama":
         from common.llm.adapters.ollama import OllamaModelAdapter
+
         return ChatBot(
             OllamaModelAdapter(
                 model=model_name,

@@ -222,7 +222,6 @@ class WorkerMessage(BaseModel):
     data: EditMessageData | TranscriptionJobMessageData | None = Field(default=None)
 
 
-
 class MeetingType(StrEnum):
     too_short = auto()
     short = auto()

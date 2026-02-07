@@ -31,9 +31,7 @@ class AzureAPIMModelAdapter(ModelAdapter):
             },
         )
 
-    async def structured_chat(
-        self, messages: list[dict[str, str]], response_format: type[T]
-    ) -> T:
+    async def structured_chat(self, messages: list[dict[str, str]], response_format: type[T]) -> T:
         response = await self.async_apim_client.beta.chat.completions.parse(
             model=self._deployment,
             messages=cast(list[ChatCompletionMessageParam], messages),
@@ -46,7 +44,6 @@ class AzureAPIMModelAdapter(ModelAdapter):
             msg = "Azure APIM response.parsed is None"
             raise ValueError(msg)
         return cast(T, parsed)
-
 
     async def chat(self, messages: list[dict[str, str]]) -> str:
         response = await self.async_apim_client.chat.completions.create(
