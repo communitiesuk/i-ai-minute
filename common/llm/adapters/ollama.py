@@ -60,7 +60,8 @@ class OllamaModelAdapter(ModelAdapter):
                     return " | ".join([parse_schema(x) for x in s["anyOf"]])
                 return "any"
 
-            schema_type = s["type"]  # Changed from type_ to schema_type
+            schema_type = s["type"]
+
             if schema_type == "object":
                 props = s.get("properties", {})
                 obj_repr = "{\n"
@@ -69,16 +70,19 @@ class OllamaModelAdapter(ModelAdapter):
                     obj_repr += f'  "{name}": {parse_schema(info)},{desc}\n'
                 obj_repr += "}"
                 return obj_repr
-            elif schema_type == "array":
+
+            if schema_type == "array":
                 items = s.get("items", {})
                 return f"[{parse_schema(items)}]"
-            elif schema_type == "string":
-                return '"string"'
-            elif schema_type in ("integer", "number"):
-                return "number"
-            elif schema_type == "boolean":
-                return "boolean"
-            return str(schema_type)
+
+            # Use mapping to reduce return statements (fixes PLR0911)
+            simple_types = {
+                "string": '"string"',
+                "integer": "number",
+                "number": "number",
+                "boolean": "boolean",
+            }
+            return simple_types.get(schema_type, str(schema_type))
 
         def resolve_refs(s: dict[str, Any], root_schema: dict[str, Any]) -> Any:
             if isinstance(s, dict):
