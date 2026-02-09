@@ -30,12 +30,12 @@ def run_evaluation(
     output_path = output_dir / f"evaluation_results_{timestamp}.json"
 
     logger.info("Loading dataset...")
-    ds = load_benchmark_dataset(
+    dataset = load_benchmark_dataset(
         num_samples=num_samples,
         sample_duration_fraction=sample_duration_fraction,
     )
 
-    indices = list(range(len(ds)))
+    indices = list(range(len(dataset)))
     logger.info("Loaded %d samples from AMI dataset", len(indices))
 
     if prepare_only:
@@ -75,7 +75,7 @@ def run_evaluation(
     results = run_engines_parallel(
         adapters_config=adapters_config,
         indices=indices,
-        dataset=ds,
+        dataset=dataset,
         wav_write_fn=to_wav_16k_mono,
         duration_fn=audio_duration_seconds,
     )

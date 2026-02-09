@@ -43,17 +43,17 @@ def to_wav_16k_mono(
             return cast(str, cached_path)
 
     audio = example["audio"]
-    y = audio["array"]
-    sr = audio["sampling_rate"]
+    audio_data = audio["array"]
+    sample_rate = audio["sampling_rate"]
 
     output_path = AUDIO_DIR / f"sample_{idx:06d}.wav"
 
-    if getattr(y, "ndim", 1) == STEREO_CHANNELS:
-        y = y.mean(axis=1)
+    if getattr(audio_data, "ndim", 1) == STEREO_CHANNELS:
+        audio_data = audio_data.mean(axis=1)
 
     with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
         temp_path = Path(temp_file.name)
-        sf.write(temp_path, y, sr, subtype="PCM_16")
+        sf.write(temp_path, audio_data, sample_rate, subtype="PCM_16")
 
     try:
         input_stream = ffmpeg.input(str(temp_path))

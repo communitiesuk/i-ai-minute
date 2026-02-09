@@ -34,15 +34,15 @@ def select_segments(
         )
 
         segments = []
-        for mid in meeting_ids[:num_meetings]:
-            meeting_duration = durations.get(mid, 0)
+        for meeting_id in meeting_ids[:num_meetings]:
+            meeting_duration = durations.get(meeting_id, 0)
             cutoff_time = meeting_duration * sample_duration_fraction
-            segments.append(MeetingSegment(meeting_id=mid, utterance_cutoff_time=cutoff_time))
+            segments.append(MeetingSegment(meeting_id=meeting_id, utterance_cutoff_time=cutoff_time))
 
         return segments
 
     logger.info("Selecting first %d meetings", num_meetings)
     return [
-        MeetingSegment(meeting_id=mid, utterance_cutoff_time=None)
-        for mid in meeting_ids[:num_meetings]
+        MeetingSegment(meeting_id=meeting_id, utterance_cutoff_time=None)
+        for meeting_id in meeting_ids[:num_meetings]
     ]

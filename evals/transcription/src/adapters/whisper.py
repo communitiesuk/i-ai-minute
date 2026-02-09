@@ -17,24 +17,33 @@ class WhisperAdapter(TranscriptionAdapter):
         logger.info("Whisply adapter initialized with model: %s", model_name)
 
     def transcribe(self, wav_path: str) -> tuple[str, float, dict[str, object]]:
-        t0 = time.time()
+        start_time = time.time()
 
         try:
-            result = asyncio.run(WhisplyLocalAdapter.start(Path(wav_path)))
-            t1 = time.time()
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_closed():
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+            
+            result = loop.run_until_complete(WhisplyLocalAdapter.start(Path(wav_path)))
+            end_time = time.time()
 
             dialogue_entries = result.transcript
 
             if not dialogue_entries:
                 logger.error("Whisply returned an empty transcript for %s", wav_path)
-                return "", (t1 - t0), {"error": "Empty transcript"}
+                return "", (end_time - start_time), {"error": "Empty transcript"}
 
             full_text = " ".join(entry["text"] for entry in dialogue_entries).strip()
 
             debug = {"model": self.model_name, "segments": len(dialogue_entries)}
-            return full_text, (t1 - t0), debug
+            return full_text, (end_time - start_time), debug
 
-        except Exception as e:
-            logger.error(f"Whisply transcription failed: {e}")
-            t1 = time.time()
-            return "", (t1 - t0), {"error": str(e)}
+        except Exception as error:
+            logger.error(f"Whisply transcription failed: {error}")
+            end_time = time.time()
+            return "", (end_time - start_time), {"error": str(error)}

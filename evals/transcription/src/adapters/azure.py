@@ -19,24 +19,24 @@ class AzureSTTAdapter(TranscriptionAdapter):
         self.language = language
 
     def transcribe(self, wav_path: str) -> tuple[str, float, dict[str, str]]:
-        t0 = time.time()
+        start_time = time.time()
 
         try:
             result = asyncio.run(CommonAzureAdapter.start(Path(wav_path)))
-            t1 = time.time()
+            end_time = time.time()
 
             dialogue_entries = result.transcript
 
             if not dialogue_entries:
                 logger.error("Azure Speech API returned an empty transcript for %s", wav_path)
-                return "", (t1 - t0), {"error": "Empty transcript"}
+                return "", (end_time - start_time), {"error": "Empty transcript"}
 
             full_text = " ".join(entry["text"] for entry in dialogue_entries).strip()
 
             debug = {"segments": str(len(dialogue_entries))}
-            return full_text, (t1 - t0), debug
+            return full_text, (end_time - start_time), debug
 
-        except Exception as e:
-            logger.error(f"Azure Speech API request failed: {e}")
-            t1 = time.time()
-            return "", (t1 - t0), {"error": str(e)}
+        except Exception as error:
+            logger.error(f"Azure Speech API request failed: {error}")
+            end_time = time.time()
+            return "", (end_time - start_time), {"error": str(error)}

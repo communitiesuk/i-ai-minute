@@ -48,9 +48,9 @@ def run_engines_parallel(
         adapter = adapter_cfg["adapter"]
         label = adapter_cfg["label"]
 
-        ex = dataset[int(idx)]
-        wav_path = wav_write_fn(ex, int(idx))
-        ref_raw = ex["text"]
+        example = dataset[int(idx)]
+        wav_path = wav_write_fn(example, int(idx))
+        ref_raw = example["text"]
         aud_sec = float(duration_fn(wav_path))
 
         hyp_raw, proc_sec, dbg = adapter.transcribe(wav_path)
@@ -144,7 +144,7 @@ def save_results(results: list[EngineOutput], output_path: Path) -> None:
         "engines": {r["summary"]["engine"]: r["samples"] for r in results},
     }
 
-    with output_path.open("w", encoding="utf-8") as f:
-        json.dump(combined, f, indent=2, ensure_ascii=False)
+    with output_path.open("w", encoding="utf-8") as file_handle:
+        json.dump(combined, file_handle, indent=2, ensure_ascii=False)
 
     logger.info("Results saved to %s", output_path)

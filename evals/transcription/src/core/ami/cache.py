@@ -29,23 +29,23 @@ def get_cache_paths(processed_dir: Path, segment: MeetingSegment, idx: int) -> C
 
 
 def load_audio(path: Path) -> np.ndarray:
-    audio, sr = sf.read(path)
-    if sr != TARGET_SAMPLE_RATE:
+    audio, sample_rate = sf.read(path)
+    if sample_rate != TARGET_SAMPLE_RATE:
         logger.warning(
             "Cached audio has unexpected sample rate %d, expected %d",
-            sr,
+            sample_rate,
             TARGET_SAMPLE_RATE,
         )
     return cast(np.ndarray, audio)
 
 
-def save_audio(path: Path, audio: np.ndarray, sr: int = TARGET_SAMPLE_RATE) -> None:
-    if sr == TARGET_SAMPLE_RATE:
-        sf.write(path, audio, sr, subtype="PCM_16")
+def save_audio(path: Path, audio: np.ndarray, sample_rate: int = TARGET_SAMPLE_RATE) -> None:
+    if sample_rate == TARGET_SAMPLE_RATE:
+        sf.write(path, audio, sample_rate, subtype="PCM_16")
     else:
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
             temp_path = Path(temp_file.name)
-            sf.write(temp_path, audio, sr, subtype="PCM_16")
+            sf.write(temp_path, audio, sample_rate, subtype="PCM_16")
 
         try:
             input_stream = ffmpeg.input(str(temp_path))

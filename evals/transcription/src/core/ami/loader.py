@@ -17,9 +17,9 @@ logger = logging.getLogger(__name__)
 
 
 def _load_utterances_for_meetings(required_meetings: set, split: str, config: str) -> dict:
-    ds = load_dataset("edinburghcstr/ami", config, split=split)
+    dataset = load_dataset("edinburghcstr/ami", config, split=split)
     utterances_by_meeting = defaultdict(list)
-    for example in ds:
+    for example in dataset:
         meeting_id = example.get("meeting_id", "unknown")
         if meeting_id in required_meetings:
             utterances_by_meeting[meeting_id].append(example)
@@ -34,10 +34,10 @@ def _apply_cutoff(utterances: list, cutoff_time: float | None) -> list:
     result = []
     accumulated = 0.0
 
-    for utt in utterances_sorted:
-        duration = utt.get("end_time", 0) - utt.get("begin_time", 0)
+    for utterance in utterances_sorted:
+        duration = utterance.get("end_time", 0) - utterance.get("begin_time", 0)
         if accumulated + duration <= cutoff_time:
-            result.append(utt)
+            result.append(utterance)
             accumulated += duration
         else:
             break

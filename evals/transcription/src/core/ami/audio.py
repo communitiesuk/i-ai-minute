@@ -17,11 +17,11 @@ def to_mono(audio: np.ndarray) -> np.ndarray:
 
 def resample_if_needed(
     audio: np.ndarray,
-    sr: int,
+    sample_rate: int,
     target_sr: int = TARGET_SAMPLE_RATE,
 ) -> np.ndarray:
-    if sr != target_sr:
-        return librosa.resample(audio, orig_sr=sr, target_sr=target_sr)
+    if sample_rate != target_sr:
+        return librosa.resample(audio, orig_sr=sample_rate, target_sr=target_sr)
     return cast(np.ndarray, audio)
 
 
@@ -38,20 +38,20 @@ def mix_utterances(utterances: list, target_sr: int = TARGET_SAMPLE_RATE) -> tup
 
     utterances_sorted = sorted(utterances, key=lambda x: x.get("begin_time", 0))
 
-    max_end_time = max(utt.get("end_time", 0) for utt in utterances_sorted)
+    max_end_time = max(utterance.get("end_time", 0) for utterance in utterances_sorted)
     total_samples = int(np.ceil(max_end_time * target_sr))
 
     mixed_audio = np.zeros(total_samples, dtype=np.float32)
     text_parts = []
 
-    for utt in utterances_sorted:
-        audio_array = utt["audio"]["array"]
-        sr = utt["audio"]["sampling_rate"]
-        begin_time = utt.get("begin_time", 0)
-        text = utt.get("text", "")
+    for utterance in utterances_sorted:
+        audio_array = utterance["audio"]["array"]
+        sample_rate = utterance["audio"]["sampling_rate"]
+        begin_time = utterance.get("begin_time", 0)
+        text = utterance.get("text", "")
 
         audio_array = to_mono(audio_array)
-        audio_array = resample_if_needed(audio_array, sr, target_sr)
+        audio_array = resample_if_needed(audio_array, sample_rate, target_sr)
 
         start_sample = int(begin_time * target_sr)
         end_sample = start_sample + len(audio_array)
@@ -71,5 +71,5 @@ def mix_utterances(utterances: list, target_sr: int = TARGET_SAMPLE_RATE) -> tup
     return mixed_audio, full_text
 
 
-def compute_duration(audio: np.ndarray, sr: int = TARGET_SAMPLE_RATE) -> float:
-    return float(len(audio) / sr)
+def compute_duration(audio: np.ndarray, sample_rate: int = TARGET_SAMPLE_RATE) -> float:
+    return float(len(audio) / sample_rate)

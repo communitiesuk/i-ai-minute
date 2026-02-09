@@ -25,22 +25,22 @@ def load_or_build_metadata(
 
     if metadata_cache_path.exists():
         logger.info("Loading cached meeting metadata...")
-        with metadata_cache_path.open("r") as f:
-            metadata = json.load(f)
+        with metadata_cache_path.open("r") as file_handle:
+            metadata = json.load(file_handle)
         logger.info("Found %d meetings in cache", len(metadata["meeting_ids"]))
         return cast(MeetingMetadata, metadata)
 
     logger.info("Loading AMI dataset (%s configuration)...", config)
     logger.info("This may take a while on first run (downloading full dataset)...")
 
-    ds = load_dataset("edinburghcstr/ami", config, split=split)
+    dataset = load_dataset("edinburghcstr/ami", config, split=split)
 
-    logger.info("Loaded %d utterances from AMI dataset", len(ds))
+    logger.info("Loaded %d utterances from AMI dataset", len(dataset))
     logger.info("Grouping utterances by meeting_id and computing durations...")
 
     meeting_utterances = defaultdict(list)
 
-    for example in ds:
+    for example in dataset:
         meeting_id = example.get("meeting_id", "unknown")
         meeting_utterances[meeting_id].append(example)
 
@@ -52,7 +52,7 @@ def load_or_build_metadata(
     for meeting_id in meeting_ids_sorted:
         utterances = meeting_utterances[meeting_id]
         if utterances:
-            max_end_time = max(utt.get("end_time", 0) for utt in utterances)
+            max_end_time = max(utterance.get("end_time", 0) for utterance in utterances)
             meeting_durations[meeting_id] = max_end_time
 
     new_metadata: MeetingMetadata = {
@@ -61,7 +61,7 @@ def load_or_build_metadata(
     }
 
     logger.info("Caching meeting metadata...")
-    with metadata_cache_path.open("w") as f:
-        json.dump(new_metadata, f)
+    with metadata_cache_path.open("w") as file_handle:
+        json.dump(new_metadata, file_handle)
 
     return new_metadata

@@ -22,10 +22,10 @@ _jiwer_transform = jiwer.Compose(
 )
 
 
-def normalise_text(s: str) -> str:
-    if not s:
+def normalise_text(text: str) -> str:
+    if not text:
         return ""
-    result = _jiwer_transform(s)
+    result = _jiwer_transform(text)
     if isinstance(result, list) and len(result) > 0:
         return " ".join(result[0]) if isinstance(result[0], list) else " ".join(result)
     return ""
@@ -55,6 +55,10 @@ def compute_wer_metrics(refs: list[str], hyps: list[str]) -> Metrics:
         "deletions": int(word_output.deletions),
         "insertions": int(word_output.insertions),
     }
+
+
+def compute_wer_pct(refs: list[str], hyps: list[str]) -> float:
+    return compute_wer_metrics(refs, hyps)["wer"]
 
 
 class TimingAccumulator:
