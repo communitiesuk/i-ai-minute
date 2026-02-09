@@ -23,16 +23,16 @@ const formatLabel = (str: string) => str.replace(/_/g, ' ')
 
 // --- Reusable Sub-component ---
 
-const StatusSection = ({ 
-  title, 
-  icon: Icon, 
-  variant, 
-  children, 
-}: { 
-  title: string 
-  icon: LucideIcon 
-  variant: 'error' | 'warning' | 'success' 
-  children: React.ReactNode 
+const StatusSection = ({
+  title,
+  icon: Icon,
+  variant,
+  children,
+}: {
+  title: string
+  icon: LucideIcon
+  variant: 'error' | 'warning' | 'success'
+  children: React.ReactNode
 }) => {
   const styles = {
     error: 'bg-red-50 border-red-200 text-red-800',
@@ -59,7 +59,6 @@ export function GuardrailResponseComponent({
   guardrailResults = [],
   hallucinations = [],
 }: GuardrailProps) {
-  
   // Logic: Separate results into warnings and passes
   const { warnings, passes } = useMemo(() => {
     const w: GuardrailResultResponse[] = []
@@ -125,8 +124,8 @@ export function GuardrailResponseComponent({
           {warnings.map((result) => {
             const isHardFail = result.passed === false
             return (
-              <div 
-                key={result.id} 
+              <div
+                key={result.id}
                 className={`flex flex-col gap-1 rounded border p-2 text-sm ${
                   isHardFail
                     ? 'border-red-100 bg-red-50'
@@ -136,7 +135,7 @@ export function GuardrailResponseComponent({
                 <div className="flex items-center gap-2">
                   {isHardFail ? (
                     <XCircle className="h-4 w-4 text-red-600" />
-                   ) : (
+                  ) : (
                     <AlertTriangle className="h-4 w-4 text-yellow-600" />
                   )}
                   <span

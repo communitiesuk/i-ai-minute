@@ -294,7 +294,6 @@ export function MinuteEditor({
         </div>
       </div>
 
-
       {!minuteVersion.html_content?.includes(
         'Short meeting detected. Minutes not available.'
       ) && (
