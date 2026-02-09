@@ -1,29 +1,13 @@
-evals/src/ailg_evals/signatures.py:3: error: Cannot find implementation or library stub for module named "dspy"  [import-not-found]
-evals/src/ailg_evals/jsonl.py:6: error: Cannot find implementation or library stub for module named "orjson"  [import-not-found]
-evals/src/ailg_evals/jsonl.py:6: note: See https://mypy.readthedocs.io/en/stable/running_mypy.html#missing-imports
-
-
-evals/transcription/src/core/ami/metadata.py:29: error: Returning Any from function declared to return "MeetingMetadata"  [no-any-return]
-evals/transcription/src/core/ami/metadata.py:34: error: Name "load_dataset" is not defined  [name-defined]
-evals/transcription/src/core/ami/metadata.py:56: error: Name "metadata" already defined on line 27  [no-redef]
-evals/transcription/src/core/ami/metadata.py:65: error: Returning Any from function declared to return "MeetingMetadata"  [no-any-return]
-
 common/audio/ffmpeg.py:5: error: Unused "type: ignore" comment  [unused-ignore]
 common/audio/ffmpeg.py:19: error: Module has no attribute "probe"  [attr-defined]
 common/audio/ffmpeg.py:28: error: Module has no attribute "input"  [attr-defined]
 common/audio/ffmpeg.py:38: error: Module has no attribute "output"  [attr-defined]
 common/audio/ffmpeg.py:41: error: Module has no attribute "run"  [attr-defined]
 
-evals/transcription/src/core/ami/cache.py:9: error: Cannot find implementation or library stub for module named "transcription.src.constants"  [import-not-found]
-evals/transcription/src/core/ami/cache.py:38: error: Returning Any from function declared to return "ndarray[Any, Any]"  [no-any-return]
-evals/transcription/src/core/ami/cache.py:50: error: Module has no attribute "input"  [attr-defined]
-evals/transcription/src/core/ami/cache.py:51: error: Module has no attribute "output"  [attr-defined]
-evals/transcription/src/core/ami/cache.py:59: error: Module has no attribute "run"  [attr-defined]
+evals/transcription/src/core/ami/cache.py:51: error: Module has no attribute "input"  [attr-defined]
+evals/transcription/src/core/ami/cache.py:52: error: Module has no attribute "output"  [attr-defined]
+evals/transcription/src/core/ami/cache.py:60: error: Module has no attribute "run"  [attr-defined]
 
-evals/transcription/src/core/metrics.py:62: error: Function is missing a return type annotation  [no-untyped-def]
-evals/transcription/src/core/metrics.py:89: error: Function is missing a return type annotation  [no-untyped-def]
-evals/transcription/src/core/metrics.py:89: note: Use "-> None" if function does not return a value
-evals/transcription/src/core/metrics.py:93: error: Function is missing a return type annotation  [no-untyped-def]
 
 evals/transcription/src/core/runner.py:16: error: Function is missing a type annotation  [no-untyped-def]
 evals/transcription/src/core/runner.py:23: error: Function is missing a type annotation  [no-untyped-def]
@@ -34,32 +18,21 @@ evals/transcription/src/core/runner.py:82: note: Possible overload variants:
 evals/transcription/src/core/runner.py:82: note:     def [SupportsRichComparisonT: SupportsDunderLT[Any] | SupportsDunderGT[Any]] sorted(Iterable[SupportsRichComparisonT], /, *, key: None = ..., reverse: bool = ...) -> list[SupportsRichComparisonT]
 evals/transcription/src/core/runner.py:82: note:     def [_T] sorted(Iterable[_T], /, *, key: Callable[[_T], SupportsDunderLT[Any] | SupportsDunderGT[Any]], reverse: bool = ...) -> list[_T]
 evals/transcription/src/core/runner.py:82: error: No overload variant of "sorted" matches argument types "object", "Callable[[Any], Never]"  [call-overload]
+
+evals/transcription/src/core/runner.py:91: error: Argument 1 to "float" has incompatible type "float | tuple[float, Ops]"; expected "str | Buffer | SupportsFloat | SupportsIndex"  [arg-type]
+
 evals/transcription/src/core/runner.py:92: error: "object" has no attribute "rtf"  [attr-defined]
 evals/transcription/src/core/runner.py:93: error: "object" has no attribute "process_sec"  [attr-defined]
 evals/transcription/src/core/runner.py:94: error: "object" has no attribute "audio_sec"  [attr-defined]
 evals/transcription/src/core/runner.py:105: error: Function is missing a return type annotation  [no-untyped-def]
-
-evals/src/ailg_evals/config.py:41: error: Argument "default_factory" to "Field" has incompatible type "Callable[[], list[str]]"; expected "Callable[[], list[Literal['faithfulness', 'coverage', 'conciseness', 'coherence']]] | Callable[[dict[str, Any]], list[Literal['faithfulness', 'coverage', 'conciseness', 'coherence']]]"  [arg-type]
-evals/src/ailg_evals/metric.py:5: error: Cannot find implementation or library stub for module named "dspy"  [import-not-found]
-evals/src/ailg_evals/runner.py:9: error: Cannot find implementation or library stub for module named "dspy"  [import-not-found]
-evals/src/ailg_evals/runner.py:10: error: Cannot find implementation or library stub for module named "orjson"  [import-not-found]
-evals/src/ailg_evals/runner.py:12: error: Cannot find implementation or library stub for module named "dspy.evaluate"  [import-not-found]
-evals/src/ailg_evals/runner.py:13: error: Cannot find implementation or library stub for module named "langchain_core.prompts"  [import-not-found]
-evals/src/ailg_evals/runner.py:14: error: Cannot find implementation or library stub for module named "langchain_openai"  [import-not-found]
-evals/src/ailg_evals/runner.py:176: error: Function is missing a return type annotation  [no-untyped-def]
-evals/src/ailg_evals/runner.py:190: error: Function is missing a type annotation  [no-untyped-def]
-
-evals/transcription/src/core/ami/audio.py:6: error: Cannot find implementation or library stub for module named "transcription.src.constants"  [import-not-found]
 evals/transcription/src/core/ami/audio.py:13: error: Returning Any from function declared to return "ndarray[Any, Any]"  [no-any-return]
 evals/transcription/src/core/ami/audio.py:30: error: Returning Any from function declared to return "ndarray[Any, Any]"  [no-any-return]
-evals/transcription/src/core/ami/loader.py:7: error: Cannot find implementation or library stub for module named "transcription.src.constants"  [import-not-found]
 evals/transcription/src/core/ami/loader.py:45: error: Function is missing a type annotation for one or more arguments  [no-untyped-def]
 evals/transcription/src/core/ami/loader.py:109: error: Function is missing a type annotation for one or more arguments  [no-untyped-def]
 evals/transcription/src/core/ami/loader.py:188: error: Function is missing a type annotation  [no-untyped-def]
 evals/transcription/src/core/ami_dataset.py:9: error: Function is missing a return type annotation  [no-untyped-def]
 evals/transcription/src/core/ami_dataset.py:18: error: Argument 1 to "_validate_dataset_contract" has incompatible type "Sample"; expected "dict[Any, Any]"  [arg-type]
 evals/transcription/src/core/ami_dataset.py:23: error: Function is missing a return type annotation  [no-untyped-def]
-evals/transcription/src/core/dataset.py:10: error: Cannot find implementation or library stub for module named "transcription.src.constants"  [import-not-found]
 evals/transcription/src/core/dataset.py:16: error: Function is missing a return type annotation  [no-untyped-def]
 evals/transcription/src/core/dataset.py:32: error: Returning Any from function declared to return "str"  [no-any-return]
 evals/transcription/src/core/dataset.py:48: error: Module has no attribute "input"  [attr-defined]
@@ -74,4 +47,4 @@ evals/transcription/src/adapters/azure.py:31: error: Argument 1 to "len" has inc
 evals/transcription/src/evaluate.py:21: error: Function is missing a return type annotation  [no-untyped-def]
 evals/transcription/src/evaluate.py:93: error: Function is missing a return type annotation  [no-untyped-def]
 evals/transcription/src/evaluate.py:93: note: Use "-> None" if function does not return a value
-Found 62 errors in 17 files (checked 110 source files)
+Found 42 errors in 11 files (checked 20 source files)

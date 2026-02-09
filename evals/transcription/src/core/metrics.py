@@ -1,5 +1,25 @@
 import jiwer
 
+from typing import TypedDict, cast
+
+class Ops(TypedDict):
+    equal: int
+    replace: int
+    delete: int
+    insert: int
+
+class Metrics(TypedDict):
+    wer: float
+    mer: float
+    wil: float
+    cer: float
+    hits: int
+    substitutions: int
+    deletions: int
+    insertions: int
+
+
+
 _jiwer_transform = jiwer.Compose(
     [
         jiwer.ToLowerCase(),
@@ -20,7 +40,8 @@ def normalise_text(s: str) -> str:
     return ""
 
 
-def compute_wer_metrics(refs: list[str], hyps: list[str]) -> dict:
+def compute_wer_metrics(refs: list[str], hyps: list[str]) -> Metrics:
+
     if not refs or not hyps:
         return {
             "wer": 0.0,
@@ -59,17 +80,17 @@ def compute_wer_metrics(refs: list[str], hyps: list[str]) -> dict:
     }
 
 
-def compute_wer_pct(refs: list[str], hyps: list[str], return_ops: bool = False):
+def compute_wer_pct(refs: list[str], hyps: list[str], return_ops: bool = False) -> float | tuple[float, Ops]   :
     metrics = compute_wer_metrics(refs, hyps)
     wer_pct = metrics["wer"] * 100.0
 
     if return_ops:
-        ops = {
+        ops = cast(Ops, {
             "equal": metrics["hits"],
             "replace": metrics["substitutions"],
             "delete": metrics["deletions"],
             "insert": metrics["insertions"],
-        }
+        })
         return wer_pct, ops
 
     return wer_pct
@@ -86,11 +107,11 @@ def token_ops(a: str, b: str) -> dict:
 
 
 class TimingAccumulator:
-    def __init__(self):
+    def __init__(self)-> None:
         self.process_sec = 0.0
         self.audio_sec = 0.0
 
-    def add(self, audio_sec: float, process_sec: float):
+    def add(self, audio_sec: float, process_sec: float)-> None:
         self.audio_sec += float(audio_sec)
         self.process_sec += float(process_sec)
 

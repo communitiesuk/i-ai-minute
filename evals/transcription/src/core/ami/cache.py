@@ -5,6 +5,7 @@ from pathlib import Path
 import ffmpeg
 import numpy as np
 import soundfile as sf
+from typing import cast
 
 from evals.transcription.src.constants import TARGET_SAMPLE_RATE
 from .selection import MeetingSegment
@@ -35,7 +36,7 @@ def load_audio(path: Path) -> np.ndarray:
             sr,
             TARGET_SAMPLE_RATE,
         )
-    return audio
+    return cast(np.ndarray, audio)
 
 
 def save_audio(path: Path, audio: np.ndarray, sr: int = TARGET_SAMPLE_RATE) -> None:

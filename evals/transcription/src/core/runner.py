@@ -7,6 +7,7 @@ from threading import Lock
 import numpy as np
 from jiwer import wer
 from tqdm import tqdm
+from typing import TypedDict
 
 from .metrics import TimingAccumulator, compute_wer_pct, normalise_text, token_ops
 
@@ -82,13 +83,13 @@ def run_engines_parallel(adapters_config, indices, *, dataset, wav_write_fn, dur
         rows = sorted(results[label]["rows"], key=lambda x: x["dataset_index"])
         timing = results[label]["timing"]
 
-        overall_wer = compute_wer_pct([r["ref_raw"] for r in rows], [r["hyp_raw"] for r in rows])
+        overall_wer = compute_wer_pct([r["ref_raw"] for r in rows], [r["hyp_raw"] for r in rows]) #set return_ops to False?
         per_wers = [r["wer_pct"] for r in rows]
 
         summary = {
             "engine": label,
             "num_samples": len(indices),
-            "overall_wer_pct": float(overall_wer),
+            "overall_wer_pct": float(overall_wer),  #could be a float or Tuple[float, Ops] based on compute_wer_pct's return type
             "rtf": float(timing.rtf),
             "process_sec": float(timing.process_sec),
             "audio_sec": float(timing.audio_sec),
@@ -114,3 +115,8 @@ def save_results(results: list, output_path: Path):
         json.dump(combined, f, indent=2, ensure_ascii=False)
 
     logger.info("Results saved to %s", output_path)
+
+
+class EngineResults(TypedDict): 
+    rows: list[dict]
+    timing: TimingAccumulator

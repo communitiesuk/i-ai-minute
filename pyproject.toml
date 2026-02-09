@@ -151,7 +151,7 @@ known-first-party = ["backend", "frontend"]
 "*/tests_playwright/*" = ["S101", "S106", "PLR0913", "PLR2004", "TD003"]
 
 [tool.mypy]
-packages = ["evals"] 
+# packages = ["evals"] 
 explicit_package_bases = true
 
 warn_unused_configs = true
@@ -167,5 +167,14 @@ no_implicit_optional = true
 exclude = ["alembic/*", "tests/*", "terraform/*", "viewer/*"]
 
 [[tool.mypy.overrides]]
-module=["ffmpeg.*", "soundfile.*", "datasets.*"]
-ignore_missing_imports=true
+module = "ffmpeg.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "soundfile.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "datasets.*"
+ignore_missing_imports = true
+
