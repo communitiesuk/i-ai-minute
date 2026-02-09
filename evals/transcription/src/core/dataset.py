@@ -5,7 +5,7 @@ from typing import cast
 
 from evals.transcription.src.core.ami.loader import AMIDatasetLoader
 from evals.transcription.src.core.types import DatasetItem
-import ffmpeg  
+import ffmpeg  # type: ignore[import-untyped]
 import soundfile as sf
 from common.audio.ffmpeg import get_duration
 
@@ -46,8 +46,8 @@ def to_wav_16k_mono(example: DatasetItem, idx: int) -> str: # WavWriteFn Callabl
         sf.write(temp_path, y, sr, subtype="PCM_16")
 
     try:
-        input_stream = ffmpeg.input(str(temp_path)) # type: ignore
-        output_stream = ffmpeg.output( # type: ignore
+        input_stream = ffmpeg.input(str(temp_path))
+        output_stream = ffmpeg.output(
             input_stream,
             str(output_path),
             acodec="pcm_s16le",
@@ -55,7 +55,7 @@ def to_wav_16k_mono(example: DatasetItem, idx: int) -> str: # WavWriteFn Callabl
             ac=1,
             loglevel="error",
         )
-        ffmpeg.run(output_stream, overwrite_output=True, quiet=True) # type: ignore
+        ffmpeg.run(output_stream, overwrite_output=True, quiet=True)
     finally:
         temp_path.unlink(missing_ok=True)
 
