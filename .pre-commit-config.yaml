@@ -8,12 +8,6 @@ repos:
         name: Check for files larger than 5 MB
         args: ["--maxkb=5120"]
 
-  # - repo: https://github.com/Yelp/detect-secrets
-  #   rev: v1.4.0
-  #   hooks:
-  #     - id: detect-secrets
-  #       exclude: (poetry.lock|.env.example|.env.test|^.github/workflows/|.cruft.json|aws_architecture)
-
   - repo: local
     hooks:
       - id: detect-ip
@@ -23,21 +17,15 @@ repos:
         exclude: '^static/|\.lock'
         files: .
 
-      - id: npm-format
-        name: Format frontend files
-        entry: bash -c 'cd frontend && npm ci && npm run prettier:fix'
-        language: system
-        pass_filenames: false
+  # Prettier for frontend files
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.1.0
+    hooks:
+      - id: prettier
         files: ^frontend/
-        types: [file]
+        args: [--write]
 
-      # - id: python-tests
-      #   name: Run Python tests
-      #   entry: poetry run pytest
-      #   language: system
-      #   types: [python]
-      #   pass_filenames: false
-
+  # Ruff for Python files
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.8.2
     hooks:
