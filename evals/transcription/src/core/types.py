@@ -8,7 +8,6 @@ from numpy.typing import NDArray
 from evals.transcription.src.adapters.base import TranscriptionAdapter
 from evals.transcription.src.core.metrics import TimingAccumulator
 
-
 AudioArray = NDArray[np.floating]
 
 

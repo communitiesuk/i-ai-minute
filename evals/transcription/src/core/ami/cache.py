@@ -1,11 +1,11 @@
 import logging
 import tempfile
 from pathlib import Path
+from typing import cast
 
 import ffmpeg  # type: ignore[import-untyped]
 import numpy as np
 import soundfile as sf
-from typing import cast
 
 from evals.transcription.src.constants import TARGET_SAMPLE_RATE
 from evals.transcription.src.core.ami.selection import MeetingSegment

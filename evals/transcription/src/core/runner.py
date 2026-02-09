@@ -6,6 +6,7 @@ from threading import Lock
 
 import numpy as np
 from tqdm import tqdm
+
 from evals.transcription.src.core.metrics import (
     TimingAccumulator,
     compute_wer_metrics,

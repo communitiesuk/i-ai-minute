@@ -4,6 +4,7 @@ from datetime import datetime
 from pathlib import Path
 
 from common.settings import get_settings
+
 from evals.transcription.src.adapters import AzureSTTAdapter, WhisperAdapter
 from evals.transcription.src.core.dataset import (
     audio_duration_seconds,
@@ -61,7 +62,7 @@ def run_evaluation(
         language="en",
     )
 
-    adapters_config:  list[AdapterConfig] = [
+    adapters_config: list[AdapterConfig] = [
         {"adapter": azure_adapter, "label": "Azure Speech-to-Text"},
         {"adapter": whisper_adapter, "label": "Whisper"},
     ]

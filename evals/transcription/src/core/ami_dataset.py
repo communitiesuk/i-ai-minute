@@ -1,9 +1,8 @@
 import logging
 from pathlib import Path
 
-from evals.transcription.src.core.ami.types import AMIDatasetSample
-
 from evals.transcription.src.core.ami import AMIDatasetLoader
+from evals.transcription.src.core.ami.types import AMIDatasetSample
 
 logger = logging.getLogger(__name__)
 
@@ -47,5 +46,3 @@ def _validate_dataset_contract(sample: AMIDatasetSample) -> None:
     logger.debug("Audio array ndim: %s", getattr(audio_array, "ndim", None))
     logger.debug("Audio array shape: %s", getattr(audio_array, "shape", None))
     logger.debug("Sampling rate: %d", sampling_rate)
-
-

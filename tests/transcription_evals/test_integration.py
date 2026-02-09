@@ -66,8 +66,7 @@ def test_run_evaluation_with_fake_adapters(tmp_path, monkeypatch):
     assert results_path.exists()
     results = json.loads(results_path.read_text(encoding="utf-8"))
     results = [
-        {"summary": summary, "samples": results["engines"][summary["engine"]]}
-        for summary in results["summaries"]
+        {"summary": summary, "samples": results["engines"][summary["engine"]]} for summary in results["summaries"]
     ]
     assert len(results) == 2
     assert {r["summary"]["engine"] for r in results} == {"Azure Speech-to-Text", "Whisper"}
@@ -96,12 +95,8 @@ def test_adapter_contracts(monkeypatch):
     async def fake_start(_path):
         return SimpleNamespace(transcript=[{"text": "hello"}, {"text": "world"}])
 
-    monkeypatch.setattr(
-        "evals.transcription.src.adapters.azure.CommonAzureAdapter.start", fake_start
-    )
-    monkeypatch.setattr(
-        "evals.transcription.src.adapters.whisper.WhisplyLocalAdapter.start", fake_start
-    )
+    monkeypatch.setattr("evals.transcription.src.adapters.azure.CommonAzureAdapter.start", fake_start)
+    monkeypatch.setattr("evals.transcription.src.adapters.whisper.WhisplyLocalAdapter.start", fake_start)
 
     azure = AzureSTTAdapter("key", "region")
     text, proc_sec, debug = azure.transcribe("/tmp/a.wav")

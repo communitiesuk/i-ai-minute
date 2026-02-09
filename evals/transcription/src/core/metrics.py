@@ -1,6 +1,7 @@
+from typing import TypedDict
+
 import jiwer
 
-from typing import TypedDict
 
 class Metrics(TypedDict):
     wer: float
@@ -8,7 +9,6 @@ class Metrics(TypedDict):
     substitutions: int
     deletions: int
     insertions: int
-
 
 
 _jiwer_transform = jiwer.Compose(
@@ -32,7 +32,6 @@ def normalise_text(s: str) -> str:
 
 
 def compute_wer_metrics(refs: list[str], hyps: list[str]) -> Metrics:
-
     if not refs or not hyps:
         return {
             "wer": 0.0,
@@ -59,11 +58,11 @@ def compute_wer_metrics(refs: list[str], hyps: list[str]) -> Metrics:
 
 
 class TimingAccumulator:
-    def __init__(self)-> None:
+    def __init__(self) -> None:
         self.process_sec = 0.0
         self.audio_sec = 0.0
 
-    def add(self, audio_sec: float, process_sec: float)-> None:
+    def add(self, audio_sec: float, process_sec: float) -> None:
         self.audio_sec += float(audio_sec)
         self.process_sec += float(process_sec)
 

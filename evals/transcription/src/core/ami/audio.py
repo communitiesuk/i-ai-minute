@@ -1,8 +1,8 @@
 import logging
+from typing import cast
 
 import librosa
 import numpy as np
-from typing import cast
 
 from evals.transcription.src.constants import STEREO_CHANNELS, TARGET_SAMPLE_RATE
 
@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 def to_mono(audio: np.ndarray) -> np.ndarray:
     if getattr(audio, "ndim", 1) == STEREO_CHANNELS:
-        return cast(np.ndarray,audio.mean(axis=1))
+        return cast(np.ndarray, audio.mean(axis=1))
     return cast(np.ndarray, audio)
 
 

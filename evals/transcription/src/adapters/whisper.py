@@ -28,7 +28,7 @@ class WhisperAdapter(TranscriptionAdapter):
             if not dialogue_entries:
                 logger.error("Whisply returned an empty transcript for %s", wav_path)
                 return "", (t1 - t0), {"error": "Empty transcript"}
-            
+
             full_text = " ".join(entry["text"] for entry in dialogue_entries).strip()
 
             debug = {"model": self.model_name, "segments": len(dialogue_entries)}
