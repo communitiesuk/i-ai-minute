@@ -28,7 +28,7 @@ class WhisperAdapter(TranscriptionAdapter):
             except RuntimeError:
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
-            
+
             result = loop.run_until_complete(WhisplyLocalAdapter.start(Path(wav_path)))
             end_time = time.time()
 

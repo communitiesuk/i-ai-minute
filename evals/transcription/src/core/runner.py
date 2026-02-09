@@ -109,15 +109,15 @@ def run_engines_parallel(
     output_results: list[EngineOutput] = []
     for adapter_cfg in adapters_config:
         label = adapter_cfg["label"]
-        rows = sorted(results[label]["rows"], key=lambda x: x["dataset_index"])
+        rows = sorted(results[label]["rows"], key=lambda row: row["dataset_index"])
         timing = results[label]["timing"]
 
         overall_metrics = compute_wer_metrics(
-            [r["ref_raw"] for r in rows],
-            [r["hyp_raw"] for r in rows],
+            [row["ref_raw"] for row in rows],
+            [row["hyp_raw"] for row in rows],
         )
         overall_wer = overall_metrics["wer"] * 100.0
-        per_wers = [r["wer_pct"] for r in rows]
+        per_wers = [row["wer_pct"] for row in rows]
 
         summary: Summary = {
             "engine": label,
@@ -140,8 +140,8 @@ def save_results(results: list[EngineOutput], output_path: Path) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     combined = {
-        "summaries": [r["summary"] for r in results],
-        "engines": {r["summary"]["engine"]: r["samples"] for r in results},
+        "summaries": [result["summary"] for result in results],
+        "engines": {result["summary"]["engine"]: result["samples"] for result in results},
     }
 
     with output_path.open("w", encoding="utf-8") as file_handle:

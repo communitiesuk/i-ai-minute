@@ -185,7 +185,7 @@ class AMIDatasetLoader(DatasetProtocol):
 
     def _log_progress(self, idx: int, total: int) -> None:
         if (idx + 1) % 5 == 0 or (idx + 1) == total:
-            accumulated = sum(s["duration_sec"] for s in self.samples)
+            accumulated = sum(sample["duration_sec"] for sample in self.samples)
             logger.info("Processed %d/%d segments, %.2f sec total", idx + 1, total, accumulated)
 
     def __len__(self) -> int:
