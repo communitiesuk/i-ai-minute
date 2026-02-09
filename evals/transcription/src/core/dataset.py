@@ -1,9 +1,10 @@
 import logging
 import tempfile
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
-import ffmpeg
+from evals.transcription.src.core.ami.loader import AMIDatasetLoader
+import ffmpeg  
 import soundfile as sf
 from common.audio.ffmpeg import get_duration
 
@@ -12,8 +13,7 @@ from .ami_dataset import load_ami_dataset
 
 logger = logging.getLogger(__name__)
 
-
-def load_benchmark_dataset(num_samples: int | None, sample_duration_fraction: float | None = None):
+def load_benchmark_dataset(num_samples: int | None, sample_duration_fraction: float | None = None)-> AMIDatasetLoader:
     logger.info("Loading AMI dataset with %d samples...", num_samples)
     logger.info("Using cache directory: %s", CACHE_DIR)
 
@@ -29,7 +29,7 @@ def to_wav_16k_mono(example: dict[str, Any], idx: int) -> str:
     if "path" in example["audio"]:
         cached_path = example["audio"]["path"]
         if Path(cached_path).exists():
-            return cached_path
+            return cast(str, cached_path)
 
     audio = example["audio"]
     y = audio["array"]
@@ -45,8 +45,8 @@ def to_wav_16k_mono(example: dict[str, Any], idx: int) -> str:
         sf.write(temp_path, y, sr, subtype="PCM_16")
 
     try:
-        input_stream = ffmpeg.input(str(temp_path))
-        output_stream = ffmpeg.output(
+        input_stream = ffmpeg.input(str(temp_path)) # type: ignore
+        output_stream = ffmpeg.output( # type: ignore
             input_stream,
             str(output_path),
             acodec="pcm_s16le",
@@ -54,7 +54,7 @@ def to_wav_16k_mono(example: dict[str, Any], idx: int) -> str:
             ac=1,
             loglevel="error",
         )
-        ffmpeg.run(output_stream, overwrite_output=True, quiet=True)
+        ffmpeg.run(output_stream, overwrite_output=True, quiet=True) # type: ignore
     finally:
         temp_path.unlink(missing_ok=True)
 

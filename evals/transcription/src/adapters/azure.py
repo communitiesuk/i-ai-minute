@@ -18,7 +18,7 @@ class AzureSTTAdapter(TranscriptionAdapter):
         self.speech_region = speech_region
         self.language = language
 
-    def transcribe(self, wav_path: str):
+    def transcribe(self, wav_path: str)->tuple[str, float, dict[str, str]]:
         t0 = time.time()
 
         try:
@@ -26,9 +26,14 @@ class AzureSTTAdapter(TranscriptionAdapter):
             t1 = time.time()
 
             dialogue_entries = result.transcript
+
+            if not dialogue_entries:
+                logger.error("Azure Speech API returned an empty transcript for %s", wav_path)
+                return "", (t1 - t0), {"error": "Empty transcript"}
+            
             full_text = " ".join(entry["text"] for entry in dialogue_entries).strip()
 
-            debug = {"segments": len(dialogue_entries)}
+            debug = {"segments": str(len(dialogue_entries))}
             return full_text, (t1 - t0), debug
 
         except Exception as e:

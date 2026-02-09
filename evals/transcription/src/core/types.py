@@ -5,19 +5,15 @@ from typing import Callable, Protocol, TypedDict
 import numpy as np
 from numpy.typing import NDArray
 
+from evals.transcription.src.adapters.base import TranscriptionAdapter
 from evals.transcription.src.core.metrics import TimingAccumulator
 
 
 AudioArray = NDArray[np.floating]
 
 
-class AdapterProtocol(Protocol):
-    def transcribe(self, wav_path: str) -> tuple[str, float, dict[str, object]]:
-        pass
-
-
 class AdapterConfig(TypedDict):
-    adapter: AdapterProtocol
+    adapter: TranscriptionAdapter
     label: str
 
 

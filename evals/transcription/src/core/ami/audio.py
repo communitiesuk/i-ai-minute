@@ -2,6 +2,7 @@ import logging
 
 import librosa
 import numpy as np
+from typing import cast
 
 from evals.transcription.src.constants import STEREO_CHANNELS, TARGET_SAMPLE_RATE
 
@@ -10,8 +11,8 @@ logger = logging.getLogger(__name__)
 
 def to_mono(audio: np.ndarray) -> np.ndarray:
     if getattr(audio, "ndim", 1) == STEREO_CHANNELS:
-        return audio.mean(axis=1)
-    return audio
+        return cast(np.ndarray,audio.mean(axis=1))
+    return cast(np.ndarray, audio)
 
 
 def resample_if_needed(
@@ -21,14 +22,14 @@ def resample_if_needed(
 ) -> np.ndarray:
     if sr != target_sr:
         return librosa.resample(audio, orig_sr=sr, target_sr=target_sr)
-    return audio
+    return cast(np.ndarray, audio)
 
 
 def normalise_peak(audio: np.ndarray) -> np.ndarray:
     max_val = np.abs(audio).max()
     if max_val > 1.0:
-        return audio / max_val
-    return audio
+        return cast(np.ndarray, audio / max_val)
+    return cast(np.ndarray, audio)
 
 
 def mix_utterances(utterances: list, target_sr: int = TARGET_SAMPLE_RATE) -> tuple[np.ndarray, str]:

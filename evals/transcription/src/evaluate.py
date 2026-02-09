@@ -11,6 +11,7 @@ from evals.transcription.src.core.dataset import (
     to_wav_16k_mono,
 )
 from evals.transcription.src.core.runner import run_engines_parallel, save_results
+from evals.transcription.src.core.types import AdapterConfig
 
 settings = get_settings()
 WORKDIR = Path(__file__).resolve().parent.parent
@@ -22,7 +23,7 @@ def run_evaluation(
     num_samples: int | None = None,
     sample_duration_fraction: float | None = None,
     prepare_only: bool = False,
-):
+) -> None:
     output_dir = WORKDIR / "results"
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     output_path = output_dir / f"evaluation_results_{timestamp}.json"
@@ -60,7 +61,7 @@ def run_evaluation(
         language="en",
     )
 
-    adapters_config = [
+    adapters_config:  list[AdapterConfig] = [
         {"adapter": azure_adapter, "label": "Azure Speech-to-Text"},
         {"adapter": whisper_adapter, "label": "Whisper"},
     ]
@@ -90,7 +91,7 @@ def run_evaluation(
     logger.info("Results saved to: %s", output_path)
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Run transcription evaluation")
     parser.add_argument(
         "--num-samples",

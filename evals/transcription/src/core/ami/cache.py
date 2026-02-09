@@ -2,7 +2,7 @@ import logging
 import tempfile
 from pathlib import Path
 
-import ffmpeg
+import ffmpeg  
 import numpy as np
 import soundfile as sf
 from typing import cast
@@ -48,8 +48,8 @@ def save_audio(path: Path, audio: np.ndarray, sr: int = TARGET_SAMPLE_RATE) -> N
             sf.write(temp_path, audio, sr, subtype="PCM_16")
 
         try:
-            input_stream = ffmpeg.input(str(temp_path))
-            output_stream = ffmpeg.output(
+            input_stream = ffmpeg.input(str(temp_path)) # type: ignore
+            output_stream = ffmpeg.output( # type: ignore
                 input_stream,
                 str(path),
                 acodec="pcm_s16le",
@@ -57,7 +57,7 @@ def save_audio(path: Path, audio: np.ndarray, sr: int = TARGET_SAMPLE_RATE) -> N
                 ac=1,
                 loglevel="error",
             )
-            ffmpeg.run(output_stream, overwrite_output=True, quiet=True)
+            ffmpeg.run(output_stream, overwrite_output=True, quiet=True) # type: ignore
         finally:
             temp_path.unlink(missing_ok=True)
 
