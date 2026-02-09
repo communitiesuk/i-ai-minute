@@ -5,23 +5,45 @@ from pathlib import Path
 from threading import Lock
 
 import numpy as np
-from jiwer import wer
 from tqdm import tqdm
-from typing import TypedDict, Any
-
-from .metrics import TimingAccumulator, compute_wer_pct, normalise_text, token_ops
+from evals.transcription.src.core.metrics import (
+    TimingAccumulator,
+    compute_wer_metrics,
+    normalise_text,
+)
+from evals.transcription.src.core.types import (
+    AdapterConfig,
+    DatasetProtocol,
+    DiffOps,
+    DurationFn,
+    EngineOutput,
+    EngineResults,
+    SampleRow,
+    Summary,
+    WavWriteFn,
+)
 
 logger = logging.getLogger(__name__)
 
 
-def run_engines_parallel(adapters_config, indices, *, dataset, wav_write_fn, duration_fn) -> list[dict[str, Any]]:
+def run_engines_parallel(
+    adapters_config: list[AdapterConfig],
+    indices: list[int],
+    *,
+    dataset: DatasetProtocol,
+    wav_write_fn: WavWriteFn,
+    duration_fn: DurationFn,
+) -> list[EngineOutput]:
     total_tasks = len(indices) * len(adapters_config)
     pbar = tqdm(total=total_tasks, desc="Processing all engines", unit="task")
     pbar_lock = Lock()
 
     results: dict[str, EngineResults] = {}
 
-    def process_sample(adapter_cfg, idx):   #mismatched name with parent arguments (adapters_config vs adapter_cfg)? unknown types for both
+    def process_sample(
+        adapter_cfg: AdapterConfig,
+        idx: int,
+    ) -> tuple[str, int, SampleRow, float, float]:
         adapter = adapter_cfg["adapter"]
         label = adapter_cfg["label"]
 
@@ -35,10 +57,16 @@ def run_engines_parallel(adapters_config, indices, *, dataset, wav_write_fn, dur
         proc_sec = float(proc_sec)
         ref_n = normalise_text(ref_raw)
         hyp_n = normalise_text(hyp_raw)
-        per_wer = 100.0 * wer([ref_n], [hyp_n])
-        ops = token_ops(ref_n, hyp_n)
+        per_metrics = compute_wer_metrics([ref_n], [hyp_n])
+        per_wer = per_metrics["wer"] * 100.0
+        ops: DiffOps = {
+            "equal": per_metrics["hits"],
+            "replace": per_metrics["substitutions"],
+            "delete": per_metrics["deletions"],
+            "insert": per_metrics["insertions"],
+        }
 
-        row = {
+        row: SampleRow = {
             "engine": label,
             "dataset_index": int(idx),
             "wav_path": wav_path,
@@ -77,19 +105,23 @@ def run_engines_parallel(adapters_config, indices, *, dataset, wav_write_fn, dur
 
     pbar.close()
 
-    output_results : list[dict[str, Any]] = []
+    output_results: list[EngineOutput] = []
     for adapter_cfg in adapters_config:
         label = adapter_cfg["label"]
         rows = sorted(results[label]["rows"], key=lambda x: x["dataset_index"])
         timing = results[label]["timing"]
 
-        overall_wer = compute_wer_pct([r["ref_raw"] for r in rows], [r["hyp_raw"] for r in rows]) #set return_ops to False?
+        overall_metrics = compute_wer_metrics(
+            [r["ref_raw"] for r in rows],
+            [r["hyp_raw"] for r in rows],
+        )
+        overall_wer = overall_metrics["wer"] * 100.0
         per_wers = [r["wer_pct"] for r in rows]
 
-        summary = {
+        summary: Summary = {
             "engine": label,
             "num_samples": len(indices),
-            "overall_wer_pct": float(overall_wer),  #could be a float or Tuple[float, Ops] based on compute_wer_pct's return type
+            "overall_wer_pct": float(overall_wer),
             "rtf": float(timing.rtf),
             "process_sec": float(timing.process_sec),
             "audio_sec": float(timing.audio_sec),
@@ -103,7 +135,7 @@ def run_engines_parallel(adapters_config, indices, *, dataset, wav_write_fn, dur
     return output_results
 
 
-def save_results(results: list, output_path: Path):
+def save_results(results: list[EngineOutput], output_path: Path) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     combined = {
@@ -115,8 +147,3 @@ def save_results(results: list, output_path: Path):
         json.dump(combined, f, indent=2, ensure_ascii=False)
 
     logger.info("Results saved to %s", output_path)
-
-
-class EngineResults(TypedDict): 
-    rows: list[dict]
-    timing: TimingAccumulator
