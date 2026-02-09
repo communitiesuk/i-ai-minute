@@ -15,7 +15,8 @@ def test_to_wav_16k_mono_uses_cached_path(tmp_path, monkeypatch):
     example = {"audio": {"path": str(cached), "array": Mock(), "sampling_rate": 16000}}
 
     def _fail(*_args, **_kwargs):
-        raise AssertionError("ffmpeg should not be invoked when cached path exists")
+        msg = "ffmpeg should not be invoked when cached path exists"
+        raise AssertionError(msg)
 
     monkeypatch.setattr("ffmpeg.input", _fail)
     monkeypatch.setattr("ffmpeg.output", _fail)
@@ -60,7 +61,8 @@ def test_to_wav_16k_mono_cleans_temp_on_ffmpeg_error(tmp_path, monkeypatch):
         temp_path_holder["path"] = path
 
     def fake_run(*_args, **_kwargs):
-        raise RuntimeError("ffmpeg failure")
+        msg = "ffmpeg failure"
+        raise RuntimeError(msg)
 
     monkeypatch.setattr("evals.transcription.src.core.dataset.sf.write", fake_write)
     monkeypatch.setattr("evals.transcription.src.core.dataset.ffmpeg.input", lambda *_: "input")

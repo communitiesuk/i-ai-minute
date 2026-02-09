@@ -26,11 +26,16 @@ class FakeDataset:
         return self._samples[idx]
 
 
-def test_run_engines_parallel_bookkeeping():
+def test_run_engines_parallel_bookkeeping(tmp_path):
+    wav_a = tmp_path / "a.wav"
+    wav_b = tmp_path / "b.wav"
+    wav_a.write_bytes(b"RIFFfake")
+    wav_b.write_bytes(b"RIFFfake")
+
     dataset = FakeDataset(
         [
-            {"text": "hello world", "audio": {"path": "/tmp/a.wav"}},
-            {"text": "good night", "audio": {"path": "/tmp/b.wav"}},
+            {"text": "hello world", "audio": {"path": str(wav_a)}},
+            {"text": "good night", "audio": {"path": str(wav_b)}},
         ]
     )
 
@@ -40,7 +45,7 @@ def test_run_engines_parallel_bookkeeping():
         adapters_config=adapters_config,
         indices=[0, 1],
         dataset=dataset,
-        wav_write_fn=lambda ex, idx: ex["audio"]["path"],
+        wav_write_fn=lambda ex, _idx: ex["audio"]["path"],
         duration_fn=lambda _path: 2.0,
     )
 

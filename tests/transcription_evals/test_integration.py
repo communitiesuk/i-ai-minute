@@ -91,21 +91,26 @@ def test_run_evaluation_with_fake_adapters(tmp_path, monkeypatch):
             assert "engine_debug" in sample
 
 
-def test_adapter_contracts(monkeypatch):
+def test_adapter_contracts(tmp_path, monkeypatch):
     async def fake_start(_path):
         return SimpleNamespace(transcript=[{"text": "hello"}, {"text": "world"}])
 
     monkeypatch.setattr("evals.transcription.src.adapters.azure.CommonAzureAdapter.start", fake_start)
     monkeypatch.setattr("evals.transcription.src.adapters.whisper.WhisplyLocalAdapter.start", fake_start)
 
+    wav_a = tmp_path / "a.wav"
+    wav_b = tmp_path / "b.wav"
+    sf.write(wav_a, [0.0, 0.0], 16000, subtype="PCM_16")
+    sf.write(wav_b, [0.0, 0.0], 16000, subtype="PCM_16")
+
     azure = AzureSTTAdapter("key", "region")
-    text, proc_sec, debug = azure.transcribe("/tmp/a.wav")
+    text, proc_sec, debug = azure.transcribe(str(wav_a))
     assert isinstance(text, str)
     assert isinstance(proc_sec, float)
     assert isinstance(debug, dict)
 
     whisper = WhisperAdapter(model_name="small", language="en")
-    text, proc_sec, debug = whisper.transcribe("/tmp/b.wav")
+    text, proc_sec, debug = whisper.transcribe(str(wav_b))
     assert isinstance(text, str)
     assert isinstance(proc_sec, float)
     assert isinstance(debug, dict)
