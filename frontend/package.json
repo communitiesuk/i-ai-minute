@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "openapi-ts": "openapi-ts",
-    "prettier:fix": "prettier --write .",
+    "prettier:fix": "./node_modules/.bin/prettier --write .",
     "test": "vitest run"
   },
   "dependencies": {
