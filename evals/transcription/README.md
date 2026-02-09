@@ -30,7 +30,8 @@ poetry install --with worker,local-dev,evals
 
 ## Usage
 
-**Run all commands from the project root directory** (`/Users/patkuc/MHCLG/i-ai-minute/`):
+**Run all commands from the project root directory** (`/Users/patkuc/MHCLG/i-ai-minute/`).
+This suite relies on the root `.env` and the root Poetry environment.
 
 ```bash
 # Evaluate all available meetings
@@ -50,6 +51,14 @@ poetry run python evals/transcription/src/evaluate.py --prepare-only
 ```
 
 Results are saved to `evals/transcription/results/evaluation_results_YYYYMMDD_HHMMSS.json` with timestamped filenames to prevent overwriting.
+
+### Tests
+
+Run tests from the project root:
+
+```bash
+poetry run pytest tests/test_transcription_evals.py
+```
 
 ## Configuration
 
