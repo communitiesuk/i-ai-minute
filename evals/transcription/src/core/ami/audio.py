@@ -48,13 +48,8 @@ def mix_utterances(
     text_parts = []
 
     for utterance in utterances_sorted:
-        audio_obj = utterance["audio"]
-        audio_array = audio_obj.array if hasattr(audio_obj, "array") else audio_obj["array"]
-        sample_rate = (
-            audio_obj.sampling_rate
-            if hasattr(audio_obj, "sampling_rate")
-            else audio_obj["sampling_rate"]
-        )
+        audio_array = utterance["audio"]["array"]
+        sample_rate = utterance["audio"]["sampling_rate"]
         begin_time = utterance["begin_time"]
         text = utterance["text"]
 

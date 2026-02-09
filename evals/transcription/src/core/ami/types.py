@@ -1,24 +1,19 @@
 from __future__ import annotations
 
-from typing import Protocol, TypedDict, runtime_checkable
+from typing import TypedDict
 
 import numpy as np
+from numpy.typing import NDArray
 
 from evals.transcription.src.core.types import DatasetItem
 
 MeetingId = str
 
 
-@runtime_checkable
-class RawAudioSample(Protocol):
-    """
-    Audio object returned by HuggingFace datasets library.
+class RawAudioDict(TypedDict):
+    """Audio representation from HuggingFace datasets"""
 
-    Note: This protocol only defines properties actually used in the codebase.
-    The underlying audio decoder has additional methods not listed here.
-    """
-
-    array: np.ndarray
+    array: NDArray[np.float32]
     sampling_rate: int
 
 
@@ -28,7 +23,7 @@ class RawDatasetRow(TypedDict):
     meeting_id: str
     audio_id: str
     text: str
-    audio: RawAudioSample
+    audio: RawAudioDict
     begin_time: float
     end_time: float
     microphone_id: str
