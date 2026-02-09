@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import TypedDict, cast
 from datasets import load_dataset
 
-from .types import MeetingId
+from evals.transcription.src.core.ami.types import MeetingId
 
 logger = logging.getLogger(__name__)
 

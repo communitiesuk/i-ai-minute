@@ -10,7 +10,7 @@ import soundfile as sf
 from common.audio.ffmpeg import get_duration
 
 from evals.transcription.src.constants import AUDIO_DIR, CACHE_DIR, STEREO_CHANNELS, TARGET_SAMPLE_RATE
-from .ami_dataset import load_ami_dataset
+from evals.transcription.src.core.ami_dataset import load_ami_dataset
 
 logger = logging.getLogger(__name__)
 

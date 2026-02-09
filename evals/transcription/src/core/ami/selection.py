@@ -1,8 +1,8 @@
 import logging
 from dataclasses import dataclass
 
-from .metadata import MeetingMetadata
-from .types import MeetingId
+from evals.transcription.src.core.ami.metadata import MeetingMetadata
+from evals.transcription.src.core.ami.types import MeetingId
 
 logger = logging.getLogger(__name__)
 

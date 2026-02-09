@@ -7,10 +7,10 @@ from datasets import load_dataset
 
 from evals.transcription.src.constants import TARGET_SAMPLE_RATE
 from evals.transcription.src.core.types import DatasetProtocol
-from . import audio, cache
-from .metadata import load_or_build_metadata
-from .selection import MeetingSegment, select_segments
-from .types import AMIDatasetSample
+from evals.transcription.src.core.ami import audio, cache
+from evals.transcription.src.core.ami.metadata import load_or_build_metadata
+from evals.transcription.src.core.ami.selection import MeetingSegment, select_segments
+from evals.transcription.src.core.ami.types import AMIDatasetSample
 from numpy import ndarray
 
 logger = logging.getLogger(__name__)

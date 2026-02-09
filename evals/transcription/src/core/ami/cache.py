@@ -8,7 +8,7 @@ import soundfile as sf
 from typing import cast
 
 from evals.transcription.src.constants import TARGET_SAMPLE_RATE
-from .selection import MeetingSegment
+from evals.transcription.src.core.ami.selection import MeetingSegment
 
 logger = logging.getLogger(__name__)
 

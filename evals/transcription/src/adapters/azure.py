@@ -5,7 +5,7 @@ from pathlib import Path
 
 from common.services.transcription_services.azure import AzureSpeechAdapter as CommonAzureAdapter
 
-from .base import TranscriptionAdapter
+from evals.transcription.src.adapters.base import TranscriptionAdapter
 
 logger = logging.getLogger(__name__)
 
