@@ -139,7 +139,7 @@ select = [
     "TCH", "TD", "TID", "UP", "YTT"
 ]
 # TODO: Decide on a structure for evals folder and add ruff support properly
-exclude = ["out/*", "viewer/*", "alembic/*"]
+exclude = ["out/*", "viewer/*", "alembic/*", "evals/src/*"]
 ignore = ["COM812", "DJ001", "RET505", "RET508", "PLR0913", "S318","ISC001","PLR0912","C901","PLR0912"]
 
 [tool.ruff.lint.isort]
@@ -164,7 +164,7 @@ check_untyped_defs = true
 no_implicit_optional = true
 # terraform: non production diagram scripts using untyped diagrams
 # TODO: Decide on a structure for evals and viewer folder and add mypy support properly
-exclude = ["alembic/*", "tests/*", "terraform/*", "viewer/*"]
+exclude = ["alembic/*", "tests/*", "terraform/*", "viewer/*", "evals/src/*"]
 
 
 [[tool.mypy.overrides]]
