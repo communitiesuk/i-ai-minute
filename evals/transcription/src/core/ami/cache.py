@@ -6,7 +6,7 @@ import ffmpeg
 import numpy as np
 import soundfile as sf
 
-from transcription.src.constants import TARGET_SAMPLE_RATE
+from evals.transcription.src.constants import TARGET_SAMPLE_RATE
 from .selection import MeetingSegment
 
 logger = logging.getLogger(__name__)

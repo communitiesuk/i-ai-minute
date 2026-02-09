@@ -3,7 +3,7 @@ import logging
 import librosa
 import numpy as np
 
-from transcription.src.constants import STEREO_CHANNELS, TARGET_SAMPLE_RATE
+from evals.transcription.src.constants import STEREO_CHANNELS, TARGET_SAMPLE_RATE
 
 logger = logging.getLogger(__name__)
 
