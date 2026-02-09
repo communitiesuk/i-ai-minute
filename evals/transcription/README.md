@@ -33,22 +33,38 @@ poetry install --with worker,local-dev,evals
 **Run all commands from the project root directory** (`/Users/patkuc/MHCLG/i-ai-minute/`).
 This suite relies on the root `.env` and the root Poetry environment.
 
+### Quick Smoke Test
+
+Fast validation using 2 meetings with 10% of each recording:
+
 ```bash
-# Evaluate all available meetings
+poetry run python evals/transcription/src/evaluate.py \
+  --num-samples 2 \
+  --sample-duration-fraction 0.1 \
+  --max-workers 1
+```
+
+### Common Use Cases
+
+```bash
+# Prepare dataset (cache audio files without transcription)
+poetry run python evals/transcription/src/evaluate.py --prepare-only
+
+# Full evaluation (all meetings, all adapters in parallel)
 poetry run python evals/transcription/src/evaluate.py
 
-# Evaluate 10 full meetings
-poetry run python evals/transcription/src/evaluate.py --num-samples 10
+# Local adapters (Whisper) - use sequential processing
+poetry run python evals/transcription/src/evaluate.py \
+  --num-samples 10 \
+  --max-workers 1
 
-# Evaluate 10 meetings, using only first 10% of each meeting
-poetry run python evals/transcription/src/evaluate.py --num-samples 10 --sample-duration-fraction 0.1
-
-# Evaluate 5 meetings, using first 25% of each
-poetry run python evals/transcription/src/evaluate.py --num-samples 5 --sample-duration-fraction 0.25
-
-# Cache dataset only without running transcription
-poetry run python evals/transcription/src/evaluate.py --prepare-only
+# Evaluate subset with partial recordings
+poetry run python evals/transcription/src/evaluate.py \
+  --num-samples 5 \
+  --sample-duration-fraction 0.25
 ```
+
+**Important**: When using local transcription adapters (e.g., Whisper), set `--max-workers 1` to avoid resource conflicts and event loop issues.
 
 Results are saved to `evals/transcription/results/evaluation_results_YYYYMMDD_HHMMSS.json` with timestamped filenames to prevent overwriting.
 
@@ -62,10 +78,13 @@ poetry run pytest tests/test_transcription_evals.py
 
 ## Configuration
 
-**Sample Selection**:
+**Command Line Arguments**:
 - `--num-samples N`: Evaluate N meetings from AMI dataset (if not specified, evaluates all available meetings)
 - `--sample-duration-fraction 0.X`: Use first X% of each selected meeting (e.g., `0.1` = first 10% of each meeting)
   - Useful for testing multiple meetings with shorter audio clips
+- `--max-workers N`: Number of parallel workers for transcription (default: 4)
+  - Set to `1` when using local transcription adapters (e.g., Whisper) to avoid resource conflicts and event loop issues
+  - Higher values work well with API-based adapters (e.g., Azure Speech-to-Text)
 - `--prepare-only`: Download and cache dataset without running transcription (saved to `evals/transcription/cache/processed/`)
 
 **Dataset**: Uses AMI Corpus meeting recordings. Audio is automatically:

@@ -111,8 +111,8 @@ class AMIDatasetLoader(DatasetProtocol):
 
     def _load_required_utterances(self, segments: List[MeetingSegment]) -> dict:
         all_cached = all(
-            cache.get_cache_paths(self.processed_cache_dir, seg, idx).is_complete()
-            for idx, seg in enumerate(segments)
+            cache.get_cache_paths(self.processed_cache_dir, segment, idx).is_complete()
+            for idx, segment in enumerate(segments)
         )
 
         if all_cached:
@@ -120,7 +120,7 @@ class AMIDatasetLoader(DatasetProtocol):
             return {}
 
         logger.info("Loading dataset for selected meetings...")
-        required_meetings = {seg.meeting_id for seg in segments}
+        required_meetings = {segment.meeting_id for segment in segments}
         return _load_utterances_for_meetings(required_meetings, self.split, self.config)
 
     def _process_segment(

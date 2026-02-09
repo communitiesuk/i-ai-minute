@@ -24,6 +24,7 @@ def run_evaluation(
     num_samples: int | None = None,
     sample_duration_fraction: float | None = None,
     prepare_only: bool = False,
+    max_workers: int | None = None,
 ) -> None:
     output_dir = WORKDIR / "results"
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -78,6 +79,7 @@ def run_evaluation(
         dataset=dataset,
         wav_write_fn=to_wav_16k_mono,
         duration_fn=audio_duration_seconds,
+        max_workers=max_workers,
     )
 
     save_results(results, output_path)
@@ -113,12 +115,19 @@ def main() -> None:
         action="store_true",
         help="Only prepare and cache the dataset without running transcription",
     )
+    parser.add_argument(
+        "--max-workers",
+        type=int,
+        default=None,
+        help="Maximum number of parallel workers. Defaults to number of adapters if not specified.",
+    )
     args = parser.parse_args()
 
     run_evaluation(
         num_samples=args.num_samples,
         sample_duration_fraction=args.sample_duration_fraction,
         prepare_only=args.prepare_only,
+        max_workers=args.max_workers,
     )
 
 

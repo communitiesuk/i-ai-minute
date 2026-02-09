@@ -34,6 +34,7 @@ def run_engines_parallel(
     dataset: DatasetProtocol,
     wav_write_fn: WavWriteFn,
     duration_fn: DurationFn,
+    max_workers: int | None = None,
 ) -> list[EngineOutput]:
     total_tasks = len(indices) * len(adapters_config)
     pbar = tqdm(total=total_tasks, desc="Processing all engines", unit="task")
@@ -92,7 +93,8 @@ def run_engines_parallel(
     for adapter_cfg in adapters_config:
         results[adapter_cfg["label"]] = EngineResults({"rows": [], "timing": TimingAccumulator()})
 
-    with ThreadPoolExecutor(max_workers=len(adapters_config)) as executor:
+    workers = max_workers if max_workers is not None else len(adapters_config)
+    with ThreadPoolExecutor(max_workers=workers) as executor:
         futures = []
         for adapter_cfg in adapters_config:
             for idx in indices:
