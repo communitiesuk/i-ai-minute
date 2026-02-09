@@ -19,6 +19,11 @@ class AzureSTTAdapter(TranscriptionAdapter):
         self.language = language
 
     def transcribe(self, wav_path: str) -> tuple[str, float, dict[str, str]]:
+        """
+        Transcribes the given wav file using Azure's Speech-to-Text API.
+        Returns a tuple of (transcribed_text, latency_seconds, debug_info).
+        """
+
         t0 = time.time()
 
         try:

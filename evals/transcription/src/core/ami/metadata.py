@@ -21,6 +21,9 @@ def load_or_build_metadata(
     split: str = "train",
     config: str = "ihm",
 ) -> MeetingMetadata:
+    '''
+    Loads meeting metadata from cache if available, otherwise builds it by loading the AMI dataset and extracting meeting IDs and durations.
+    '''
     metadata_cache_path = cache_dir / "meeting_metadata.json"
 
     if metadata_cache_path.exists():

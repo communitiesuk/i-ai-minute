@@ -17,6 +17,10 @@ class WhisperAdapter(TranscriptionAdapter):
         logger.info("Whisply adapter initialized with model: %s", model_name)
 
     def transcribe(self, wav_path: str) -> tuple[str, float, dict[str, object]]:
+        '''
+        Transcribes the given wav file using the Whisply local adapter.
+        Returns a tuple of (transcribed_text, latency_seconds, debug_info).
+        '''
         t0 = time.time()
 
         try:

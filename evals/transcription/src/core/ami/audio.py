@@ -10,6 +10,10 @@ logger = logging.getLogger(__name__)
 
 
 def to_mono(audio: np.ndarray) -> np.ndarray:
+    '''
+    Converts stereo audio to mono by averaging the channels.
+    If the audio is already mono, it is returned unchanged.
+    '''
     if getattr(audio, "ndim", 1) == STEREO_CHANNELS:
         return cast(np.ndarray, audio.mean(axis=1))
     return cast(np.ndarray, audio)
@@ -20,12 +24,18 @@ def resample_if_needed(
     sr: int,
     target_sr: int = TARGET_SAMPLE_RATE,
 ) -> np.ndarray:
+    '''
+    Resamples the audio to the target sample rate if it is different from the original sample rate.
+    '''
     if sr != target_sr:
         return librosa.resample(audio, orig_sr=sr, target_sr=target_sr)
     return cast(np.ndarray, audio)
 
 
 def normalise_peak(audio: np.ndarray) -> np.ndarray:
+    '''
+    Normalises the audio to ensure the peak amplitude is within [-1.0, 1.0].
+    '''
     max_val = np.abs(audio).max()
     if max_val > 1.0:
         return cast(np.ndarray, audio / max_val)
@@ -33,6 +43,10 @@ def normalise_peak(audio: np.ndarray) -> np.ndarray:
 
 
 def mix_utterances(utterances: list, target_sr: int = TARGET_SAMPLE_RATE) -> tuple[np.ndarray, str]:
+    '''
+    Mixes multiple utterances into a single audio array and concatenates their texts.
+    Returns a tuple of (mixed_audio, text).
+    '''
     if not utterances:
         return np.array([], dtype=np.float32), ""
 
@@ -72,4 +86,7 @@ def mix_utterances(utterances: list, target_sr: int = TARGET_SAMPLE_RATE) -> tup
 
 
 def compute_duration(audio: np.ndarray, sr: int = TARGET_SAMPLE_RATE) -> float:
+    '''
+    Computes the duration of the audio in seconds.
+    '''
     return float(len(audio) / sr)
