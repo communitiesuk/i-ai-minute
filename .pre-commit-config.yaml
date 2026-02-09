@@ -17,15 +17,14 @@ repos:
         exclude: '^static/|\.lock'
         files: .
 
-  # Prettier for frontend files
-  - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v3.1.0
-    hooks:
-      - id: prettier
+      - id: npm-format
+        name: Format frontend files
+        entry: bash -c 'cd frontend && npx prettier --write .'
+        language: system
+        pass_filenames: false
         files: ^frontend/
-        args: [--write]
+        types: [file]
 
-  # Ruff for Python files
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.8.2
     hooks:
