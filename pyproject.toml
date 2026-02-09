@@ -166,9 +166,13 @@ no_implicit_optional = true
 # TODO: Decide on a structure for evals and viewer folder and add mypy support properly
 exclude = ["alembic/*", "tests/*", "terraform/*", "viewer/*"]
 
-[[tool.mypy.overrides]]
-module = "ffmpeg.*"
+
+
+[[tool.mypy.overrides]] 
+module = "ffmpeg.*" 
 ignore_missing_imports = true
+ignore_errors = true
+
 
 [[tool.mypy.overrides]]
 module = "soundfile.*"

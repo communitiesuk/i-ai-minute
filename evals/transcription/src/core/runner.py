@@ -7,21 +7,21 @@ from threading import Lock
 import numpy as np
 from jiwer import wer
 from tqdm import tqdm
-from typing import TypedDict
+from typing import TypedDict, Any
 
 from .metrics import TimingAccumulator, compute_wer_pct, normalise_text, token_ops
 
 logger = logging.getLogger(__name__)
 
 
-def run_engines_parallel(adapters_config, indices, *, dataset, wav_write_fn, duration_fn):
+def run_engines_parallel(adapters_config, indices, *, dataset, wav_write_fn, duration_fn) -> list[dict[str, Any]]:
     total_tasks = len(indices) * len(adapters_config)
     pbar = tqdm(total=total_tasks, desc="Processing all engines", unit="task")
     pbar_lock = Lock()
 
-    results = {}
+    results: dict[str, EngineResults] = {}
 
-    def process_sample(adapter_cfg, idx):
+    def process_sample(adapter_cfg, idx):   #mismatched name with parent arguments (adapters_config vs adapter_cfg)? unknown types for both
         adapter = adapter_cfg["adapter"]
         label = adapter_cfg["label"]
 
@@ -61,7 +61,7 @@ def run_engines_parallel(adapters_config, indices, *, dataset, wav_write_fn, dur
         return label, idx, row, aud_sec, proc_sec
 
     for adapter_cfg in adapters_config:
-        results[adapter_cfg["label"]] = {"rows": [], "timing": TimingAccumulator()}
+        results[adapter_cfg["label"]] = EngineResults({"rows": [], "timing": TimingAccumulator()})
 
     with ThreadPoolExecutor(max_workers=len(adapters_config)) as executor:
         futures = []
@@ -77,7 +77,7 @@ def run_engines_parallel(adapters_config, indices, *, dataset, wav_write_fn, dur
 
     pbar.close()
 
-    output_results = []
+    output_results : list[dict[str, Any]] = []
     for adapter_cfg in adapters_config:
         label = adapter_cfg["label"]
         rows = sorted(results[label]["rows"], key=lambda x: x["dataset_index"])
