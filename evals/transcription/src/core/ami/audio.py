@@ -1,10 +1,11 @@
 import logging
-from typing import cast
+from typing import List, cast
 
 import librosa
 import numpy as np
 
 from evals.transcription.src.constants import STEREO_CHANNELS, TARGET_SAMPLE_RATE
+from evals.transcription.src.core.ami.types import RawDatasetRow
 
 logger = logging.getLogger(__name__)
 
@@ -32,23 +33,30 @@ def normalise_peak(audio: np.ndarray) -> np.ndarray:
     return cast(np.ndarray, audio)
 
 
-def mix_utterances(utterances: list, target_sr: int = TARGET_SAMPLE_RATE) -> tuple[np.ndarray, str]:
+def mix_utterances(
+    utterances: List[RawDatasetRow], target_sr: int = TARGET_SAMPLE_RATE
+) -> tuple[np.ndarray, str]:
     if not utterances:
         return np.array([], dtype=np.float32), ""
 
-    utterances_sorted = sorted(utterances, key=lambda x: x.get("begin_time", 0))
+    utterances_sorted = sorted(utterances, key=lambda x: x["begin_time"])
 
-    max_end_time = max(utterance.get("end_time", 0) for utterance in utterances_sorted)
+    max_end_time = max(utterance["end_time"] for utterance in utterances_sorted)
     total_samples = int(np.ceil(max_end_time * target_sr))
 
     mixed_audio = np.zeros(total_samples, dtype=np.float32)
     text_parts = []
 
     for utterance in utterances_sorted:
-        audio_array = utterance["audio"]["array"]
-        sample_rate = utterance["audio"]["sampling_rate"]
-        begin_time = utterance.get("begin_time", 0)
-        text = utterance.get("text", "")
+        audio_obj = utterance["audio"]
+        audio_array = audio_obj.array if hasattr(audio_obj, "array") else audio_obj["array"]
+        sample_rate = (
+            audio_obj.sampling_rate
+            if hasattr(audio_obj, "sampling_rate")
+            else audio_obj["sampling_rate"]
+        )
+        begin_time = utterance["begin_time"]
+        text = utterance["text"]
 
         audio_array = to_mono(audio_array)
         audio_array = resample_if_needed(audio_array, sample_rate, target_sr)

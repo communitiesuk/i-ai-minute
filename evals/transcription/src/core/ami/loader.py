@@ -1,7 +1,7 @@
 import logging
 from collections import defaultdict
 from pathlib import Path
-from typing import List
+from typing import DefaultDict, List
 
 from datasets import load_dataset
 from numpy import ndarray
@@ -10,32 +10,37 @@ from evals.transcription.src.constants import TARGET_SAMPLE_RATE
 from evals.transcription.src.core.ami import audio, cache
 from evals.transcription.src.core.ami.metadata import load_or_build_metadata
 from evals.transcription.src.core.ami.selection import MeetingSegment, select_segments
-from evals.transcription.src.core.ami.types import AMIDatasetSample
+from evals.transcription.src.core.ami.types import AMIDatasetSample, RawDatasetRow
 from evals.transcription.src.core.types import DatasetProtocol
 
 logger = logging.getLogger(__name__)
 
 
-def _load_utterances_for_meetings(required_meetings: set, split: str, config: str) -> dict:
+def _load_utterances_for_meetings(
+    required_meetings: set, split: str, config: str
+) -> DefaultDict[str, List[RawDatasetRow]]:
     dataset = load_dataset("edinburghcstr/ami", config, split=split)
-    utterances_by_meeting = defaultdict(list)
-    for example in dataset:
-        meeting_id = example.get("meeting_id", "unknown")
+    utterances_by_meeting: DefaultDict[str, List[RawDatasetRow]] = defaultdict(list)
+    for row in dataset:
+        r = row
+        meeting_id = r["meeting_id"]
         if meeting_id in required_meetings:
-            utterances_by_meeting[meeting_id].append(example)
+            utterances_by_meeting[meeting_id].append(r)
     return utterances_by_meeting
 
 
-def _apply_cutoff(utterances: list, cutoff_time: float | None) -> list:
+def _apply_cutoff(
+    utterances: List[RawDatasetRow], cutoff_time: float | None
+) -> List[RawDatasetRow]:
     if cutoff_time is None:
         return utterances
 
-    utterances_sorted = sorted(utterances, key=lambda x: x.get("begin_time", 0))
-    result = []
+    utterances_sorted = sorted(utterances, key=lambda x: x["begin_time"])
+    result: List[RawDatasetRow] = []
     accumulated = 0.0
 
     for utterance in utterances_sorted:
-        duration = utterance.get("end_time", 0) - utterance.get("begin_time", 0)
+        duration = utterance["end_time"] - utterance["begin_time"]
         if accumulated + duration <= cutoff_time:
             result.append(utterance)
             accumulated += duration
@@ -109,7 +114,9 @@ class AMIDatasetLoader(DatasetProtocol):
         logger.info("Dataset preparation complete: %d samples ready", len(self.samples))
         return self.samples
 
-    def _load_required_utterances(self, segments: List[MeetingSegment]) -> dict:
+    def _load_required_utterances(
+        self, segments: List[MeetingSegment]
+    ) -> DefaultDict[str, List[RawDatasetRow]]:
         all_cached = all(
             cache.get_cache_paths(self.processed_cache_dir, segment, idx).is_complete()
             for idx, segment in enumerate(segments)
@@ -117,7 +124,7 @@ class AMIDatasetLoader(DatasetProtocol):
 
         if all_cached:
             logger.info("All required segments are cached, loading from cache...")
-            return {}
+            return defaultdict(list)
 
         logger.info("Loading dataset for selected meetings...")
         required_meetings = {segment.meeting_id for segment in segments}
@@ -127,7 +134,7 @@ class AMIDatasetLoader(DatasetProtocol):
         self,
         segment: MeetingSegment,
         idx: int,
-        utterances_by_meeting: dict,
+        utterances_by_meeting: DefaultDict[str, List[RawDatasetRow]],
     ) -> AMIDatasetSample | None:
         paths = cache.get_cache_paths(self.processed_cache_dir, segment, idx)
 
@@ -161,7 +168,7 @@ class AMIDatasetLoader(DatasetProtocol):
 
     def _build_from_utterances(
         self,
-        utterances: list,
+        utterances: List[RawDatasetRow],
         paths: cache.CachePaths,
         segment: MeetingSegment,
         idx: int,
