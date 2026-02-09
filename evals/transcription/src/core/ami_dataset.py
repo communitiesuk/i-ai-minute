@@ -1,7 +1,7 @@
 import logging
 from pathlib import Path
 
-from evals.transcription.src.core.ami.types import Sample
+from evals.transcription.src.core.ami.types import AMIDatasetSample
 
 from .ami import AMIDatasetLoader
 
@@ -14,7 +14,7 @@ def load_ami_dataset(
     sample_duration_fraction: float | None = None,
 ) -> AMIDatasetLoader:
     loader = AMIDatasetLoader(cache_dir, num_samples, sample_duration_fraction)
-    samples: list[Sample] = loader.prepare()
+    samples: list[AMIDatasetSample] = loader.prepare()
 
     if samples:
         _validate_dataset_contract(samples[0])
@@ -22,7 +22,7 @@ def load_ami_dataset(
     return loader
 
 
-def _validate_dataset_contract(sample: Sample) -> None:
+def _validate_dataset_contract(sample: AMIDatasetSample) -> None:
     if "audio" not in sample:
         msg = "Dataset row must contain 'audio'"
         raise ValueError(msg)

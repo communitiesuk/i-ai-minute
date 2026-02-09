@@ -1,9 +1,10 @@
 import logging
 import tempfile
 from pathlib import Path
-from typing import Any, cast
+from typing import cast
 
 from evals.transcription.src.core.ami.loader import AMIDatasetLoader
+from evals.transcription.src.core.types import DatasetItem
 import ffmpeg  
 import soundfile as sf
 from common.audio.ffmpeg import get_duration
@@ -25,7 +26,7 @@ def load_benchmark_dataset(num_samples: int | None, sample_duration_fraction: fl
     return ami_loader
 
 
-def to_wav_16k_mono(example: dict[str, Any], idx: int) -> str:
+def to_wav_16k_mono(example: DatasetItem, idx: int) -> str: # WavWriteFn Callable[[DatasetItem, int], str]
     if "path" in example["audio"]:
         cached_path = example["audio"]["path"]
         if Path(cached_path).exists():
