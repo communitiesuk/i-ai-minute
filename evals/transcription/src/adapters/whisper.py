@@ -5,7 +5,7 @@ from pathlib import Path
 
 from common.services.transcription_services.whisply_local import WhisplyLocalAdapter
 
-from .base import TranscriptionAdapter
+from evals.transcription.src.adapters.base import TranscriptionAdapter
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +16,7 @@ class WhisperAdapter(TranscriptionAdapter):
         self.language = language
         logger.info("Whisply adapter initialized with model: %s", model_name)
 
-    def transcribe(self, wav_path: str):
+    def transcribe(self, wav_path: str) -> tuple[str, float, dict[str, object]]:
         t0 = time.time()
 
         try:
@@ -24,6 +24,11 @@ class WhisperAdapter(TranscriptionAdapter):
             t1 = time.time()
 
             dialogue_entries = result.transcript
+
+            if not dialogue_entries:
+                logger.error("Whisply returned an empty transcript for %s", wav_path)
+                return "", (t1 - t0), {"error": "Empty transcript"}
+            
             full_text = " ".join(entry["text"] for entry in dialogue_entries).strip()
 
             debug = {"model": self.model_name, "segments": len(dialogue_entries)}

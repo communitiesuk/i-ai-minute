@@ -2,12 +2,13 @@ import logging
 import tempfile
 from pathlib import Path
 
-import ffmpeg
+import ffmpeg  
 import numpy as np
 import soundfile as sf
+from typing import cast
 
-from ...constants import TARGET_SAMPLE_RATE
-from .selection import MeetingSegment
+from evals.transcription.src.constants import TARGET_SAMPLE_RATE
+from evals.transcription.src.core.ami.selection import MeetingSegment
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +36,7 @@ def load_audio(path: Path) -> np.ndarray:
             sr,
             TARGET_SAMPLE_RATE,
         )
-    return audio
+    return cast(np.ndarray, audio)
 
 
 def save_audio(path: Path, audio: np.ndarray, sr: int = TARGET_SAMPLE_RATE) -> None:
@@ -47,8 +48,8 @@ def save_audio(path: Path, audio: np.ndarray, sr: int = TARGET_SAMPLE_RATE) -> N
             sf.write(temp_path, audio, sr, subtype="PCM_16")
 
         try:
-            input_stream = ffmpeg.input(str(temp_path))
-            output_stream = ffmpeg.output(
+            input_stream = ffmpeg.input(str(temp_path)) # type: ignore
+            output_stream = ffmpeg.output( # type: ignore
                 input_stream,
                 str(path),
                 acodec="pcm_s16le",
@@ -56,7 +57,7 @@ def save_audio(path: Path, audio: np.ndarray, sr: int = TARGET_SAMPLE_RATE) -> N
                 ac=1,
                 loglevel="error",
             )
-            ffmpeg.run(output_stream, overwrite_output=True, quiet=True)
+            ffmpeg.run(output_stream, overwrite_output=True, quiet=True) # type: ignore
         finally:
             temp_path.unlink(missing_ok=True)
 

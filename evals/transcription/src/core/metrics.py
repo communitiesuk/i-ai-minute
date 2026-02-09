@@ -1,5 +1,16 @@
 import jiwer
 
+from typing import TypedDict
+
+class Metrics(TypedDict):
+    wer: float
+    hits: int
+    substitutions: int
+    deletions: int
+    insertions: int
+
+
+
 _jiwer_transform = jiwer.Compose(
     [
         jiwer.ToLowerCase(),
@@ -20,13 +31,11 @@ def normalise_text(s: str) -> str:
     return ""
 
 
-def compute_wer_metrics(refs: list[str], hyps: list[str]) -> dict:
+def compute_wer_metrics(refs: list[str], hyps: list[str]) -> Metrics:
+
     if not refs or not hyps:
         return {
             "wer": 0.0,
-            "mer": 0.0,
-            "wil": 0.0,
-            "cer": 0.0,
             "hits": 0,
             "substitutions": 0,
             "deletions": 0,
@@ -40,18 +49,8 @@ def compute_wer_metrics(refs: list[str], hyps: list[str]) -> dict:
         hypothesis_transform=_jiwer_transform,
     )
 
-    char_output = jiwer.process_characters(
-        refs,
-        hyps,
-        reference_transform=_jiwer_transform,
-        hypothesis_transform=_jiwer_transform,
-    )
-
     return {
         "wer": float(word_output.wer),
-        "mer": float(word_output.mer),
-        "wil": float(word_output.wil),
-        "cer": float(char_output.cer),
         "hits": int(word_output.hits),
         "substitutions": int(word_output.substitutions),
         "deletions": int(word_output.deletions),
@@ -59,38 +58,12 @@ def compute_wer_metrics(refs: list[str], hyps: list[str]) -> dict:
     }
 
 
-def compute_wer_pct(refs: list[str], hyps: list[str], return_ops: bool = False):
-    metrics = compute_wer_metrics(refs, hyps)
-    wer_pct = metrics["wer"] * 100.0
-
-    if return_ops:
-        ops = {
-            "equal": metrics["hits"],
-            "replace": metrics["substitutions"],
-            "delete": metrics["deletions"],
-            "insert": metrics["insertions"],
-        }
-        return wer_pct, ops
-
-    return wer_pct
-
-
-def token_ops(a: str, b: str) -> dict:
-    metrics = compute_wer_metrics([a], [b])
-    return {
-        "equal": metrics["hits"],
-        "replace": metrics["substitutions"],
-        "delete": metrics["deletions"],
-        "insert": metrics["insertions"],
-    }
-
-
 class TimingAccumulator:
-    def __init__(self):
+    def __init__(self)-> None:
         self.process_sec = 0.0
         self.audio_sec = 0.0
 
-    def add(self, audio_sec: float, process_sec: float):
+    def add(self, audio_sec: float, process_sec: float)-> None:
         self.audio_sec += float(audio_sec)
         self.process_sec += float(process_sec)
 

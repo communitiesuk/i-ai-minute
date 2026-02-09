@@ -2,11 +2,10 @@ import json
 import logging
 from collections import defaultdict
 from pathlib import Path
-from typing import TypedDict
+from typing import TypedDict, cast
+from datasets import load_dataset
 
-from ...constants import TARGET_SAMPLE_RATE
-
-from .types import MeetingId
+from evals.transcription.src.core.ami.types import MeetingId
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +27,7 @@ def load_or_build_metadata(
         with metadata_cache_path.open("r") as f:
             metadata = json.load(f)
         logger.info("Found %d meetings in cache", len(metadata["meeting_ids"]))
-        return metadata
+        return cast(MeetingMetadata, metadata)
 
     logger.info("Loading AMI dataset (%s configuration)...", config)
     logger.info("This may take a while on first run (downloading full dataset)...")
@@ -55,13 +54,13 @@ def load_or_build_metadata(
             max_end_time = max(utt.get("end_time", 0) for utt in utterances)
             meeting_durations[meeting_id] = max_end_time
 
-    metadata: MeetingMetadata = {
+    new_metadata: MeetingMetadata = {
         "meeting_ids": meeting_ids_sorted,
         "durations_sec": meeting_durations,
     }
 
     logger.info("Caching meeting metadata...")
     with metadata_cache_path.open("w") as f:
-        json.dump(metadata, f)
+        json.dump(new_metadata, f)
 
-    return metadata
+    return new_metadata

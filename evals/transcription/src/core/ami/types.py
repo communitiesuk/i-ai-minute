@@ -1,4 +1,5 @@
 from typing import TypedDict
+from evals.transcription.src.core.types import DatasetItem
 
 MeetingId = str
 
@@ -11,9 +12,7 @@ class Utterance(TypedDict):
     meeting_id: str
 
 
-class Sample(TypedDict):
-    audio: dict
-    text: str
+class AMIDatasetSample(DatasetItem):
     meeting_id: str
     dataset_index: int
     duration_sec: float

@@ -1,14 +1,17 @@
 import logging
 from collections import defaultdict
 from pathlib import Path
+from typing import List
 
 from datasets import load_dataset
 
-from . import audio, cache
-from ...constants import TARGET_SAMPLE_RATE
-from .metadata import load_or_build_metadata
-from .selection import MeetingSegment, select_segments
-from .types import Sample
+from evals.transcription.src.constants import TARGET_SAMPLE_RATE
+from evals.transcription.src.core.types import DatasetProtocol
+from evals.transcription.src.core.ami import audio, cache
+from evals.transcription.src.core.ami.metadata import load_or_build_metadata
+from evals.transcription.src.core.ami.selection import MeetingSegment, select_segments
+from evals.transcription.src.core.ami.types import AMIDatasetSample
+from numpy import ndarray
 
 logger = logging.getLogger(__name__)
 
@@ -43,13 +46,13 @@ def _apply_cutoff(utterances: list, cutoff_time: float | None) -> list:
 
 
 def _build_sample(
-    mixed_audio,
+    mixed_audio: ndarray,  
     text: str,
     segment: MeetingSegment,
     idx: int,
     wav_path: Path,
     num_utterances: int,
-) -> Sample:
+) -> AMIDatasetSample:
     return {
         "audio": {
             "array": mixed_audio,
@@ -64,7 +67,7 @@ def _build_sample(
     }
 
 
-class AMIDatasetLoader:
+class AMIDatasetLoader(DatasetProtocol):
     def __init__(
         self,
         cache_dir: Path,
@@ -85,9 +88,9 @@ class AMIDatasetLoader:
         self.raw_cache_dir.mkdir(parents=True, exist_ok=True)
         self.processed_cache_dir.mkdir(parents=True, exist_ok=True)
 
-        self.samples: list[Sample] = []
+        self.samples: list[AMIDatasetSample] = []
 
-    def prepare(self) -> list[Sample]:
+    def prepare(self) -> list[AMIDatasetSample]:
         metadata = load_or_build_metadata(self.cache_dir, self.split, self.config)
         segments = select_segments(metadata, self.num_samples, self.sample_duration_fraction)
 
@@ -106,7 +109,7 @@ class AMIDatasetLoader:
         logger.info("Dataset preparation complete: %d samples ready", len(self.samples))
         return self.samples
 
-    def _load_required_utterances(self, segments) -> dict:
+    def _load_required_utterances(self, segments:List[MeetingSegment]) -> dict:   
         all_cached = all(
             cache.get_cache_paths(self.processed_cache_dir, seg, idx).is_complete()
             for idx, seg in enumerate(segments)
@@ -125,7 +128,7 @@ class AMIDatasetLoader:
         segment: MeetingSegment,
         idx: int,
         utterances_by_meeting: dict,
-    ) -> Sample | None:
+    ) -> AMIDatasetSample | None:
         paths = cache.get_cache_paths(self.processed_cache_dir, segment, idx)
 
         if paths.is_complete():
@@ -143,7 +146,7 @@ class AMIDatasetLoader:
         paths: cache.CachePaths,
         segment: MeetingSegment,
         idx: int,
-    ) -> Sample:
+    ) -> AMIDatasetSample:
         mixed_audio = cache.load_audio(paths.wav)
         text = cache.load_transcript(paths.transcript)
         sample = _build_sample(mixed_audio, text, segment, idx, paths.wav, len(text.split()))
@@ -162,7 +165,7 @@ class AMIDatasetLoader:
         paths: cache.CachePaths,
         segment: MeetingSegment,
         idx: int,
-    ) -> Sample:
+    ) -> AMIDatasetSample:
         utterances = _apply_cutoff(utterances, segment.utterance_cutoff_time)
         mixed_audio, text = audio.mix_utterances(utterances)
 
@@ -185,10 +188,10 @@ class AMIDatasetLoader:
             accumulated = sum(s["duration_sec"] for s in self.samples)
             logger.info("Processed %d/%d segments, %.2f sec total", idx + 1, total, accumulated)
 
-    def __len__(self):
+    def __len__(self)-> int:
         return len(self.samples)
 
-    def __getitem__(self, idx: int) -> Sample:
+    def __getitem__(self, idx: int) -> AMIDatasetSample:
         if idx < 0 or idx >= len(self.samples):
             msg = f"Sample index {idx} out of range [0, {len(self.samples)})"
             raise IndexError(msg)
