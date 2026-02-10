@@ -3,27 +3,7 @@ from __future__ import annotations
 import pytest
 
 from evals.transcription.src.core.runner import run_engines_parallel
-
-
-class FakeAdapter:
-    def __init__(self, label: str, hyp: str, proc_sec: float = 0.25):
-        self.label = label
-        self.hyp = hyp
-        self.proc_sec = proc_sec
-
-    def transcribe(self, wav_path: str):  # noqa: ARG002
-        return {"text": self.hyp, "duration_sec": self.proc_sec, "debug_info": {"label": self.label}}
-
-
-class FakeDataset:
-    def __init__(self, samples: list[dict]):
-        self._samples = samples
-
-    def __len__(self) -> int:
-        return len(self._samples)
-
-    def __getitem__(self, idx: int) -> dict:
-        return self._samples[idx]
+from tests.transcription_evals.conftest import FakeAdapter, FakeDataset
 
 
 def test_run_engines_parallel_bookkeeping(tmp_path):
@@ -51,14 +31,14 @@ def test_run_engines_parallel_bookkeeping(tmp_path):
 
     assert len(results) == 1
     summary = results[0]["summary"]
-    assert summary["engine"] == "Adapter A"
+    assert summary["engine"] == "A"
     assert summary["num_samples"] == 2
     assert summary["process_sec"] == pytest.approx(1.0)
     assert summary["audio_sec"] == pytest.approx(4.0)
-    assert summary["rtf"] == pytest.approx(0.25)
+    assert summary["processing_speed_ratio"] == pytest.approx(0.25)
 
     samples_out = results[0]["samples"]
     assert samples_out[0]["dataset_index"] == 0
     assert samples_out[1]["dataset_index"] == 1
-    assert samples_out[0]["engine"] == "Adapter A"
-    assert samples_out[0]["rtf"] == pytest.approx(0.25)
+    assert samples_out[0]["engine"] == "A"
+    assert samples_out[0]["processing_speed_ratio"] == pytest.approx(0.25)

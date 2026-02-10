@@ -10,27 +10,7 @@ import soundfile as sf
 from evals.transcription.src.adapters.azure import AzureSTTAdapter
 from evals.transcription.src.adapters.whisper import WhisperAdapter
 from evals.transcription.src.evaluate import run_evaluation
-
-
-class FakeAdapter:
-    def __init__(self, label: str, hyp: str, proc_sec: float = 0.25):
-        self.label = label
-        self.hyp = hyp
-        self.proc_sec = proc_sec
-
-    def transcribe(self, wav_path: str):  # noqa: ARG002
-        return {"text": self.hyp, "duration_sec": self.proc_sec, "debug_info": {"label": self.label}}
-
-
-class FakeDataset:
-    def __init__(self, samples: list[dict]):
-        self._samples = samples
-
-    def __len__(self) -> int:
-        return len(self._samples)
-
-    def __getitem__(self, idx: int) -> dict:
-        return self._samples[idx]
+from tests.transcription_evals.conftest import FakeAdapter, FakeDataset
 
 
 def test_run_evaluation_with_fake_adapters(tmp_path, monkeypatch):
@@ -81,7 +61,7 @@ def test_run_evaluation_with_fake_adapters(tmp_path, monkeypatch):
             assert sample["engine"] in {"Azure Speech-to-Text", "Whisper"}
             assert sample["audio_sec"] == 1.0
             assert sample["process_sec"] == 0.25
-            assert sample["rtf"] == pytest.approx(0.25)
+            assert sample["processing_speed_ratio"] == pytest.approx(0.25)
             assert sample["ref_raw"]
             assert sample["hyp_raw"]
             assert sample["ref_norm"]
