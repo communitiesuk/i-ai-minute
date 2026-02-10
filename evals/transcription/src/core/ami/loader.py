@@ -6,7 +6,7 @@ from typing import DefaultDict, List
 from datasets import load_dataset
 from numpy import ndarray
 
-from evals.transcription.src.constants import TARGET_SAMPLE_RATE
+from common.constants import TARGET_SAMPLE_RATE
 from evals.transcription.src.core.ami import audio, cache
 from evals.transcription.src.core.ami.metadata import load_or_build_metadata
 from evals.transcription.src.core.ami.selection import MeetingSegment, select_segments
@@ -184,9 +184,9 @@ class AMIDatasetLoader(DatasetProtocol):
         """
         Loads the mixed audio and transcript text from cache and builds a dataset sample.
         """
-        mixed_audio = cache.load_audio(paths.wav)
+        mixed_audio = cache.load_audio(paths.audio)
         text = cache.load_transcript(paths.transcript)
-        sample = _build_sample(mixed_audio, text, segment, index, paths.wav, len(text.split()))
+        sample = _build_sample(mixed_audio, text, segment, index, paths.audio, len(text.split()))
 
         logger.info(
             "Cache hit: %s (%.2f sec, %d words)",
@@ -210,10 +210,10 @@ class AMIDatasetLoader(DatasetProtocol):
         utterances = _apply_cutoff(utterances, segment.utterance_cutoff_time)
         mixed_audio, text = audio.mix_utterances(utterances)
 
-        cache.save_audio(paths.wav, mixed_audio)
+        cache.save_audio(paths.audio, mixed_audio, TARGET_SAMPLE_RATE)
         cache.save_transcript(paths.transcript, text)
 
-        sample = _build_sample(mixed_audio, text, segment, index, paths.wav, len(utterances))
+        sample = _build_sample(mixed_audio, text, segment, index, paths.audio, len(utterances))
 
         logger.info(
             "Cache miss: mixed %s (%d utterances, %.2f sec, %d words)",

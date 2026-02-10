@@ -3,13 +3,12 @@ import tempfile
 from pathlib import Path
 from typing import cast
 
-import ffmpeg
 import soundfile
+from common.audio.ffmpeg import convert_to_mp3
 
 from evals.transcription.src.constants import (
     AUDIO_DIR,
     CACHE_DIR,
-    TARGET_SAMPLE_RATE,
 )
 from evals.transcription.src.core.ami.audio import to_mono
 from evals.transcription.src.core.ami.loader import AMIDatasetLoader
@@ -38,7 +37,7 @@ def load_benchmark_dataset(
 
 def to_wav_16k_mono(example: DatasetItem, index: int) -> str:
     """
-    Converts the input audio to 16kHz mono WAV format using ffmpeg.
+    Converts the input audio to mono MP3 format using ffmpeg (preserves sample rate).
     Caches the processed audio and returns the path to the processed file.
     """
     if "path" in example["audio"]:
@@ -50,7 +49,7 @@ def to_wav_16k_mono(example: DatasetItem, index: int) -> str:
     audio_data = audio["array"]
     sample_rate = audio["sampling_rate"]
 
-    output_path = AUDIO_DIR / f"sample_{index:06d}.wav"
+    output_path = AUDIO_DIR / f"sample_{index:06d}.mp3"
 
     audio_data = to_mono(audio_data)
 
@@ -59,16 +58,7 @@ def to_wav_16k_mono(example: DatasetItem, index: int) -> str:
         soundfile.write(temp_path, audio_data, sample_rate, subtype="PCM_16")
 
     try:
-        input_stream = ffmpeg.input(str(temp_path))
-        output_stream = ffmpeg.output(
-            input_stream,
-            str(output_path),
-            acodec="pcm_s16le",
-            ar=TARGET_SAMPLE_RATE,
-            ac=1,
-            loglevel="error",
-        )
-        ffmpeg.run(output_stream, overwrite_output=True, quiet=True)
+        convert_to_mp3(temp_path, output_path)
     finally:
         temp_path.unlink(missing_ok=True)
 

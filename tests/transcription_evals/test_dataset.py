@@ -38,15 +38,16 @@ def test_to_wav_16k_mono_downmixes_stereo_and_returns_path(tmp_path, monkeypatch
     def fake_write(path, data, sr, subtype=None):  # noqa: ARG001
         captured["data"] = data
 
+    def fake_convert_to_mp3(_input_path, output_path):
+        return output_path
+
     monkeypatch.setattr("evals.transcription.src.core.dataset.soundfile.write", fake_write)
-    monkeypatch.setattr("evals.transcription.src.core.dataset.ffmpeg.input", lambda *_: "input")
-    monkeypatch.setattr("evals.transcription.src.core.dataset.ffmpeg.output", lambda *_args, **_kw: "output")
-    monkeypatch.setattr("evals.transcription.src.core.dataset.ffmpeg.run", lambda *_args, **_kw: None)
+    monkeypatch.setattr("evals.transcription.src.core.dataset.convert_to_mp3", fake_convert_to_mp3)
 
     example = {"audio": {"array": samples, "sampling_rate": 16000}}
     output_path = to_wav_16k_mono(example, 1)
 
-    assert output_path == str(audio_dir / "sample_000001.wav")
+    assert output_path == str(audio_dir / "sample_000001.mp3")
     np.testing.assert_allclose(captured["data"], expected_mono)
 
 
@@ -64,10 +65,12 @@ def test_to_wav_16k_mono_cleans_temp_on_ffmpeg_error(tmp_path, monkeypatch):
         msg = "ffmpeg failure"
         raise RuntimeError(msg)
 
+    def fake_convert_to_mp3_error(_input_path, _output_path):
+        msg = "ffmpeg failure"
+        raise RuntimeError(msg)
+
     monkeypatch.setattr("evals.transcription.src.core.dataset.soundfile.write", fake_write)
-    monkeypatch.setattr("evals.transcription.src.core.dataset.ffmpeg.input", lambda *_: "input")
-    monkeypatch.setattr("evals.transcription.src.core.dataset.ffmpeg.output", lambda *_args, **_kw: "output")
-    monkeypatch.setattr("evals.transcription.src.core.dataset.ffmpeg.run", fake_run)
+    monkeypatch.setattr("evals.transcription.src.core.dataset.convert_to_mp3", fake_convert_to_mp3_error)
 
     example = {"audio": {"array": np.zeros((2, 2)), "sampling_rate": 16000}}
 

@@ -3,11 +3,10 @@ import tempfile
 from pathlib import Path
 from typing import cast
 
-import ffmpeg
 import numpy
 import soundfile
+from common.audio.ffmpeg import convert_to_mp3
 
-from evals.transcription.src.constants import TARGET_SAMPLE_RATE
 from evals.transcription.src.core.ami.selection import MeetingSegment
 
 logger = logging.getLogger(__name__)
@@ -18,63 +17,44 @@ class CachePaths:
     Container for cached audio and transcript file paths.
     """
 
-    def __init__(self, wav_path: Path, transcript_path: Path):
-        self.wav = wav_path
+    def __init__(self, audio_path: Path, transcript_path: Path):
+        self.audio = audio_path
         self.transcript = transcript_path
 
     def is_complete(self) -> bool:
-        return self.wav.exists() and self.transcript.exists()
+        return self.audio.exists() and self.transcript.exists()
 
 
 def get_cache_paths(processed_dir: Path, segment: MeetingSegment, index: int) -> CachePaths:
     """
     Using the given path, meeting segment, and index, returns the expected cache paths for
-    the wav file and transcript.
+    the audio file and transcript.
     """
-    wav_path = processed_dir / f"{segment.meeting_id}_{index:06d}.wav"
-    transcript_path = wav_path.with_suffix(".txt")
-    return CachePaths(wav_path, transcript_path)
+    audio_path = processed_dir / f"{segment.meeting_id}_{index:06d}.mp3"
+    transcript_path = audio_path.with_suffix(".txt")
+    return CachePaths(audio_path, transcript_path)
 
 
 def load_audio(path: Path) -> numpy.ndarray:
     """
     Loads the audio from the given path and returns it as a numpy array.
     """
-    audio, sample_rate = soundfile.read(path)
-    if sample_rate != TARGET_SAMPLE_RATE:
-        logger.warning(
-            "Cached audio has unexpected sample rate %d, expected %d",
-            sample_rate,
-            TARGET_SAMPLE_RATE,
-        )
+    audio, _sample_rate = soundfile.read(path)
     return cast(numpy.ndarray, audio)
 
 
-def save_audio(path: Path, audio: numpy.ndarray, sample_rate: int = TARGET_SAMPLE_RATE) -> None:
+def save_audio(path: Path, audio: numpy.ndarray, sample_rate: int) -> None:
     """
-    Saves the given audio array to the specified path with the target sample rate.
-    If the original sample rate is different from the target, it resamples the audio before saving.
+    Saves the given audio array to the specified path as mono MP3 (preserves sample rate).
     """
-    if sample_rate == TARGET_SAMPLE_RATE:
-        soundfile.write(path, audio, sample_rate, subtype="PCM_16")
-    else:
-        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
-            temp_path = Path(temp_file.name)
-            soundfile.write(temp_path, audio, sample_rate, subtype="PCM_16")
+    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
+        temp_path = Path(temp_file.name)
+        soundfile.write(temp_path, audio, sample_rate, subtype="PCM_16")
 
-        try:
-            input_stream = ffmpeg.input(str(temp_path))
-            output_stream = ffmpeg.output(
-                input_stream,
-                str(path),
-                acodec="pcm_s16le",
-                ar=TARGET_SAMPLE_RATE,
-                ac=1,
-                loglevel="error",
-            )
-            ffmpeg.run(output_stream, overwrite_output=True, quiet=True)
-        finally:
-            temp_path.unlink(missing_ok=True)
+    try:
+        convert_to_mp3(temp_path, path)
+    finally:
+        temp_path.unlink(missing_ok=True)
 
 
 def load_transcript(path: Path) -> str:
