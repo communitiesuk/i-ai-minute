@@ -56,7 +56,7 @@ def compute_wer_metrics(refs: list[str], hyps: list[str]) -> Metrics:
 
 class TimingAccumulator:
     """
-    Accumulates processing and audio duration for RTF calculation.
+    Accumulates processing and audio duration for processing speed ratio calculation.
     """
 
     def __init__(self) -> None:
@@ -68,5 +68,5 @@ class TimingAccumulator:
         self.process_sec += float(process_sec)
 
     @property
-    def rtf(self) -> float:
+    def processing_speed_ratio(self) -> float:
         return self.process_sec / self.audio_sec if self.audio_sec else float("nan")

@@ -92,7 +92,7 @@ class SampleRow(TypedDict):
     wav_path: str
     audio_sec: float
     process_sec: float
-    rtf: float | None
+    processing_speed_ratio: float | None
     wer_pct: float
     diff_ops: DiffOps
     ref_raw: str
@@ -110,7 +110,7 @@ class Summary(TypedDict):
     engine: str
     num_samples: int
     overall_wer_pct: float
-    rtf: float
+    processing_speed_ratio: float
     process_sec: float
     audio_sec: float
     per_sample_wer_min: float | None
