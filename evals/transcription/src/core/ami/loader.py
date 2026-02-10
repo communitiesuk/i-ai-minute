@@ -17,10 +17,10 @@ logger = logging.getLogger(__name__)
 
 
 def _load_utterances_for_meetings(required_meetings: set, split: str, config: str) -> dict:
-    '''
+    """
     Loads specified meetings from the AMI dataset using Hugging Face's datasets library.
     Returns a dictionary mapping meeting IDs to lists of utterances.
-    '''
+    """
     ds = load_dataset("edinburghcstr/ami", config, split=split)
     utterances_by_meeting = defaultdict(list)
     for example in ds:
@@ -31,15 +31,15 @@ def _load_utterances_for_meetings(required_meetings: set, split: str, config: st
 
 
 def _apply_cutoff(utterances: list, cutoff_time: float | None) -> list:
-    '''
+    """
     Applies a cutoff time to the list of utterances, keeping only those that fit within the cutoff.
-    '''
+    """
     if cutoff_time is None:
         return utterances
 
     utterances_sorted = sorted(utterances, key=lambda x: x.get("begin_time", 0))
     result = []
-    accumulated  = 0.0
+    accumulated = 0.0
 
     for utt in utterances_sorted:
         duration = utt.get("end_time", 0) - utt.get("begin_time", 0)
@@ -60,9 +60,9 @@ def _build_sample(
     wav_path: Path,
     num_utterances: int,
 ) -> AMIDatasetSample:
-    '''
+    """
     Builds a dataset sample dictionary containing the mixed audio, transcript text, and metadata.
-    '''
+    """
     return {
         "audio": {
             "array": mixed_audio,
@@ -101,10 +101,10 @@ class AMIDatasetLoader(DatasetProtocol):
         self.samples: list[AMIDatasetSample] = []
 
     def prepare(self) -> list[AMIDatasetSample]:
-        '''
+        """
         Prepares the dataset by loading metadata, selecting segments, and processing audio.
         Returns a list of dataset samples ready for evaluation.
-        '''
+        """
         metadata = load_or_build_metadata(self.cache_dir, self.split, self.config)
         segments = select_segments(metadata, self.num_samples, self.sample_duration_fraction)
 
@@ -124,10 +124,10 @@ class AMIDatasetLoader(DatasetProtocol):
         return self.samples
 
     def _load_required_utterances(self, segments: List[MeetingSegment]) -> dict:
-        '''
+        """
         Checks if all required segments are already cached. If so, returns an empty dict.
         Otherwise, loads the necessary utterances for the required meetings and returns them in a dict.
-        '''
+        """
         all_cached = all(
             cache.get_cache_paths(self.processed_cache_dir, seg, idx).is_complete()
             for idx, seg in enumerate(segments)
@@ -147,10 +147,10 @@ class AMIDatasetLoader(DatasetProtocol):
         idx: int,
         utterances_by_meeting: dict,
     ) -> AMIDatasetSample | None:
-        '''
+        """
         Processes a single meeting segment by either loading from cache or building from utterances.
         Returns the dataset sample for the segment, or None if processing fails.
-        '''
+        """
         paths = cache.get_cache_paths(self.processed_cache_dir, segment, idx)
 
         if paths.is_complete():
@@ -169,9 +169,9 @@ class AMIDatasetLoader(DatasetProtocol):
         segment: MeetingSegment,
         idx: int,
     ) -> AMIDatasetSample:
-        '''
+        """
         Loads the mixed audio and transcript text from cache and builds a dataset sample.
-        '''
+        """
         mixed_audio = cache.load_audio(paths.wav)
         text = cache.load_transcript(paths.transcript)
         sample = _build_sample(mixed_audio, text, segment, idx, paths.wav, len(text.split()))
@@ -191,9 +191,9 @@ class AMIDatasetLoader(DatasetProtocol):
         segment: MeetingSegment,
         idx: int,
     ) -> AMIDatasetSample:
-        '''
+        """
         Builds the mixed audio and concatenated transcript text from the list of utterances, saves to cache, and builds a dataset sample.
-        '''
+        """
         utterances = _apply_cutoff(utterances, segment.utterance_cutoff_time)
         mixed_audio, text = audio.mix_utterances(utterances)
 
@@ -212,9 +212,9 @@ class AMIDatasetLoader(DatasetProtocol):
         return sample
 
     def _log_progress(self, idx: int, total: int) -> None:
-        '''
+        """
         Logs progress every 5 segments or at the end of processing.
-        '''
+        """
         if (idx + 1) % 5 == 0 or (idx + 1) == total:
             accumulated = sum(s["duration_sec"] for s in self.samples)
             logger.info("Processed %d/%d segments, %.2f sec total", idx + 1, total, accumulated)
@@ -223,9 +223,9 @@ class AMIDatasetLoader(DatasetProtocol):
         return len(self.samples)
 
     def __getitem__(self, idx: int) -> AMIDatasetSample:
-        '''
+        """
         Retrieves the dataset sample at the specified index.
-        '''
+        """
         if idx < 0 or idx >= len(self.samples):
             msg = f"Sample index {idx} out of range [0, {len(self.samples)})"
             raise IndexError(msg)

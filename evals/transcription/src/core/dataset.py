@@ -23,6 +23,9 @@ logger = logging.getLogger(__name__)
 def load_benchmark_dataset(
     num_samples: int | None, sample_duration_fraction: float | None = None
 ) -> AMIDatasetLoader:
+    """
+    Loads the AMI dataset with optional sampling of meetings and duration fractions.
+    """
     logger.info("Loading AMI dataset with %d samples...", num_samples)
     logger.info("Using cache directory: %s", CACHE_DIR)
 
@@ -37,6 +40,10 @@ def load_benchmark_dataset(
 def to_wav_16k_mono(
     example: DatasetItem, idx: int
 ) -> str:  # WavWriteFn Callable[[DatasetItem, int], str]
+    """
+    Converts the input audio to 16kHz mono WAV format using ffmpeg.
+    Caches the processed audio and returns the path to the processed file.
+    """
     if "path" in example["audio"]:
         cached_path = example["audio"]["path"]
         if Path(cached_path).exists():
@@ -73,4 +80,7 @@ def to_wav_16k_mono(
 
 
 def audio_duration_seconds(wav_path: str) -> float:
+    """
+    Computes the duration of the audio file in seconds.
+    """
     return get_duration(Path(wav_path))
