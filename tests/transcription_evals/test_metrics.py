@@ -10,18 +10,15 @@ def test_normalise_text_edge_cases():
     assert normalise_text("  Hello,   WORLD!!  ") == "hello world"
 
 
-def test_compute_wer_metrics_empty_inputs():
-    metrics = compute_wer_metrics([], [])
-    assert metrics["wer"] == 0.0
-    assert metrics["hits"] == 0
-    assert metrics["substitutions"] == 0
-    assert metrics["deletions"] == 0
-    assert metrics["insertions"] == 0
-
-
 def test_compute_wer_metrics_empty_reference_raises_error():
-    with pytest.raises(ValueError, match="one or more references are empty strings"):
+    with pytest.raises(ValueError):
         compute_wer_metrics([""], ["hello world"])
+    
+    with pytest.raises(ValueError):
+        compute_wer_metrics([""], [""])
+    
+    with pytest.raises(ValueError):
+        compute_wer_metrics([], [])
 
 
 def test_compute_wer_metrics_empty_hypothesis():

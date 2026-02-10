@@ -38,15 +38,6 @@ def compute_wer_metrics(refs: list[str], hyps: list[str]) -> Metrics:
     """
     Computes WER and related metrics using jiwer.
     """
-    if not refs and not hyps:
-        return {
-            "wer": 0.0,
-            "hits": 0,
-            "substitutions": 0,
-            "deletions": 0,
-            "insertions": 0,
-        }
-
     word_output = jiwer.process_words(
         refs,
         hyps,
