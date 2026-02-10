@@ -4,8 +4,10 @@ This document defines the system data contracts for processing, storage, and eva
 
 All contracts are described in an SQL table-like format. Where the runtime system stores structured payloads inside `JSONB` columns, the contract includes both:
 
-- The **physical** storage table/column (what is actually stored today)
-- A **logical** table view describing the expected shape of the nested payload
+- A **logical** table view describing the expected shape of the nested payload.
+- The **physical** storage table/column.
+
+The contract tries to follow the original implementation schema and early evals implementation schema.
 
 ## Logical schema diagrams
 
@@ -26,7 +28,6 @@ erDiagram
     TIMESTAMPTZ created_datetime
     UUID user_id FK
     TEXT s3_file_key
-    UUID transcription_id FK
   }
 
   transcription {
@@ -38,6 +39,7 @@ erDiagram
     TEXT status
     TEXT error
     UUID user_id FK
+    UUID recording_id FK
   }
 
   minute {
@@ -94,7 +96,7 @@ erDiagram
 
   user ||--o{ recording : has
   user ||--o{ transcription : has
-  recording }o--|| transcription : links
+  transcription }o--|| recording : creates
 
   transcription ||--o{ minute : creates
   user_template ||--o{ minute : configures
@@ -114,14 +116,13 @@ erDiagram
     TEXT run_id PK
     TIMESTAMPTZ timestamp
     TEXT example_id PK
-    UUID recording_id
-    TEXT s3_file_key
     TEXT reference_transcript
+    JSONB reference_dialogue_entries
     TEXT candidate_transcript
     JSONB candidate_dialogue_entries
     DOUBLE wer
     DOUBLE cer
-    DOUBLE sa_wer
+    DOUBLE speaker_attributed_wer
     DOUBLE diarization_error_rate
     DOUBLE speaker_confusion_rate
     INT speaker_count_pred
@@ -187,21 +188,28 @@ erDiagram
 
 ## 1. Transcription data contract (inputs + output)
 
+Following section follows original implementation schema.
+
+The only exception is making `transcription.recording_id FK` to `recording.id`, rather than `recording.transcription_id FK` to `transcription.id`.
+
 ### 1.1 Input: audio asset (recording)
+
+Audio asset (recording).
 
 ```sql
 CREATE TABLE recording (
   id                 UUID PRIMARY KEY,
   created_datetime    TIMESTAMPTZ NOT NULL DEFAULT now(),
-
-  user_id            UUID NOT NULL REFERENCES "user"(id),
+  user_id            UUID NOT NULL REFERENCES user(id),
   s3_file_key        TEXT NOT NULL,
-
-  transcription_id   UUID NULL REFERENCES transcription(id) ON DELETE SET NULL
 );
 ```
 
-### 1.2 Input/processing context: transcription job lifecycle
+### 1.2 Input/processing context: transcription
+
+Transcription result with diarization.
+
+Additionally used as evals input.
 
 ```sql
 CREATE TABLE transcription (
@@ -210,13 +218,12 @@ CREATE TABLE transcription (
   updated_datetime      TIMESTAMPTZ NOT NULL DEFAULT now(),
 
   title                TEXT NULL,
-
   dialogue_entries     JSONB NULL,
-
   status               TEXT NOT NULL DEFAULT 'AWAITING_START',
   error                TEXT NULL,
 
-  user_id              UUID NULL REFERENCES "user"(id)
+  user_id              UUID NULL REFERENCES user(id),
+  recording_id         UUID NOT NULL REFERENCES recording(id)
 );
 ```
 
@@ -225,7 +232,6 @@ CREATE TABLE transcription (
 `transcription.dialogue_entries` stores an array of diarized segments with the following shape.
 
 ```sql
--- Logical contract view (stored physically as transcription.dialogue_entries JSONB)
 CREATE TABLE transcription_dialogue_entry (
   transcription_id   UUID NOT NULL REFERENCES transcription(id) ON DELETE CASCADE,
 
@@ -342,34 +348,28 @@ The following contract defines the **expected eval outputs** for transcription e
 
 ### 3.1 Detailed report: example-level transcription eval record
 
+Per-example transcription eval results.
+
 ```sql
--- Proposed contract for per-example transcription evaluation output
 CREATE TABLE transcription_eval_record (
   run_id               TEXT NOT NULL,
   timestamp            TIMESTAMPTZ NOT NULL,
+  example_id           TEXT NOT NULL REFERENCES transcription(id) ON DELETE CASCADE,
 
-  -- Example identity
-  example_id           TEXT NOT NULL,
-
-  -- Example input pointers (at least one should be present)
-  recording_id         UUID NULL,
-  s3_file_key          TEXT NULL,
-
-  -- Ground truth (when available)
+  -- Ground truth
   reference_transcript TEXT NULL,
+  reference_dialogue_entries JSONB NULL,
 
   -- Candidate output under test
   candidate_transcript TEXT NOT NULL,
-
-  -- Optional: diarization-aware candidate (e.g., flattening dialogue_entries)
   candidate_dialogue_entries JSONB NULL,
 
-  -- Metrics (common choices per ADR-007)
+  -- Metrics
   wer                  DOUBLE PRECISION NULL,
   cer                  DOUBLE PRECISION NULL,
-  sa_wer               DOUBLE PRECISION NULL,
+  speaker_attributed_wer               DOUBLE PRECISION NULL,
 
-  -- Diarization sanity / quality (choose what you compute)
+  -- Diarization sanity / quality
   diarization_error_rate DOUBLE PRECISION NULL,
   speaker_confusion_rate DOUBLE PRECISION NULL,
   speaker_count_pred    INTEGER NULL,
@@ -385,8 +385,9 @@ CREATE TABLE transcription_eval_record (
 
 ### 3.2 Summary output: run-level transcription eval summary
 
+Run-level transcription eval results. Summarises transcription_eval_record for the run_id.
+
 ```sql
--- Proposed contract for run-level summary aggregation
 CREATE TABLE transcription_eval_run_summary (
   run_id               TEXT PRIMARY KEY,
   timestamp            TIMESTAMPTZ NOT NULL,
@@ -408,12 +409,11 @@ CREATE TABLE transcription_eval_run_summary (
 
 ## 4. Summary data eval output contract
 
-This contract is aligned with `evals/src/ailg_evals/schemas.py`.
-
 ### 4.1 Detailed report: example-level eval record
 
+Per-example summary eval results.
+
 ```sql
--- Mirrors EvalRecord (Pydantic) structure
 CREATE TABLE summary_eval_record (
   run_id               TEXT NOT NULL,
   timestamp            TIMESTAMPTZ NOT NULL,
@@ -438,7 +438,7 @@ CREATE TABLE summary_eval_record (
 
 ### 4.2 Optional normalization: metric results (metric_name as a row)
 
-If you want metric results queryable in SQL, normalize `metrics` like this:
+Metric results (metric_name as a row).
 
 ```sql
 CREATE TABLE summary_eval_metric_result (
@@ -446,7 +446,7 @@ CREATE TABLE summary_eval_metric_result (
   example_id           TEXT NOT NULL,
 
   metric_name          TEXT NOT NULL,
-  score                DOUBLE PRECISION NOT NULL CHECK (score >= 0.0 AND score <= 1.0),
+  score                DOUBLE PRECISION NOT NULL,
   reason               TEXT NOT NULL,
 
   PRIMARY KEY (run_id, example_id, metric_name),
@@ -454,12 +454,11 @@ CREATE TABLE summary_eval_metric_result (
 );
 ```
 
-### 4.3 Summary output: run-level summary JSON
+### 4.3 Summary output: run-level summary
 
-The current runner writes a `summary.json` with the following contract:
+Run-level summarisation eval results. Summarises summary_eval_record for the run_id.
 
 ```sql
--- Mirrors evals/src/ailg_evals/runner.py summary dict
 CREATE TABLE summary_eval_run_summary (
   run_id               TEXT PRIMARY KEY,
 
