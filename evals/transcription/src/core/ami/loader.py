@@ -7,7 +7,7 @@ from datasets import load_dataset
 from numpy import ndarray
 
 from common.constants import TARGET_SAMPLE_RATE
-from evals.transcription.src.core.ami import audio, cache
+from evals.transcription.src.core.ami import AMI_DATASET_NAME, audio, cache
 from evals.transcription.src.core.ami.metadata import load_or_build_metadata
 from evals.transcription.src.core.ami.selection import MeetingSegment, select_segments
 from evals.transcription.src.core.ami.types import AMIDatasetSample, RawDatasetRow
@@ -23,7 +23,7 @@ def _load_utterances_for_meetings(
     Loads specified meetings from the AMI dataset using Hugging Face's datasets library.
     Returns a dictionary mapping meeting IDs to lists of utterances.
     """
-    dataset = load_dataset("edinburghcstr/ami", config, split=split)
+    dataset = load_dataset(AMI_DATASET_NAME, config, split=split)
     utterances_by_meeting: DefaultDict[str, List[RawDatasetRow]] = defaultdict(list)
     for row in dataset:
         r = row

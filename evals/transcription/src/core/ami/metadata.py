@@ -6,6 +6,8 @@ from typing import TypedDict, cast
 
 from datasets import load_dataset
 
+from evals.transcription.src.core.ami import AMI_DATASET_NAME
+
 logger = logging.getLogger(__name__)
 
 
@@ -39,7 +41,7 @@ def load_or_build_metadata(
     logger.info("Loading AMI dataset (%s configuration)...", config)
     logger.info("This may take a while on first run (downloading full dataset)...")
 
-    dataset = load_dataset("edinburghcstr/ami", config, split=split)
+    dataset = load_dataset(AMI_DATASET_NAME, config, split=split)
 
     logger.info("Loaded %d utterances from AMI dataset", len(dataset))
     logger.info("Grouping utterances by meeting_id and computing durations...")
