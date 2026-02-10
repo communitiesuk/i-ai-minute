@@ -36,6 +36,9 @@ def run_engines_parallel(
     duration_fn: DurationFn,
     max_workers: int | None = None,
 ) -> list[EngineOutput]:
+    """
+    Run multiple transcription adapters in parallel on dataset samples and compute WER metrics.
+    """
     total_tasks = len(indices) * len(adapters_config)
     pbar = tqdm(total=total_tasks, desc="Processing all engines", unit="task")
     pbar_lock = Lock()
@@ -46,6 +49,9 @@ def run_engines_parallel(
         adapter_cfg: AdapterConfig,
         idx: int,
     ) -> tuple[str, int, SampleRow, float, float]:
+        """
+        Transcribe a single sample and compute WER metrics.
+        """
         adapter = adapter_cfg["adapter"]
         label = adapter_cfg["label"]
 
@@ -139,6 +145,9 @@ def run_engines_parallel(
 
 
 def save_results(results: list[EngineOutput], output_path: Path) -> None:
+    """
+    Save evaluation results to JSON file with summaries and per-sample details.
+    """
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     combined = {

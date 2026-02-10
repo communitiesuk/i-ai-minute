@@ -12,17 +12,29 @@ AudioArray = NDArray[np.floating]
 
 
 class AdapterConfig(TypedDict):
+    """
+    Configuration for a transcription adapter with its label.
+    """
+
     adapter: TranscriptionAdapter
     label: str
 
 
 class AudioSample(TypedDict):
+    """
+    Audio data with array, sample rate, and file path.
+    """
+
     array: AudioArray
     sampling_rate: int
     path: str
 
 
 class DatasetItem(TypedDict):
+    """
+    Single dataset sample with audio and reference text.
+    """
+
     audio: AudioSample
     text: str
 
@@ -36,11 +48,19 @@ class DatasetProtocol(Protocol):
 
 
 class EngineResults(TypedDict):
+    """
+    Results from a transcription engine including sample rows and timing data.
+    """
+
     rows: list["SampleRow"]
     timing: TimingAccumulator
 
 
 class DiffOps(TypedDict):
+    """
+    Word-level edit operations from WER calculation.
+    """
+
     equal: int
     replace: int
     delete: int
@@ -48,6 +68,10 @@ class DiffOps(TypedDict):
 
 
 class SampleRow(TypedDict):
+    """
+    Detailed transcription results for a single sample.
+    """
+
     engine: str
     dataset_index: int
     wav_path: str
@@ -64,6 +88,10 @@ class SampleRow(TypedDict):
 
 
 class Summary(TypedDict):
+    """
+    Aggregate metrics for a transcription engine across all samples.
+    """
+
     engine: str
     num_samples: int
     overall_wer_pct: float
@@ -76,6 +104,10 @@ class Summary(TypedDict):
 
 
 class EngineOutput(TypedDict):
+    """
+    Complete output from a transcription engine with summary and sample details.
+    """
+
     summary: Summary
     samples: list[SampleRow]
 
