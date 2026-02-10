@@ -13,10 +13,10 @@ def test_normalise_text_edge_cases():
 def test_compute_wer_metrics_empty_reference_raises_error():
     with pytest.raises(ValueError):
         compute_wer_metrics([""], ["hello world"])
-    
+
     with pytest.raises(ValueError):
         compute_wer_metrics([""], [""])
-    
+
     with pytest.raises(ValueError):
         compute_wer_metrics([], [])
 

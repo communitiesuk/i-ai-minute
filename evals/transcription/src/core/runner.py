@@ -99,7 +99,9 @@ def run_engines_parallel(
         return label, index, row, audio_seconds, process_seconds
 
     for adapter_config in adapters_config:
-        results[adapter_config["adapter"].name] = EngineResults({"rows": [], "timing": TimingAccumulator()})
+        results[adapter_config["adapter"].name] = EngineResults(
+            {"rows": [], "timing": TimingAccumulator()}
+        )
 
     workers = max_workers if max_workers is not None else len(adapters_config)
     with ThreadPoolExecutor(max_workers=workers) as executor:
