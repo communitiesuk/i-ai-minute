@@ -12,6 +12,9 @@ def load_ami_dataset(
     num_samples: int | None,
     sample_duration_fraction: float | None = None,
 ) -> AMIDatasetLoader:
+    """
+    Loads the AMI dataset with optional sampling of meetings and duration fractions.
+    """
     loader = AMIDatasetLoader(cache_dir, num_samples, sample_duration_fraction)
     samples: list[AMIDatasetSample] = loader.prepare()
 
@@ -22,6 +25,10 @@ def load_ami_dataset(
 
 
 def _validate_dataset_contract(sample: AMIDatasetSample) -> None:
+    """
+    Validates that the dataset sample conforms to the expected contract.
+    """
+
     if "audio" not in sample:
         msg = "Dataset row must contain 'audio'"
         raise ValueError(msg)

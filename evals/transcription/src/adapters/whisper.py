@@ -15,5 +15,5 @@ class WhisperAdapter(TranscriptionAdapter):
     def _get_debug_info(self, dialogue_entries: list) -> dict[str, object]:
         return {"segments": len(dialogue_entries)}
 
-    def transcribe(self, wav_path: str) -> "TranscriptionResult":
+    def transcribe(self, wav_path: str) -> TranscriptionResult:
         return self._transcribe_with_service(wav_path)

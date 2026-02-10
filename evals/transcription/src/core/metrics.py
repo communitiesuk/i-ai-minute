@@ -23,6 +23,9 @@ _jiwer_transform = jiwer.Compose(
 
 
 def normalise_text(text: str) -> str:
+    """
+    Normalises text for WER computation by applying the same transformations as jiwer.
+    """
     if not text:
         return ""
     result = _jiwer_transform(text)
@@ -32,6 +35,9 @@ def normalise_text(text: str) -> str:
 
 
 def compute_wer_metrics(refs: list[str], hyps: list[str]) -> Metrics:
+    """
+    Computes WER and related metrics using jiwer.
+    """
     if not refs or not hyps:
         return {
             "wer": 0.0,
