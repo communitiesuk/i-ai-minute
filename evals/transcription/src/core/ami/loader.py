@@ -7,7 +7,8 @@ from common.constants import TARGET_SAMPLE_RATE
 from datasets import load_dataset
 from numpy import ndarray
 
-from evals.transcription.src.core.ami import AMI_DATASET_NAME, audio, cache
+from evals.transcription.src.core.ami import audio, cache
+from evals.transcription.src.core.ami.constants import AMI_DATASET_NAME
 from evals.transcription.src.core.ami.metadata import load_or_build_metadata
 from evals.transcription.src.core.ami.selection import MeetingSegment, select_segments
 from evals.transcription.src.core.ami.types import AMIDatasetSample, RawDatasetRow

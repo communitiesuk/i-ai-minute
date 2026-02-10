@@ -6,7 +6,7 @@ from typing import TypedDict, cast
 
 from datasets import load_dataset
 
-from evals.transcription.src.core.ami import AMI_DATASET_NAME
+from evals.transcription.src.core.ami.constants import AMI_DATASET_NAME
 
 logger = logging.getLogger(__name__)
 

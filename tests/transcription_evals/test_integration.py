@@ -96,12 +96,28 @@ def test_adapter_contracts(tmp_path, monkeypatch):
     assert isinstance(result["debug_info"], dict)
 
 
-def test_run_evaluation_requires_azure_credentials(monkeypatch):
-    dataset = FakeDataset([])
+def test_run_evaluation_requires_azure_credentials(monkeypatch, tmp_path):
+    wav_a = tmp_path / "a.wav"
+    sf.write(wav_a, [0.0, 0.0], 16000, subtype="PCM_16")
+
+    samples = [{"text": "hello world", "audio": {"path": str(wav_a)}}]
+    dataset = FakeDataset(samples)
     fake_settings = SimpleNamespace(AZURE_SPEECH_KEY=None, AZURE_SPEECH_REGION=None)
 
-    monkeypatch.setattr("evals.transcription.src.evaluate.settings", fake_settings)
+    monkeypatch.setattr("common.services.transcription_services.azure.settings", fake_settings)
     monkeypatch.setattr("evals.transcription.src.evaluate.load_benchmark_dataset", lambda **_: dataset)
+    monkeypatch.setattr("evals.transcription.src.evaluate.get_duration", lambda _: 1.0)
+    monkeypatch.setattr("evals.transcription.src.evaluate.WORKDIR", Path(tmp_path))
+    monkeypatch.setattr(
+        "evals.transcription.src.evaluate.WhisperAdapter",
+        lambda **_: FakeAdapter("Whisper", "hello world"),
+    )
 
-    with pytest.raises(ValueError, match="Azure credentials not found"):
-        run_evaluation(num_samples=1)
+    run_evaluation(num_samples=1)
+
+    results_path = next((Path(tmp_path) / "results").glob("evaluation_results_*.json"))
+    results = json.loads(results_path.read_text(encoding="utf-8"))
+
+    azure_samples = results["engines"]["Azure Speech API"]
+    assert len(azure_samples) == 1
+    assert "Azure credentials not found" in azure_samples[0]["engine_debug"]["error"]
