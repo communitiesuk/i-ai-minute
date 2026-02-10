@@ -5,10 +5,10 @@ from unittest.mock import Mock
 import numpy as np
 import pytest
 
-from evals.transcription.src.core.dataset import to_wav_16k_mono
+from evals.transcription.src.core.dataset import prepare_audio_for_transcription
 
 
-def test_to_wav_16k_mono_uses_cached_path(tmp_path, monkeypatch):
+def test_prepare_audio_for_transcription_uses_cached_path(tmp_path, monkeypatch):
     cached = tmp_path / "cached.wav"
     cached.write_bytes(b"RIFFfake")
 
@@ -22,16 +22,15 @@ def test_to_wav_16k_mono_uses_cached_path(tmp_path, monkeypatch):
     monkeypatch.setattr("ffmpeg.output", _fail)
     monkeypatch.setattr("ffmpeg.run", _fail)
 
-    assert to_wav_16k_mono(example, 0) == str(cached)
+    assert prepare_audio_for_transcription(example, 0) == str(cached)
 
 
-def test_to_wav_16k_mono_downmixes_stereo_and_returns_path(tmp_path, monkeypatch):
+def test_prepare_audio_for_transcription_downmixes_stereo_and_returns_path(tmp_path, monkeypatch):
     audio_dir = tmp_path / "audio"
     audio_dir.mkdir()
     monkeypatch.setattr("evals.transcription.src.core.dataset.AUDIO_DIR", audio_dir)
 
     samples = np.array([[0.0, 1.0], [1.0, 0.0]])
-    expected_mono = samples.mean(axis=1)
 
     captured = {}
 
@@ -45,13 +44,13 @@ def test_to_wav_16k_mono_downmixes_stereo_and_returns_path(tmp_path, monkeypatch
     monkeypatch.setattr("evals.transcription.src.core.dataset.convert_to_mp3", fake_convert_to_mp3)
 
     example = {"audio": {"array": samples, "sampling_rate": 16000}}
-    output_path = to_wav_16k_mono(example, 1)
+    output_path = prepare_audio_for_transcription(example, 1)
 
     assert output_path == str(audio_dir / "sample_000001.mp3")
-    np.testing.assert_allclose(captured["data"], expected_mono)
+    np.testing.assert_allclose(captured["data"], samples)
 
 
-def test_to_wav_16k_mono_cleans_temp_on_ffmpeg_error(tmp_path, monkeypatch):
+def test_prepare_audio_for_transcription_cleans_temp_on_ffmpeg_error(tmp_path, monkeypatch):
     audio_dir = tmp_path / "audio"
     audio_dir.mkdir()
     monkeypatch.setattr("evals.transcription.src.core.dataset.AUDIO_DIR", audio_dir)
@@ -75,7 +74,7 @@ def test_to_wav_16k_mono_cleans_temp_on_ffmpeg_error(tmp_path, monkeypatch):
     example = {"audio": {"array": np.zeros((2, 2)), "sampling_rate": 16000}}
 
     with pytest.raises(RuntimeError):
-        to_wav_16k_mono(example, 2)
+        prepare_audio_for_transcription(example, 2)
 
     temp_path = temp_path_holder["path"]
     assert temp_path is not None
