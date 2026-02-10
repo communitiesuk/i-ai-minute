@@ -3,10 +3,10 @@ from collections import defaultdict
 from pathlib import Path
 from typing import DefaultDict, List
 
+from common.constants import TARGET_SAMPLE_RATE
 from datasets import load_dataset
 from numpy import ndarray
 
-from common.constants import TARGET_SAMPLE_RATE
 from evals.transcription.src.core.ami import AMI_DATASET_NAME, audio, cache
 from evals.transcription.src.core.ami.metadata import load_or_build_metadata
 from evals.transcription.src.core.ami.selection import MeetingSegment, select_segments
