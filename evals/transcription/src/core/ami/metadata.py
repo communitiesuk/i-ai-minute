@@ -6,14 +6,12 @@ from typing import TypedDict, cast
 
 from datasets import load_dataset
 
-from evals.transcription.src.core.ami.types import MeetingId
-
 logger = logging.getLogger(__name__)
 
 
 class MeetingMetadata(TypedDict):
-    meeting_ids: list[MeetingId]
-    durations_sec: dict[MeetingId, float]
+    meeting_ids: list[str]
+    durations_sec: dict[str, float]
 
 
 def load_or_build_metadata(

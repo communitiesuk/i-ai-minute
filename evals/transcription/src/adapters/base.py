@@ -5,7 +5,9 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import TypedDict
 
-from common.types import TranscriptionJobMessageData
+from common.services.transcription_services.adapter import (
+    TranscriptionAdapter as CommonTranscriptionAdapter,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -18,25 +20,23 @@ class TranscriptionResult(TypedDict):
     debug_info: dict[str, object]
 
 
-class TranscriptionAdapter(ABC):
-    _service_name: str
-
+class EvalsTranscriptionAdapter(ABC):
     @abstractmethod
     def transcribe(self, wav_path: str) -> TranscriptionResult:
         """Transcribe the given wav file."""
         pass
 
-    @abstractmethod
-    async def _run_transcription(self, wav_path: Path) -> TranscriptionJobMessageData:
-        """Run the actual transcription service."""
-        pass
 
-    def _transcribe_with_service(self, wav_path: str) -> TranscriptionResult:
-        """Shared transcription logic for all adapters."""
+class ServiceTranscriptionAdapter(EvalsTranscriptionAdapter):
+    def __init__(self, service_adapter: type[CommonTranscriptionAdapter], service_name: str):
+        self._adapter = service_adapter
+        self._service_name = service_name
+
+    def transcribe(self, wav_path: str) -> TranscriptionResult:
         start_time = time.time()
 
         try:
-            result = asyncio.run(self._run_transcription(Path(wav_path)))
+            result = asyncio.run(self._adapter.start(Path(wav_path)))
             end_time = time.time()
 
             dialogue_entries = result.transcript

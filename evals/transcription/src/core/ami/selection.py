@@ -2,14 +2,13 @@ import logging
 from dataclasses import dataclass
 
 from evals.transcription.src.core.ami.metadata import MeetingMetadata
-from evals.transcription.src.core.ami.types import MeetingId
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class MeetingSegment:
-    meeting_id: MeetingId
+    meeting_id: str
     utterance_cutoff_time: float | None = None
 
 

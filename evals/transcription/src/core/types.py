@@ -5,7 +5,7 @@ from typing import Callable, Protocol, TypedDict
 import numpy as np
 from numpy.typing import NDArray
 
-from evals.transcription.src.adapters.base import TranscriptionAdapter
+from evals.transcription.src.adapters.base import EvalsTranscriptionAdapter
 from evals.transcription.src.core.metrics import TimingAccumulator
 
 AudioArray = NDArray[np.floating]
@@ -16,7 +16,7 @@ class AdapterConfig(TypedDict):
     Configuration for a transcription adapter with its label.
     """
 
-    adapter: TranscriptionAdapter
+    adapter: EvalsTranscriptionAdapter
     label: str
 
 

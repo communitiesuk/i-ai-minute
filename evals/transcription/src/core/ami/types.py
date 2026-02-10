@@ -7,8 +7,6 @@ from numpy.typing import NDArray
 
 from evals.transcription.src.core.types import DatasetItem
 
-MeetingId = str
-
 
 class RawAudioDict(TypedDict):
     """Audio representation from HuggingFace datasets"""
