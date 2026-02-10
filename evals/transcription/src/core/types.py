@@ -113,9 +113,9 @@ class Summary(TypedDict):
     processing_speed_ratio: float
     process_sec: float
     audio_sec: float
-    per_sample_wer_min: float | None
-    per_sample_wer_max: float | None
-    per_sample_wer_mean: float | None
+    per_sample_wer_min: float
+    per_sample_wer_max: float
+    per_sample_wer_mean: float
 
 
 class EngineOutput(TypedDict):

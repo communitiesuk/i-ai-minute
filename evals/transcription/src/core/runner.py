@@ -138,9 +138,9 @@ def run_engines_parallel(
             "processing_speed_ratio": float(timing.processing_speed_ratio),
             "process_sec": float(timing.process_sec),
             "audio_sec": float(timing.audio_sec),
-            "per_sample_wer_min": float(numpy.min(per_sample_wers)) if per_sample_wers else None,
-            "per_sample_wer_max": float(numpy.max(per_sample_wers)) if per_sample_wers else None,
-            "per_sample_wer_mean": float(numpy.mean(per_sample_wers)) if per_sample_wers else None,
+            "per_sample_wer_min": float(numpy.min(per_sample_wers)),
+            "per_sample_wer_max": float(numpy.max(per_sample_wers)),
+            "per_sample_wer_mean": float(numpy.mean(per_sample_wers)),
         }
 
         output_results.append({"summary": summary, "samples": rows})
