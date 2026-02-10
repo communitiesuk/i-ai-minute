@@ -55,11 +55,7 @@ def run_evaluation(
         )
 
     logger.info("Initializing Azure Speech-to-Text adapter...")
-    azure_adapter = AzureSTTAdapter(
-        speech_key=settings.AZURE_SPEECH_KEY,
-        speech_region=settings.AZURE_SPEECH_REGION,
-        language="en-GB",
-    )
+    azure_adapter = AzureSTTAdapter()
 
     whisper_adapter = WhisperAdapter()
 
