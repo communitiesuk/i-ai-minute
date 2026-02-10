@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from evals.transcription.src.core.metrics import compute_wer_metrics, normalise_text
 
 
@@ -17,11 +19,17 @@ def test_compute_wer_metrics_empty_inputs():
     assert metrics["insertions"] == 0
 
 
+def test_compute_wer_metrics_empty_reference_raises_error():
+    with pytest.raises(ValueError, match="one or more references are empty strings"):
+        compute_wer_metrics([""], ["hello world"])
+
+
 def test_compute_wer_metrics_empty_hypothesis():
     metrics = compute_wer_metrics(["hello world"], [""])
     assert metrics["wer"] == 1.0
     assert metrics["hits"] == 0
     assert metrics["deletions"] == 2
+    assert metrics["insertions"] == 0
 
 
 def test_compute_wer_metrics_perfect_match():
