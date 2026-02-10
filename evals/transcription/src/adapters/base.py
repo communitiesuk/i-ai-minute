@@ -21,6 +21,10 @@ class TranscriptionResult(TypedDict):
 
 
 class EvalsTranscriptionAdapter(ABC):
+    """
+    Abstract base class for transcription adapters used in evaluations.
+    """
+
     @abstractmethod
     def transcribe(self, wav_path: str) -> TranscriptionResult:
         """Transcribe the given wav file."""
@@ -28,6 +32,10 @@ class EvalsTranscriptionAdapter(ABC):
 
 
 class ServiceTranscriptionAdapter(EvalsTranscriptionAdapter):
+    """
+    Adapter wrapping common transcription services for evaluation use.
+    """
+
     def __init__(self, service_adapter: type[CommonTranscriptionAdapter], service_name: str):
         self._adapter = service_adapter
         self._service_name = service_name

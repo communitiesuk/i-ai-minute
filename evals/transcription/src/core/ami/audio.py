@@ -2,7 +2,7 @@ import logging
 from typing import List, cast
 
 import librosa
-import numpy as np
+import numpy
 
 from evals.transcription.src.constants import STEREO_CHANNELS, TARGET_SAMPLE_RATE
 from evals.transcription.src.core.ami.types import RawDatasetRow
@@ -10,55 +10,55 @@ from evals.transcription.src.core.ami.types import RawDatasetRow
 logger = logging.getLogger(__name__)
 
 
-def to_mono(audio: np.ndarray) -> np.ndarray:
+def to_mono(audio: numpy.ndarray) -> numpy.ndarray:
     """
     Converts stereo audio to mono by averaging the channels.
     If the audio is already mono, it is returned unchanged.
     """
     if getattr(audio, "ndim", 1) == STEREO_CHANNELS:
-        return cast(np.ndarray, audio.mean(axis=1))
-    return cast(np.ndarray, audio)
+        return cast(numpy.ndarray, audio.mean(axis=1))
+    return cast(numpy.ndarray, audio)
 
 
 def resample_if_needed(
-    audio: np.ndarray,
-    current_sr: int,
-    target_sr: int = TARGET_SAMPLE_RATE,
-) -> np.ndarray:
+    audio: numpy.ndarray,
+    current_sample_rate: int,
+    target_sample_rate: int = TARGET_SAMPLE_RATE,
+) -> numpy.ndarray:
     """
     Resamples the audio to the target sample rate if it is different from the current sample rate.
     """
-    if current_sr != target_sr:
-        return librosa.resample(audio, orig_sr=current_sr, target_sr=target_sr)
-    return cast(np.ndarray, audio)
+    if current_sample_rate != target_sample_rate:
+        return librosa.resample(audio, orig_sr=current_sample_rate, target_sr=target_sample_rate)
+    return cast(numpy.ndarray, audio)
 
 
-def normalise_peak(audio: np.ndarray) -> np.ndarray:
+def normalise_peak(audio: numpy.ndarray) -> numpy.ndarray:
     """
     Normalises the audio to ensure the peak amplitude is within [-1.0, 1.0].
     """
-    max_val = np.abs(audio).max()
+    max_val = numpy.abs(audio).max()
     if max_val > 1.0:
-        return cast(np.ndarray, audio / max_val)
-    return cast(np.ndarray, audio)
+        return cast(numpy.ndarray, audio / max_val)
+    return cast(numpy.ndarray, audio)
 
 
 def mix_utterances(
-    utterances: List[RawDatasetRow], target_sr: int = TARGET_SAMPLE_RATE
-) -> tuple[np.ndarray, str]:
+    utterances: List[RawDatasetRow], target_sample_rate: int = TARGET_SAMPLE_RATE
+) -> tuple[numpy.ndarray, str]:
     """
     Mixes multiple utterances into a single audio array and concatenates their texts.
     Returns a tuple of (mixed_audio, text).
     """
     if not utterances:
-        return np.array([], dtype=np.float32), ""
+        return numpy.array([], dtype=numpy.float32), ""
 
     utterances_sorted = sorted(utterances, key=lambda x: x["begin_time"])
 
     max_end_time = max(utterance["end_time"] for utterance in utterances_sorted)
-    total_samples = int(np.ceil(max_end_time * target_sr))
+    total_samples = int(numpy.ceil(max_end_time * target_sample_rate))
 
-    mixed_audio = np.zeros(total_samples, dtype=np.float32)
+    mixed_audio = numpy.zeros(total_samples, dtype=numpy.float32)
     text_parts = []
 
     for utterance in utterances_sorted:
@@ -68,9 +68,9 @@ def mix_utterances(
         text = utterance["text"]
 
         audio_array = to_mono(audio_array)
-        audio_array = resample_if_needed(audio_array, sample_rate, target_sr)
+        audio_array = resample_if_needed(audio_array, sample_rate, target_sample_rate)
 
-        start_sample = int(begin_time * target_sr)
+        start_sample = int(begin_time * target_sample_rate)
         end_sample = start_sample + len(audio_array)
 
         if end_sample > len(mixed_audio):
@@ -88,7 +88,7 @@ def mix_utterances(
     return mixed_audio, full_text
 
 
-def compute_duration(audio: np.ndarray, sample_rate: int = TARGET_SAMPLE_RATE) -> float:
+def compute_duration(audio: numpy.ndarray, sample_rate: int = TARGET_SAMPLE_RATE) -> float:
     """
     Computes the duration of the audio in seconds.
     """

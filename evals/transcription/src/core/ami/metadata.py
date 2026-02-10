@@ -10,6 +10,10 @@ logger = logging.getLogger(__name__)
 
 
 class MeetingMetadata(TypedDict):
+    """
+    Metadata containing meeting IDs and their durations.
+    """
+
     meeting_ids: list[str]
     durations_sec: dict[str, float]
 

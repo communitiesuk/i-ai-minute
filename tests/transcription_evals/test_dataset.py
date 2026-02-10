@@ -38,7 +38,7 @@ def test_to_wav_16k_mono_downmixes_stereo_and_returns_path(tmp_path, monkeypatch
     def fake_write(path, data, sr, subtype=None):  # noqa: ARG001
         captured["data"] = data
 
-    monkeypatch.setattr("evals.transcription.src.core.dataset.sf.write", fake_write)
+    monkeypatch.setattr("evals.transcription.src.core.dataset.soundfile.write", fake_write)
     monkeypatch.setattr("evals.transcription.src.core.dataset.ffmpeg.input", lambda *_: "input")
     monkeypatch.setattr("evals.transcription.src.core.dataset.ffmpeg.output", lambda *_args, **_kw: "output")
     monkeypatch.setattr("evals.transcription.src.core.dataset.ffmpeg.run", lambda *_args, **_kw: None)
@@ -64,7 +64,7 @@ def test_to_wav_16k_mono_cleans_temp_on_ffmpeg_error(tmp_path, monkeypatch):
         msg = "ffmpeg failure"
         raise RuntimeError(msg)
 
-    monkeypatch.setattr("evals.transcription.src.core.dataset.sf.write", fake_write)
+    monkeypatch.setattr("evals.transcription.src.core.dataset.soundfile.write", fake_write)
     monkeypatch.setattr("evals.transcription.src.core.dataset.ffmpeg.input", lambda *_: "input")
     monkeypatch.setattr("evals.transcription.src.core.dataset.ffmpeg.output", lambda *_args, **_kw: "output")
     monkeypatch.setattr("evals.transcription.src.core.dataset.ffmpeg.run", fake_run)

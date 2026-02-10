@@ -4,7 +4,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from threading import Lock
 
-import numpy as np
+import numpy
 from tqdm import tqdm
 
 from evals.transcription.src.core.metrics import (
@@ -40,36 +40,36 @@ def run_engines_parallel(
     Run multiple transcription adapters in parallel on dataset samples and compute WER metrics.
     """
     total_tasks = len(indices) * len(adapters_config)
-    pbar = tqdm(total=total_tasks, desc="Processing all engines", unit="task")
-    pbar_lock = Lock()
+    progress_bar = tqdm(total=total_tasks, desc="Processing all engines", unit="task")
+    progress_bar_lock = Lock()
 
     results: dict[str, EngineResults] = {}
 
     def process_sample(
-        adapter_cfg: AdapterConfig,
-        idx: int,
+        adapter_config: AdapterConfig,
+        index: int,
     ) -> tuple[str, int, SampleRow, float, float]:
         """
         Transcribe a single sample and compute WER metrics.
         """
-        adapter = adapter_cfg["adapter"]
-        label = adapter_cfg["label"]
+        adapter = adapter_config["adapter"]
+        label = adapter_config["label"]
 
-        example = dataset[int(idx)]
-        wav_path = wav_write_fn(example, int(idx))
+        example = dataset[int(index)]
+        wav_path = wav_write_fn(example, int(index))
         ref_raw = example["text"]
-        aud_sec = float(duration_fn(wav_path))
+        audio_seconds = float(duration_fn(wav_path))
 
         result = adapter.transcribe(wav_path)
         hyp_raw = result["text"]
-        proc_sec = float(result["duration_sec"])
-        dbg = result["debug_info"]
+        process_seconds = float(result["duration_sec"])
+        debug_info = result["debug_info"]
 
-        ref_n = normalise_text(ref_raw)
-        hyp_n = normalise_text(hyp_raw)
-        per_metrics = compute_wer_metrics([ref_n], [hyp_n])
-        per_wer = per_metrics["wer"] * 100.0
-        ops: DiffOps = {
+        reference_normalized = normalise_text(ref_raw)
+        hypothesis_normalized = normalise_text(hyp_raw)
+        per_metrics = compute_wer_metrics([reference_normalized], [hypothesis_normalized])
+        per_sample_wer = per_metrics["wer"] * 100.0
+        diff_operations: DiffOps = {
             "equal": per_metrics["hits"],
             "replace": per_metrics["substitutions"],
             "delete": per_metrics["deletions"],
@@ -78,47 +78,47 @@ def run_engines_parallel(
 
         row: SampleRow = {
             "engine": label,
-            "dataset_index": int(idx),
+            "dataset_index": int(index),
             "wav_path": wav_path,
-            "audio_sec": aud_sec,
-            "process_sec": proc_sec,
-            "rtf": (proc_sec / aud_sec) if aud_sec else None,
-            "wer_pct": float(per_wer),
-            "diff_ops": ops,
+            "audio_sec": audio_seconds,
+            "process_sec": process_seconds,
+            "rtf": (process_seconds / audio_seconds) if audio_seconds else None,
+            "wer_pct": float(per_sample_wer),
+            "diff_ops": diff_operations,
             "ref_raw": ref_raw,
             "hyp_raw": hyp_raw,
-            "ref_norm": ref_n,
-            "hyp_norm": hyp_n,
-            "engine_debug": dbg,
+            "ref_norm": reference_normalized,
+            "hyp_norm": hypothesis_normalized,
+            "engine_debug": debug_info,
         }
 
-        with pbar_lock:
-            pbar.update(1)
-            pbar.set_postfix({"engine": label, "sample": idx})
+        with progress_bar_lock:
+            progress_bar.update(1)
+            progress_bar.set_postfix({"engine": label, "sample": index})
 
-        return label, idx, row, aud_sec, proc_sec
+        return label, index, row, audio_seconds, process_seconds
 
-    for adapter_cfg in adapters_config:
-        results[adapter_cfg["label"]] = EngineResults({"rows": [], "timing": TimingAccumulator()})
+    for adapter_config in adapters_config:
+        results[adapter_config["label"]] = EngineResults({"rows": [], "timing": TimingAccumulator()})
 
     workers = max_workers if max_workers is not None else len(adapters_config)
     with ThreadPoolExecutor(max_workers=workers) as executor:
         futures = []
-        for adapter_cfg in adapters_config:
-            for idx in indices:
-                future = executor.submit(process_sample, adapter_cfg, idx)
+        for adapter_config in adapters_config:
+            for index in indices:
+                future = executor.submit(process_sample, adapter_config, index)
                 futures.append(future)
 
         for future in as_completed(futures):
-            label, idx, row, aud_sec, proc_sec = future.result()
+            label, index, row, audio_seconds, process_seconds = future.result()
             results[label]["rows"].append(row)
-            results[label]["timing"].add(aud_sec, proc_sec)
+            results[label]["timing"].add(audio_seconds, process_seconds)
 
-    pbar.close()
+    progress_bar.close()
 
     output_results: list[EngineOutput] = []
-    for adapter_cfg in adapters_config:
-        label = adapter_cfg["label"]
+    for adapter_config in adapters_config:
+        label = adapter_config["label"]
         rows = sorted(results[label]["rows"], key=lambda row: row["dataset_index"])
         timing = results[label]["timing"]
 
@@ -127,7 +127,7 @@ def run_engines_parallel(
             [row["hyp_raw"] for row in rows],
         )
         overall_wer = overall_metrics["wer"] * 100.0
-        per_wers = [row["wer_pct"] for row in rows]
+        per_sample_wers = [row["wer_pct"] for row in rows]
 
         summary: Summary = {
             "engine": label,
@@ -136,9 +136,9 @@ def run_engines_parallel(
             "rtf": float(timing.rtf),
             "process_sec": float(timing.process_sec),
             "audio_sec": float(timing.audio_sec),
-            "per_sample_wer_min": float(np.min(per_wers)) if per_wers else None,
-            "per_sample_wer_max": float(np.max(per_wers)) if per_wers else None,
-            "per_sample_wer_mean": float(np.mean(per_wers)) if per_wers else None,
+            "per_sample_wer_min": float(numpy.min(per_sample_wers)) if per_sample_wers else None,
+            "per_sample_wer_max": float(numpy.max(per_sample_wers)) if per_sample_wers else None,
+            "per_sample_wer_mean": float(numpy.mean(per_sample_wers)) if per_sample_wers else None,
         }
 
         output_results.append({"summary": summary, "samples": rows})

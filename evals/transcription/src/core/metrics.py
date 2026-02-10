@@ -68,6 +68,10 @@ def compute_wer_pct(refs: list[str], hyps: list[str]) -> float:
 
 
 class TimingAccumulator:
+    """
+    Accumulates processing and audio duration for RTF calculation.
+    """
+
     def __init__(self) -> None:
         self.process_sec = 0.0
         self.audio_sec = 0.0

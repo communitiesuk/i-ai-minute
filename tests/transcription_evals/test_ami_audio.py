@@ -22,7 +22,7 @@ def test_mix_utterances_aligns_and_concatenates_text():
         },
     ]
 
-    mixed, text = audio.mix_utterances(utterances, target_sr=16000)
+    mixed, text = audio.mix_utterances(utterances, target_sample_rate=16000)
 
     assert text == "hello world"
     assert len(mixed) == 4
@@ -45,7 +45,7 @@ def test_mix_utterances_overlaps_and_normalises_peak():
         },
     ]
 
-    mixed, _text = audio.mix_utterances(utterances, target_sr=16000)
+    mixed, _text = audio.mix_utterances(utterances, target_sample_rate=16000)
 
     np.testing.assert_allclose(mixed, np.array([1.0, 1.0], dtype=np.float32))
 

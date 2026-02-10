@@ -103,7 +103,7 @@ def test_adapter_contracts(tmp_path, monkeypatch):
     sf.write(wav_a, [0.0, 0.0], 16000, subtype="PCM_16")
     sf.write(wav_b, [0.0, 0.0], 16000, subtype="PCM_16")
 
-    azure = AzureSTTAdapter("key", "region")
+    azure = AzureSTTAdapter()
     result = azure.transcribe(str(wav_a))
     assert isinstance(result["text"], str)
     assert isinstance(result["duration_sec"], float)

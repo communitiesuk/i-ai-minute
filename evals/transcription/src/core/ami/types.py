@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TypedDict
 
-import numpy as np
+import numpy
 from numpy.typing import NDArray
 
 from evals.transcription.src.core.types import DatasetItem
@@ -11,7 +11,7 @@ from evals.transcription.src.core.types import DatasetItem
 class RawAudioDict(TypedDict):
     """Audio representation from HuggingFace datasets"""
 
-    array: NDArray[np.float32]
+    array: NDArray[numpy.float32]
     sampling_rate: int
 
 
@@ -29,6 +29,10 @@ class RawDatasetRow(TypedDict):
 
 
 class Utterance(TypedDict):
+    """
+    Single utterance with audio, text, and timing information.
+    """
+
     audio: dict
     text: str
     begin_time: float
@@ -37,6 +41,10 @@ class Utterance(TypedDict):
 
 
 class AMIDatasetSample(DatasetItem):
+    """
+    AMI dataset sample with meeting metadata and utterance count.
+    """
+
     meeting_id: str
     dataset_index: int
     duration_sec: float

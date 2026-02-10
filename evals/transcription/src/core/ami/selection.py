@@ -8,6 +8,10 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class MeetingSegment:
+    """
+    Represents a meeting segment with optional utterance cutoff time.
+    """
+
     meeting_id: str
     utterance_cutoff_time: float | None = None
 

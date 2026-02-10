@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import cast
 
 import ffmpeg  # type: ignore[import-untyped]
-import soundfile as sf
+import soundfile
 
 from evals.transcription.src.constants import (
     AUDIO_DIR,
@@ -36,9 +36,7 @@ def load_benchmark_dataset(
     return ami_loader
 
 
-def to_wav_16k_mono(
-    example: DatasetItem, idx: int
-) -> str:  # WavWriteFn Callable[[DatasetItem, int], str]
+def to_wav_16k_mono(example: DatasetItem, index: int) -> str:
     """
     Converts the input audio to 16kHz mono WAV format using ffmpeg.
     Caches the processed audio and returns the path to the processed file.
@@ -52,14 +50,14 @@ def to_wav_16k_mono(
     audio_data = audio["array"]
     sample_rate = audio["sampling_rate"]
 
-    output_path = AUDIO_DIR / f"sample_{idx:06d}.wav"
+    output_path = AUDIO_DIR / f"sample_{index:06d}.wav"
 
     if getattr(audio_data, "ndim", 1) == STEREO_CHANNELS:
         audio_data = audio_data.mean(axis=1)
 
     with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
         temp_path = Path(temp_file.name)
-        sf.write(temp_path, audio_data, sample_rate, subtype="PCM_16")
+        soundfile.write(temp_path, audio_data, sample_rate, subtype="PCM_16")
 
     try:
         input_stream = ffmpeg.input(str(temp_path))

@@ -61,7 +61,7 @@ def _build_sample(
     mixed_audio: ndarray,
     text: str,
     segment: MeetingSegment,
-    idx: int,
+    index: int,
     wav_path: Path,
     num_utterances: int,
 ) -> AMIDatasetSample:
@@ -76,13 +76,17 @@ def _build_sample(
         },
         "text": text,
         "meeting_id": segment.meeting_id,
-        "dataset_index": idx,
+        "dataset_index": index,
         "duration_sec": audio.compute_duration(mixed_audio),
         "num_utterances": num_utterances,
     }
 
 
 class AMIDatasetLoader(DatasetProtocol):
+    """
+    Loads and caches AMI dataset samples with configurable meeting selection.
+    """
+
     def __init__(
         self,
         cache_dir: Path,
@@ -119,11 +123,11 @@ class AMIDatasetLoader(DatasetProtocol):
 
         utterances_by_meeting = self._load_required_utterances(segments)
 
-        for idx, segment in enumerate(segments):
-            sample = self._process_segment(segment, idx, utterances_by_meeting)
+        for index, segment in enumerate(segments):
+            sample = self._process_segment(segment, index, utterances_by_meeting)
             if sample:
                 self.samples.append(sample)
-                self._log_progress(idx, len(segments))
+                self._log_progress(index, len(segments))
 
         logger.info("Dataset preparation complete: %d samples ready", len(self.samples))
         return self.samples
@@ -137,8 +141,8 @@ class AMIDatasetLoader(DatasetProtocol):
         in a dict.
         """
         all_cached = all(
-            cache.get_cache_paths(self.processed_cache_dir, segment, idx).is_complete()
-            for idx, segment in enumerate(segments)
+            cache.get_cache_paths(self.processed_cache_dir, segment, index).is_complete()
+            for index, segment in enumerate(segments)
         )
 
         if all_cached:
@@ -152,37 +156,37 @@ class AMIDatasetLoader(DatasetProtocol):
     def _process_segment(
         self,
         segment: MeetingSegment,
-        idx: int,
+        index: int,
         utterances_by_meeting: DefaultDict[str, List[RawDatasetRow]],
     ) -> AMIDatasetSample | None:
         """
         Processes a single meeting segment by either loading from cache or building from utterances.
         Returns the dataset sample for the segment, or None if processing fails.
         """
-        paths = cache.get_cache_paths(self.processed_cache_dir, segment, idx)
+        paths = cache.get_cache_paths(self.processed_cache_dir, segment, index)
 
         if paths.is_complete():
-            return self._load_from_cache(paths, segment, idx)
+            return self._load_from_cache(paths, segment, index)
 
         utterances = utterances_by_meeting.get(segment.meeting_id, [])
         if not utterances:
             logger.warning("No utterances for meeting %s, skipping", segment.meeting_id)
             return None
 
-        return self._build_from_utterances(utterances, paths, segment, idx)
+        return self._build_from_utterances(utterances, paths, segment, index)
 
     def _load_from_cache(
         self,
         paths: cache.CachePaths,
         segment: MeetingSegment,
-        idx: int,
+        index: int,
     ) -> AMIDatasetSample:
         """
         Loads the mixed audio and transcript text from cache and builds a dataset sample.
         """
         mixed_audio = cache.load_audio(paths.wav)
         text = cache.load_transcript(paths.transcript)
-        sample = _build_sample(mixed_audio, text, segment, idx, paths.wav, len(text.split()))
+        sample = _build_sample(mixed_audio, text, segment, index, paths.wav, len(text.split()))
 
         logger.info(
             "Cache hit: %s (%.2f sec, %d words)",
@@ -197,7 +201,7 @@ class AMIDatasetLoader(DatasetProtocol):
         utterances: List[RawDatasetRow],
         paths: cache.CachePaths,
         segment: MeetingSegment,
-        idx: int,
+        index: int,
     ) -> AMIDatasetSample:
         """
         Builds the mixed audio and concatenated transcript text from the list of utterances,
@@ -209,7 +213,7 @@ class AMIDatasetLoader(DatasetProtocol):
         cache.save_audio(paths.wav, mixed_audio)
         cache.save_transcript(paths.transcript, text)
 
-        sample = _build_sample(mixed_audio, text, segment, idx, paths.wav, len(utterances))
+        sample = _build_sample(mixed_audio, text, segment, index, paths.wav, len(utterances))
 
         logger.info(
             "Cache miss: mixed %s (%d utterances, %.2f sec, %d words)",
@@ -220,22 +224,22 @@ class AMIDatasetLoader(DatasetProtocol):
         )
         return sample
 
-    def _log_progress(self, idx: int, total: int) -> None:
+    def _log_progress(self, index: int, total: int) -> None:
         """
         Logs progress every 5 segments or at the end of processing.
         """
-        if (idx + 1) % 5 == 0 or (idx + 1) == total:
+        if (index + 1) % 5 == 0 or (index + 1) == total:
             accumulated = sum(sample["duration_sec"] for sample in self.samples)
-            logger.info("Processed %d/%d segments, %.2f sec total", idx + 1, total, accumulated)
+            logger.info("Processed %d/%d segments, %.2f sec total", index + 1, total, accumulated)
 
     def __len__(self) -> int:
         return len(self.samples)
 
-    def __getitem__(self, idx: int) -> AMIDatasetSample:
+    def __getitem__(self, index: int) -> AMIDatasetSample:
         """
         Retrieves the dataset sample at the specified index.
         """
-        if idx < 0 or idx >= len(self.samples):
-            msg = f"Sample index {idx} out of range [0, {len(self.samples)})"
+        if index < 0 or index >= len(self.samples):
+            msg = f"Sample index {index} out of range [0, {len(self.samples)})"
             raise IndexError(msg)
-        return self.samples[idx]
+        return self.samples[index]

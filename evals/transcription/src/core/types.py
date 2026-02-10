@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from typing import Callable, Protocol, TypedDict
 
-import numpy as np
+import numpy
 from numpy.typing import NDArray
 
 from evals.transcription.src.adapters.base import EvalsTranscriptionAdapter
 from evals.transcription.src.core.metrics import TimingAccumulator
 
-AudioArray = NDArray[np.floating]
+AudioArray = NDArray[numpy.floating]
 
 
 class AdapterConfig(TypedDict):
@@ -40,10 +40,14 @@ class DatasetItem(TypedDict):
 
 
 class DatasetProtocol(Protocol):
+    """
+    Protocol for dataset objects supporting indexing and length operations.
+    """
+
     def __len__(self) -> int:
         pass
 
-    def __getitem__(self, idx: int) -> DatasetItem:
+    def __getitem__(self, index: int) -> DatasetItem:
         pass
 
 
@@ -65,6 +69,18 @@ class DiffOps(TypedDict):
     replace: int
     delete: int
     insert: int
+
+
+class Metrics(TypedDict):
+    """
+    Word Error Rate metrics including edit operation counts.
+    """
+
+    wer: float
+    hits: int
+    substitutions: int
+    deletions: int
+    insertions: int
 
 
 class SampleRow(TypedDict):
