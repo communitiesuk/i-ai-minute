@@ -22,14 +22,14 @@ def to_mono(audio: np.ndarray) -> np.ndarray:
 
 def resample_if_needed(
     audio: np.ndarray,
-    sample_rate: int,
+    current_sr: int,
     target_sr: int = TARGET_SAMPLE_RATE,
 ) -> np.ndarray:
     """
-    Resamples the audio to the target sample rate if it is different from the original sample rate.
+    Resamples the audio to the target sample rate if it is different from the current sample rate.
     """
-    if sample_rate != target_sr:
-        return librosa.resample(audio, orig_sr=sample_rate, target_sr=target_sr)
+    if current_sr != target_sr:
+        return librosa.resample(audio, orig_sr=current_sr, target_sr=target_sr)
     return cast(np.ndarray, audio)
 
 

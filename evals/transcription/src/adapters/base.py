@@ -23,6 +23,7 @@ class TranscriptionAdapter(ABC):
 
     @abstractmethod
     def transcribe(self, wav_path: str) -> TranscriptionResult:
+        """Transcribe the given wav file."""
         pass
 
     @abstractmethod
