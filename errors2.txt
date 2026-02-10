@@ -1,9 +1,0 @@
-evals/transcription/src/evaluate.py:77: error: Argument "dataset" to "run_engines_parallel" has incompatible type "AMIDatasetLoader"; expected "DatasetProtocol"  [arg-type]
-evals/transcription/src/evaluate.py:77: note: Following member(s) of "AMIDatasetLoader" have conflicts:
-evals/transcription/src/evaluate.py:77: note:     Expected:
-evals/transcription/src/evaluate.py:77: note:         def __getitem__(self, int, /) -> DatasetItem
-evals/transcription/src/evaluate.py:77: note:     Got:
-evals/transcription/src/evaluate.py:77: note:         def __getitem__(self, int, /) -> Sample
-
-evals/transcription/src/evaluate.py:78: error: Argument "wav_write_fn" to "run_engines_parallel" has incompatible type "Callable[[dict[str, Any], int], str]"; expected "Callable[[DatasetItem, int], str]"  [arg-type]
-Found 2 errors in 1 file (checked 21 source files)
