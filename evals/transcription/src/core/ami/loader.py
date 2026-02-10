@@ -129,7 +129,7 @@ class AMIDatasetLoader(DatasetProtocol):
                 self.samples.append(sample)
                 self._log_progress(index, len(segments))
 
-        logger.info("Dataset preparation complete: %d samples ready", len(self.samples))
+        logger.info("Dataset preparation complete: %d samples ready", self.num_of_samples)
         return self.samples
 
     def _load_required_utterances(
@@ -186,13 +186,14 @@ class AMIDatasetLoader(DatasetProtocol):
         """
         mixed_audio = cache.load_audio(paths.audio)
         text = cache.load_transcript(paths.transcript)
-        sample = _build_sample(mixed_audio, text, segment, index, paths.audio, len(text.split()))
+        word_count = len(text.split())
+        sample = _build_sample(mixed_audio, text, segment, index, paths.audio, word_count)
 
         logger.info(
             "Cache hit: %s (%.2f sec, %d words)",
             segment.meeting_id,
             sample["duration_sec"],
-            len(text.split()),
+            word_count,
         )
         return sample
 
@@ -215,12 +216,13 @@ class AMIDatasetLoader(DatasetProtocol):
 
         sample = _build_sample(mixed_audio, text, segment, index, paths.audio, len(utterances))
 
+        word_count = len(text.split())
         logger.info(
             "Cache miss: mixed %s (%d utterances, %.2f sec, %d words)",
             segment.meeting_id,
             sample["num_utterances"],
             sample["duration_sec"],
-            len(text.split()),
+            word_count,
         )
         return sample
 
@@ -232,14 +234,18 @@ class AMIDatasetLoader(DatasetProtocol):
             accumulated = sum(sample["duration_sec"] for sample in self.samples)
             logger.info("Processed %d/%d segments, %.2f sec total", index + 1, total, accumulated)
 
-    def __len__(self) -> int:
+    @property
+    def num_of_samples(self) -> int:
         return len(self.samples)
+
+    def __len__(self) -> int:
+        return self.num_of_samples
 
     def __getitem__(self, index: int) -> AMIDatasetSample:
         """
         Retrieves the dataset sample at the specified index.
         """
-        if index < 0 or index >= len(self.samples):
-            msg = f"Sample index {index} out of range [0, {len(self.samples)})"
+        if index < 0 or index >= self.num_of_samples:
+            msg = f"Sample index {index} out of range [0, {self.num_of_samples})"
             raise IndexError(msg)
         return self.samples[index]
