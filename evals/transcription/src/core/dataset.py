@@ -9,9 +9,9 @@ import soundfile
 from evals.transcription.src.constants import (
     AUDIO_DIR,
     CACHE_DIR,
-    STEREO_CHANNELS,
     TARGET_SAMPLE_RATE,
 )
+from evals.transcription.src.core.ami.audio import to_mono
 from evals.transcription.src.core.ami.loader import AMIDatasetLoader
 from evals.transcription.src.core.ami_dataset import load_ami_dataset
 from evals.transcription.src.core.types import DatasetItem
@@ -52,8 +52,7 @@ def to_wav_16k_mono(example: DatasetItem, index: int) -> str:
 
     output_path = AUDIO_DIR / f"sample_{index:06d}.wav"
 
-    if getattr(audio_data, "ndim", 1) == STEREO_CHANNELS:
-        audio_data = audio_data.mean(axis=1)
+    audio_data = to_mono(audio_data)
 
     with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
         temp_path = Path(temp_file.name)

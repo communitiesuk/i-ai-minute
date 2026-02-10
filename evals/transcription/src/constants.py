@@ -1,7 +1,6 @@
 from pathlib import Path
 
-TARGET_SAMPLE_RATE = 16000
-STEREO_CHANNELS = 2
+from common.constants import STEREO_CHANNELS, TARGET_SAMPLE_RATE
 
 WORKDIR = Path(__file__).resolve().parent
 CACHE_DIR = WORKDIR / "cache"

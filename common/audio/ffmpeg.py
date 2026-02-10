@@ -4,6 +4,8 @@ from pathlib import Path
 
 import ffmpeg  # type: ignore[import-untyped]
 
+from common.constants import MONO_CHANNELS
+
 logger = logging.getLogger(__name__)
 
 
@@ -32,7 +34,7 @@ def convert_to_mp3(input_file_path: Path) -> Path:
             "acodec": "libmp3lame",  # Use LAME MP3 encoder
             "loglevel": "warning",  # Show warnings and errors
             "audio_bitrate": "192k",
-            "ac": 1,
+            "ac": MONO_CHANNELS,
         }
 
         output_stream = ffmpeg.output(input_stream, output_file.as_posix(), **output_args)
