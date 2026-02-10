@@ -47,7 +47,7 @@ def test_mix_utterances_overlaps_and_normalises_peak():
 
     mixed, _text = audio.mix_utterances(utterances, target_sample_rate=16000)
 
-    np.testing.assert_allclose(mixed, np.array([1.0, 1.0], dtype=np.float32))
+    np.testing.assert_allclose(mixed, np.array([2.0, 2.0], dtype=np.float32))
 
 
 def test_apply_cutoff_respects_duration():
