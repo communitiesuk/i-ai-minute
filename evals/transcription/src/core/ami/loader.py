@@ -92,7 +92,7 @@ class AMIDatasetLoader(DatasetProtocol):
         cache_dir: Path,
         num_samples: int | None,
         sample_duration_fraction: float | None = None,
-        split: str = "train",
+        split: str = "test",
         config: str = "ihm",
     ):
         self.cache_dir = cache_dir
