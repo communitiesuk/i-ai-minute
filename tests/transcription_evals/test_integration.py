@@ -19,7 +19,7 @@ class FakeAdapter:
         self.proc_sec = proc_sec
 
     def transcribe(self, wav_path: str):  # noqa: ARG002
-        return self.hyp, self.proc_sec, {"label": self.label}
+        return {"text": self.hyp, "duration_sec": self.proc_sec, "debug_info": {"label": self.label}}
 
 
 class FakeDataset:
@@ -48,7 +48,7 @@ def test_run_evaluation_with_fake_adapters(tmp_path, monkeypatch):
     fake_settings = SimpleNamespace(AZURE_SPEECH_KEY="key", AZURE_SPEECH_REGION="region")
     monkeypatch.setattr("evals.transcription.src.evaluate.settings", fake_settings)
     monkeypatch.setattr("evals.transcription.src.evaluate.load_benchmark_dataset", lambda **_: dataset)
-    monkeypatch.setattr("evals.transcription.src.evaluate.audio_duration_seconds", lambda _: 1.0)
+    monkeypatch.setattr("evals.transcription.src.evaluate.get_duration", lambda _: 1.0)
     monkeypatch.setattr("evals.transcription.src.evaluate.WORKDIR", Path(tmp_path))
 
     monkeypatch.setattr(
@@ -104,16 +104,16 @@ def test_adapter_contracts(tmp_path, monkeypatch):
     sf.write(wav_b, [0.0, 0.0], 16000, subtype="PCM_16")
 
     azure = AzureSTTAdapter("key", "region")
-    text, proc_sec, debug = azure.transcribe(str(wav_a))
-    assert isinstance(text, str)
-    assert isinstance(proc_sec, float)
-    assert isinstance(debug, dict)
+    result = azure.transcribe(str(wav_a))
+    assert isinstance(result["text"], str)
+    assert isinstance(result["duration_sec"], float)
+    assert isinstance(result["debug_info"], dict)
 
-    whisper = WhisperAdapter(model_name="small", language="en")
-    text, proc_sec, debug = whisper.transcribe(str(wav_b))
-    assert isinstance(text, str)
-    assert isinstance(proc_sec, float)
-    assert isinstance(debug, dict)
+    whisper = WhisperAdapter()
+    result = whisper.transcribe(str(wav_b))
+    assert isinstance(result["text"], str)
+    assert isinstance(result["duration_sec"], float)
+    assert isinstance(result["debug_info"], dict)
 
 
 def test_run_evaluation_requires_azure_credentials(monkeypatch):

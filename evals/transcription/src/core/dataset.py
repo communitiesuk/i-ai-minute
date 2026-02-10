@@ -5,7 +5,6 @@ from typing import cast
 
 import ffmpeg  # type: ignore[import-untyped]
 import soundfile as sf
-from common.audio.ffmpeg import get_duration
 
 from evals.transcription.src.constants import (
     AUDIO_DIR,
@@ -70,7 +69,3 @@ def to_wav_16k_mono(
         temp_path.unlink(missing_ok=True)
 
     return str(output_path)
-
-
-def audio_duration_seconds(wav_path: str) -> float:
-    return get_duration(Path(wav_path))

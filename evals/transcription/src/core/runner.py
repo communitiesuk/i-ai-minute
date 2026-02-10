@@ -60,9 +60,11 @@ def run_engines_parallel(
         ref_raw = example["text"]
         aud_sec = float(duration_fn(wav_path))
 
-        hyp_raw, proc_sec, dbg = adapter.transcribe(wav_path)
+        result = adapter.transcribe(wav_path)
+        hyp_raw = result["text"]
+        proc_sec = float(result["duration_sec"])
+        dbg = result["debug_info"]
 
-        proc_sec = float(proc_sec)
         ref_n = normalise_text(ref_raw)
         hyp_n = normalise_text(hyp_raw)
         per_metrics = compute_wer_metrics([ref_n], [hyp_n])

@@ -3,11 +3,11 @@ import logging
 from datetime import datetime
 from pathlib import Path
 
+from common.audio.ffmpeg import get_duration
 from common.settings import get_settings
 
 from evals.transcription.src.adapters import AzureSTTAdapter, WhisperAdapter
 from evals.transcription.src.core.dataset import (
-    audio_duration_seconds,
     load_benchmark_dataset,
     to_wav_16k_mono,
 )
@@ -61,10 +61,7 @@ def run_evaluation(
         language="en-GB",
     )
 
-    whisper_adapter = WhisperAdapter(
-        model_name="small",
-        language="en",
-    )
+    whisper_adapter = WhisperAdapter()
 
     adapters_config: list[AdapterConfig] = [
         {"adapter": azure_adapter, "label": "Azure Speech-to-Text"},
@@ -81,7 +78,7 @@ def run_evaluation(
         indices=indices,
         dataset=dataset,
         wav_write_fn=to_wav_16k_mono,
-        duration_fn=audio_duration_seconds,
+        duration_fn=lambda path: get_duration(Path(path)),
         max_workers=max_workers,
     )
 

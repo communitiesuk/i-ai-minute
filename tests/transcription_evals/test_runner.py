@@ -12,7 +12,7 @@ class FakeAdapter:
         self.proc_sec = proc_sec
 
     def transcribe(self, wav_path: str):  # noqa: ARG002
-        return self.hyp, self.proc_sec, {"label": self.label}
+        return {"text": self.hyp, "duration_sec": self.proc_sec, "debug_info": {"label": self.label}}
 
 
 class FakeDataset:
