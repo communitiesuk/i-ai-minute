@@ -25,6 +25,12 @@ class EvalsTranscriptionAdapter(ABC):
     Abstract base class for transcription adapters used in evaluations.
     """
 
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        """Name of the transcription adapter."""
+        pass
+
     @abstractmethod
     def transcribe(self, wav_path: str) -> TranscriptionResult:
         """Transcribe the given wav file."""
@@ -39,6 +45,10 @@ class ServiceTranscriptionAdapter(EvalsTranscriptionAdapter):
     def __init__(self, service_adapter: type[CommonTranscriptionAdapter], service_name: str):
         self._adapter = service_adapter
         self._service_name = service_name
+
+    @property
+    def name(self) -> str:
+        return self._service_name
 
     def transcribe(self, wav_path: str) -> TranscriptionResult:
         start_time = time.time()

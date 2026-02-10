@@ -13,11 +13,10 @@ AudioArray = NDArray[numpy.floating]
 
 class AdapterConfig(TypedDict):
     """
-    Configuration for a transcription adapter with its label.
+    Configuration for a transcription adapter.
     """
 
     adapter: EvalsTranscriptionAdapter
-    label: str
 
 
 class AudioSample(TypedDict):

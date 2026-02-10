@@ -53,7 +53,7 @@ def run_engines_parallel(
         Transcribe a single sample and compute WER metrics.
         """
         adapter = adapter_config["adapter"]
-        label = adapter_config["label"]
+        label = adapter.name
 
         example = dataset[int(index)]
         wav_path = wav_write_fn(example, int(index))
@@ -99,7 +99,7 @@ def run_engines_parallel(
         return label, index, row, audio_seconds, process_seconds
 
     for adapter_config in adapters_config:
-        results[adapter_config["label"]] = EngineResults({"rows": [], "timing": TimingAccumulator()})
+        results[adapter_config["adapter"].name] = EngineResults({"rows": [], "timing": TimingAccumulator()})
 
     workers = max_workers if max_workers is not None else len(adapters_config)
     with ThreadPoolExecutor(max_workers=workers) as executor:
@@ -118,7 +118,7 @@ def run_engines_parallel(
 
     output_results: list[EngineOutput] = []
     for adapter_config in adapters_config:
-        label = adapter_config["label"]
+        label = adapter_config["adapter"].name
         rows = sorted(results[label]["rows"], key=lambda row: row["dataset_index"])
         timing = results[label]["timing"]
 

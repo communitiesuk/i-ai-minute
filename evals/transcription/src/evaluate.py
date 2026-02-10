@@ -60,8 +60,8 @@ def run_evaluation(
     whisper_adapter = WhisperAdapter()
 
     adapters_config: list[AdapterConfig] = [
-        {"adapter": azure_adapter, "label": "Azure Speech-to-Text"},
-        {"adapter": whisper_adapter, "label": "Whisper"},
+        {"adapter": azure_adapter},
+        {"adapter": whisper_adapter},
     ]
 
     logger.info(
