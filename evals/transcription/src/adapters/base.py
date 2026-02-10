@@ -31,11 +31,6 @@ class TranscriptionAdapter(ABC):
         """Run the actual transcription service."""
         pass
 
-    @abstractmethod
-    def _get_debug_info(self, dialogue_entries: list) -> dict[str, object]:
-        """Return service-specific debug information."""
-        pass
-
     def _transcribe_with_service(self, wav_path: str) -> TranscriptionResult:
         """Shared transcription logic for all adapters."""
         start_time = time.time()
@@ -56,8 +51,7 @@ class TranscriptionAdapter(ABC):
 
             full_text = " ".join(entry["text"] for entry in dialogue_entries).strip()
 
-            debug = self._get_debug_info(dialogue_entries)
-            return {"text": full_text, "duration_sec": (end_time - start_time), "debug_info": debug}
+            return {"text": full_text, "duration_sec": (end_time - start_time), "debug_info": {}}
 
         except Exception as error:
             logger.error("%s transcription failed: %s", self._service_name, error)

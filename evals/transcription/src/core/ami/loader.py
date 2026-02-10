@@ -133,7 +133,8 @@ class AMIDatasetLoader(DatasetProtocol):
     ) -> DefaultDict[str, List[RawDatasetRow]]:
         """
         Checks if all required segments are already cached. If so, returns an empty dict.
-        Otherwise, loads the necessary utterances for the required meetings and returns them in a dict.
+        Otherwise, loads the necessary utterances for the required meetings and returns them
+        in a dict.
         """
         all_cached = all(
             cache.get_cache_paths(self.processed_cache_dir, segment, idx).is_complete()
@@ -199,7 +200,8 @@ class AMIDatasetLoader(DatasetProtocol):
         idx: int,
     ) -> AMIDatasetSample:
         """
-        Builds the mixed audio and concatenated transcript text from the list of utterances, saves to cache, and builds a dataset sample.
+        Builds the mixed audio and concatenated transcript text from the list of utterances,
+        saves to cache, and builds a dataset sample.
         """
         utterances = _apply_cutoff(utterances, segment.utterance_cutoff_time)
         mixed_audio, text = audio.mix_utterances(utterances)

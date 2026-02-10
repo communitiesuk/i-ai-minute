@@ -19,8 +19,9 @@ def select_segments(
     sample_duration_fraction: float | None = None,
 ) -> list[MeetingSegment]:
     """
-    Selects meeting segments based on the provided metadata, number of samples, and optional duration fraction.
-    Returns a list of MeetingSegment objects representing the selected segments for evaluation.
+    Selects meeting segments based on the provided metadata, number of samples, and optional
+    duration fraction. Returns a list of MeetingSegment objects representing the selected
+    segments for evaluation.
     """
     meeting_ids = metadata["meeting_ids"]
     durations = metadata["durations_sec"]

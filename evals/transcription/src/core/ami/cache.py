@@ -24,7 +24,8 @@ class CachePaths:
 
 def get_cache_paths(processed_dir: Path, segment: MeetingSegment, idx: int) -> CachePaths:
     """
-    Using the given path, meeting segment, and index, returns the expected cache paths for the wav file and transcript.
+    Using the given path, meeting segment, and index, returns the expected cache paths for
+    the wav file and transcript.
     """
     wav_path = processed_dir / f"{segment.meeting_id}_{idx:06d}.wav"
     transcript_path = wav_path.with_suffix(".txt")
