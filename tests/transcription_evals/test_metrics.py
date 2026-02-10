@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from evals.transcription.src.core.metrics import compute_wer_metrics, compute_wer_pct, normalise_text
+from evals.transcription.src.core.metrics import compute_wer_metrics, normalise_text
 
 
 def test_normalise_text_edge_cases():
@@ -12,7 +12,34 @@ def test_compute_wer_metrics_empty_inputs():
     metrics = compute_wer_metrics([], [])
     assert metrics["wer"] == 0.0
     assert metrics["hits"] == 0
-    assert compute_wer_pct([], []) == 0.0
+    assert metrics["substitutions"] == 0
+    assert metrics["deletions"] == 0
+    assert metrics["insertions"] == 0
+
+
+def test_compute_wer_metrics_empty_hypothesis():
+    metrics = compute_wer_metrics(["hello world"], [""])
+    assert metrics["wer"] == 1.0
+    assert metrics["hits"] == 0
+    assert metrics["deletions"] == 2
+
+
+def test_compute_wer_metrics_perfect_match():
+    metrics = compute_wer_metrics(["hello world"], ["hello world"])
+    assert metrics["wer"] == 0.0
+    assert metrics["hits"] == 2
+    assert metrics["substitutions"] == 0
+    assert metrics["deletions"] == 0
+    assert metrics["insertions"] == 0
+
+
+def test_compute_wer_metrics_all_substitutions():
+    metrics = compute_wer_metrics(["hello world"], ["goodbye universe"])
+    assert metrics["wer"] == 1.0
+    assert metrics["hits"] == 0
+    assert metrics["substitutions"] == 2
+    assert metrics["deletions"] == 0
+    assert metrics["insertions"] == 0
 
 
 def test_compute_wer_metrics_small_example():

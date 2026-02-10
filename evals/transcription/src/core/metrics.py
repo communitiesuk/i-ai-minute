@@ -38,7 +38,7 @@ def compute_wer_metrics(refs: list[str], hyps: list[str]) -> Metrics:
     """
     Computes WER and related metrics using jiwer.
     """
-    if not refs or not hyps:
+    if not refs and not hyps:
         return {
             "wer": 0.0,
             "hits": 0,
@@ -61,10 +61,6 @@ def compute_wer_metrics(refs: list[str], hyps: list[str]) -> Metrics:
         "deletions": int(word_output.deletions),
         "insertions": int(word_output.insertions),
     }
-
-
-def compute_wer_pct(refs: list[str], hyps: list[str]) -> float:
-    return compute_wer_metrics(refs, hyps)["wer"]
 
 
 class TimingAccumulator:
