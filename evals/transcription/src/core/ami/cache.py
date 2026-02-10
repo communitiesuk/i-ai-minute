@@ -3,7 +3,7 @@ import tempfile
 from pathlib import Path
 from typing import cast
 
-import ffmpeg  # type: ignore[import-untyped]
+import ffmpeg
 import numpy
 import soundfile
 

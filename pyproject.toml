@@ -182,3 +182,7 @@ ignore_missing_imports = true
 module = "datasets.*"
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = "ffmpeg.*"
+ignore_missing_imports = true
+
