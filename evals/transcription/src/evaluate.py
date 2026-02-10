@@ -9,7 +9,7 @@ from common.settings import get_settings
 from evals.transcription.src.adapters import AzureSTTAdapter, WhisperAdapter
 from evals.transcription.src.core.dataset import (
     load_benchmark_dataset,
-    to_wav_16k_mono,
+    prepare_audio_for_transcription,
 )
 from evals.transcription.src.core.runner import run_engines_parallel, save_results
 from evals.transcription.src.core.types import AdapterConfig
@@ -66,7 +66,7 @@ def run_evaluation(
         adapters_config=adapters_config,
         indices=indices,
         dataset=dataset,
-        wav_write_fn=to_wav_16k_mono,
+        wav_write_fn=prepare_audio_for_transcription,
         duration_fn=lambda path: get_duration(Path(path)),
         max_workers=max_workers,
     )

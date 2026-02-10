@@ -10,7 +10,6 @@ from evals.transcription.src.constants import (
     AUDIO_DIR,
     CACHE_DIR,
 )
-from evals.transcription.src.core.ami.audio import to_mono
 from evals.transcription.src.core.ami.loader import AMIDatasetLoader
 from evals.transcription.src.core.ami_dataset import load_ami_dataset
 from evals.transcription.src.core.types import DatasetItem
@@ -35,9 +34,9 @@ def load_benchmark_dataset(
     return ami_loader
 
 
-def to_wav_16k_mono(example: DatasetItem, index: int) -> str:
+def prepare_audio_for_transcription(example: DatasetItem, index: int) -> str:
     """
-    Converts the input audio to mono MP3 format using ffmpeg (preserves sample rate).
+    Converts the input audio to MP3 format using ffmpeg.
     Caches the processed audio and returns the path to the processed file.
     """
     if "path" in example["audio"]:
@@ -50,8 +49,6 @@ def to_wav_16k_mono(example: DatasetItem, index: int) -> str:
     sample_rate = audio["sampling_rate"]
 
     output_path = AUDIO_DIR / f"sample_{index:06d}.mp3"
-
-    audio_data = to_mono(audio_data)
 
     with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
         temp_path = Path(temp_file.name)
