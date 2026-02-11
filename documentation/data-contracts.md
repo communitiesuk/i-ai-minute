@@ -63,6 +63,14 @@ erDiagram
     UUID user_id FK
   }
 
+  template_question {
+    UUID id PK
+    INT position
+    TEXT title
+    TEXT description
+    UUID user_template_id FK
+  }
+
   minute_version {
     UUID id PK
     TIMESTAMPTZ created_datetime
@@ -91,20 +99,21 @@ erDiagram
     TEXT text
     DOUBLE start_time
     DOUBLE end_time
-    INT position
   }
 
   user ||--o{ recording : has
   user ||--o{ transcription : has
   transcription }o--|| recording : creates
+  transcription ||--o{ transcription_dialogue_entry : contains
 
   transcription ||--o{ minute : creates
+
   user_template ||--o{ minute : configures
+  user_template ||--o{ template_question : has
 
   minute ||--o{ minute_version : versions
   minute_version ||--o{ hallucination : flags
 
-  transcription ||--o{ transcription_dialogue_entry : contains
 ```
 
 ### Evals
@@ -116,14 +125,14 @@ erDiagram
     TEXT run_id PK
     TIMESTAMPTZ timestamp
     TEXT example_id PK
+    TEXT model_version
     TEXT reference_transcript
     JSONB reference_dialogue_entries
     TEXT candidate_transcript
     JSONB candidate_dialogue_entries
     DOUBLE wer
-    DOUBLE cer
     DOUBLE speaker_attributed_wer
-    DOUBLE diarization_error_rate
+    DOUBLE word_diarisation_error_rate
     DOUBLE speaker_confusion_rate
     INT speaker_count_pred
     INT speaker_count_ref
@@ -147,7 +156,7 @@ erDiagram
     TEXT run_id PK
     TIMESTAMPTZ timestamp
     TEXT example_id PK
-    TEXT dialogue
+    TEXT transcription_text
     TEXT reference_summary
     TEXT candidate_summary
     TEXT candidate_model
@@ -155,6 +164,8 @@ erDiagram
     JSONB generation_config
     JSONB metrics
     JSONB latency_ms
+    JSONB input_tokens
+    JSONB output_tokens
     JSONB error
   }
 
@@ -162,8 +173,11 @@ erDiagram
     TEXT run_id PK
     TEXT example_id PK
     TEXT metric_name PK
+    TEXT prompt_version
     DOUBLE score
     TEXT reason
+    INT input_tokens
+    INT output_tokens
   }
 
   summary_eval_run_summary {
@@ -176,6 +190,8 @@ erDiagram
     DOUBLE overall
     JSONB metrics
     JSONB latency_ms
+    JSONB input_tokens
+    JSONB output_tokens
   }
 
   transcription_eval_record }o--|| transcription_eval_run_summary : aggregates
@@ -238,9 +254,7 @@ CREATE TABLE transcription_dialogue_entry (
   speaker            TEXT NOT NULL,
   text               TEXT NOT NULL,
   start_time         DOUBLE PRECISION NOT NULL,
-  end_time           DOUBLE PRECISION NOT NULL,
-
-  position           INTEGER NULL,
+  end_time           DOUBLE PRECISION NOT NULL
 
   PRIMARY KEY (transcription_id, speaker, start_time, end_time)
 );
@@ -355,25 +369,25 @@ CREATE TABLE transcription_eval_record (
   run_id               TEXT NOT NULL,
   timestamp            TIMESTAMPTZ NOT NULL,
   example_id           TEXT NOT NULL REFERENCES transcription(id) ON DELETE CASCADE,
+  model_version        TEXT NOT NULL,
 
   -- Ground truth
-  reference_transcript TEXT NULL,
-  reference_dialogue_entries JSONB NULL,
+  reference_transcript        TEXT NULL,
+  reference_dialogue_entries  JSONB NULL,
 
   -- Candidate output under test
-  candidate_transcript TEXT NOT NULL,
-  candidate_dialogue_entries JSONB NULL,
+  candidate_transcript        TEXT NOT NULL,
+  candidate_dialogue_entries  JSONB NULL,
 
   -- Metrics
-  wer                  DOUBLE PRECISION NULL,
-  cer                  DOUBLE PRECISION NULL,
-  speaker_attributed_wer               DOUBLE PRECISION NULL,
+  wer                    DOUBLE PRECISION NULL,
+  speaker_attributed_wer DOUBLE PRECISION NULL,
 
   -- Diarization sanity / quality
-  diarization_error_rate DOUBLE PRECISION NULL,
-  speaker_confusion_rate DOUBLE PRECISION NULL,
-  speaker_count_pred    INTEGER NULL,
-  speaker_count_ref     INTEGER NULL,
+  word_diarisation_error_rate DOUBLE PRECISION NULL,
+  speaker_confusion_rate      DOUBLE PRECISION NULL,
+  speaker_count_pred          INTEGER NULL,
+  speaker_count_ref           INTEGER NULL,
 
   -- Latency and errors
   latency_ms            JSONB NOT NULL,   -- e.g., {"preprocess": 123, "transcribe": 456}
@@ -400,7 +414,7 @@ CREATE TABLE transcription_eval_run_summary (
 
   overall_score        DOUBLE PRECISION NULL,
 
-  metrics              JSONB NOT NULL,    -- e.g., {"wer": {"mean": 0.12, "p50": 0.10}, ...}
+  metrics              JSONB NOT NULL,    -- e.g., {"wer": {"mean": 0.12, "min": 0.10, "max": 0.20, "std": 0.05}, ...}
   latency_ms           JSONB NOT NULL     -- e.g., {"transcribe_p50": 4500, ...}
 );
 ```
@@ -419,7 +433,7 @@ CREATE TABLE summary_eval_record (
   timestamp            TIMESTAMPTZ NOT NULL,
 
   example_id           TEXT NOT NULL,
-  dialogue             TEXT NOT NULL,
+  transcription_text   TEXT NOT NULL,
   reference_summary    TEXT NULL,
 
   candidate_summary    TEXT NOT NULL,
@@ -429,6 +443,8 @@ CREATE TABLE summary_eval_record (
 
   metrics              JSONB NOT NULL,  -- map metric_name -> {"score": 0..1, "reason": "..."}
   latency_ms           JSONB NOT NULL,  -- e.g., {"summarize": 1234, "judge": 567}
+  input_tokens         INTEGER NOT NULL,
+  output_tokens        INTEGER NOT NULL,
 
   error                JSONB NULL,
 
@@ -446,8 +462,11 @@ CREATE TABLE summary_eval_metric_result (
   example_id           TEXT NOT NULL,
 
   metric_name          TEXT NOT NULL,
+  prompt_version       TEXT NOT NULL,
   score                DOUBLE PRECISION NOT NULL,
   reason               TEXT NOT NULL,
+  input_tokens         INTEGER NOT NULL,
+  output_tokens        INTEGER NOT NULL,
 
   PRIMARY KEY (run_id, example_id, metric_name),
   FOREIGN KEY (run_id, example_id) REFERENCES summary_eval_record(run_id, example_id) ON DELETE CASCADE
@@ -471,7 +490,9 @@ CREATE TABLE summary_eval_run_summary (
 
   overall              DOUBLE PRECISION NULL,
 
-  metrics              JSONB NOT NULL,  -- {metric_name: {"mean": number}}
-  latency_ms           JSONB NOT NULL   -- {"summarize_p50": int, "judge_p50": int}
+  metrics              JSONB NOT NULL,  -- {metric_name: {"mean": number, "sd": number}}
+  latency_ms           JSONB NOT NULL,  -- {"summarize": int, "judge": int}
+  input_tokens         INTEGER NOT NULL,
+  output_tokens        INTEGER NOT NULL
 );
 ```
