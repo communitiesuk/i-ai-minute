@@ -54,7 +54,6 @@ class OllamaModelAdapter(ModelAdapter):
         schema = response_format.model_json_schema()
 
         # Build a clearer instruction that explains what fields to include
-        # instead of just dumping the schema
         properties = schema.get("properties", {})
         required_fields = schema.get("required", [])
 
@@ -102,11 +101,14 @@ Remember: Respond with ONLY the JSON object containing your actual analysis, not
 
         openai_messages = [self._convert_to_openai_message(msg) for msg in modified_messages]
 
+        # FIX: Explicitly cast temperature to float to satisfy Mypy and Client
+        temperature = float(self._kwargs.get("temperature", 0.0))
+
         response = await self.async_client.chat.completions.create(
             model=self._model,
             messages=openai_messages,
             response_format={"type": "json_object"},
-            temperature=self._kwargs.get("temperature", 0.0),
+            temperature=temperature,
         )
 
         content = response.choices[0].message.content
@@ -125,6 +127,8 @@ Remember: Respond with ONLY the JSON object containing your actual analysis, not
         try:
             openai_messages = [self._convert_to_openai_message(msg) for msg in messages]
 
+            # FIX: Explicitly cast temperature if you decide to use kwargs later
+            # For now, 0.0 is hardcoded, which is fine, but ensuring consistency:
             response = await self.async_client.chat.completions.create(
                 model=self._model,
                 messages=openai_messages,
