@@ -67,7 +67,7 @@ class OllamaModelAdapter(ModelAdapter):
         fields_text = "\n".join(field_descriptions)
 
         # Create example based on the schema to guide the model
-        example_obj = {}
+        example_obj: dict[str, Any] = {}
         for field_name, field_info in properties.items():
             field_type = field_info.get("type", "string")
             if field_type == "number":
