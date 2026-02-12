@@ -68,7 +68,7 @@ An extension of WER that considers vocabulary overlap between reference and hypo
 A combined metric that attempts to capture both transcription and diarization quality by computing WER while accounting for speaker attribution.
 
 * Good, because it produces a single headline number for overall system quality.
-* Bad, because it is a jack of all trades, master of none—attempting to capture both transcription and diarization quality simultaneously.
+* Bad, because it is attempting to capture both transcription and diarization quality simultaneously.
 * Bad, because it doesn't allow separate analysis of transcription vs. diarization performance.
 * Bad, because it can be replaced by WER in conjunction with WDER.
 
@@ -115,6 +115,7 @@ Uses NLI models to check bidirectional entailment between reference and hypothes
 
 * Good, because it can capture non-trivial situations where AI makes mistakes that have high impact on the actual transcript.
 * Good, because it can detect contradictions, as contradicting statements will convey contradicting information.
+* Good, because it can define a clear failure mode.
 * Bad, because if we identify issues, there is very little we can do about the system, especially if other metrics indicate this is the best available option.
 * Bad, because it requires significant computational power (e.g., basic AI-capable GPU).
 
