@@ -35,7 +35,7 @@ def main(api_key: str, transcript_content: str, transcript_file: str, model_id: 
         audio_bytes = b"".join(audio)
         audio_segments.append(audio_bytes)
 
-    # Combine audio
+    # Combine audio chunks
     full_audio = b"".join(audio_segments)
 
     # Trim file name to create output file name
