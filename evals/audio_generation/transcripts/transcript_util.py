@@ -1,5 +1,5 @@
-
 from pathlib import Path
+
 
 def get_transcripts(file_name: str) -> str:
     base_dir = Path(__file__).parent

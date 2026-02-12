@@ -114,3 +114,4 @@ config/google-credentials.json
 coverage.xml
 .coverage
 
+*.mp3

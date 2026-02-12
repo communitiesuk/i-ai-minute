@@ -1,5 +1,6 @@
-from pathlib import Path
 import inspect
+from pathlib import Path
+
 
 def save_audio(full_audio: bytes, output_file: str):
     # Get the file path of the module that called this function
