@@ -28,6 +28,7 @@ erDiagram
     TIMESTAMPTZ created_datetime
     UUID user_id FK
     TEXT s3_file_key
+    UUID based_on_recording_id FK
   }
 
   transcription {
@@ -101,6 +102,7 @@ erDiagram
     DOUBLE end_time
   }
 
+  recording ||--o| recording : converts
   user ||--o{ recording : has
   user ||--o{ transcription : has
   transcription }o--|| recording : creates
@@ -128,8 +130,8 @@ erDiagram
     TEXT model_version
     TEXT reference_transcript
     JSONB reference_dialogue_entries
-    TEXT candidate_transcript
-    JSONB candidate_dialogue_entries
+    TEXT hypothesis_transcript
+    JSONB hypothesis_dialogue_entries
     DOUBLE wer
     DOUBLE speaker_attributed_wer
     DOUBLE word_diarisation_error_rate
@@ -137,6 +139,7 @@ erDiagram
     INT speaker_count_pred
     INT speaker_count_ref
     JSONB latency_ms
+    DOUBLE latency_recording_ratio
     JSONB error
   }
 
@@ -158,8 +161,8 @@ erDiagram
     TEXT example_id PK
     TEXT transcription_text
     TEXT reference_summary
-    TEXT candidate_summary
-    TEXT candidate_model
+    TEXT hypothesis_summary
+    TEXT hypothesis_model
     TEXT prompt_version
     JSONB generation_config
     JSONB metrics
@@ -202,7 +205,7 @@ erDiagram
 
 ---
 
-## 1. Transcription data contract (inputs + output)
+## 1. Transcription data contract physical model (inputs + output)
 
 Following section follows original implementation schema.
 
@@ -214,10 +217,11 @@ Audio asset (recording).
 
 ```sql
 CREATE TABLE recording (
-  id                 UUID PRIMARY KEY,
-  created_datetime    TIMESTAMPTZ NOT NULL DEFAULT now(),
-  user_id            UUID NOT NULL REFERENCES user(id),
-  s3_file_key        TEXT NOT NULL,
+  id                       UUID PRIMARY KEY,
+  created_datetime          TIMESTAMPTZ NOT NULL DEFAULT now(),
+  user_id                  UUID NOT NULL REFERENCES user(id),
+  s3_file_key              TEXT NOT NULL,
+  based_on_recording_id    UUID NULL REFERENCES recording(id) ON DELETE SET NULL
 );
 ```
 
@@ -375,9 +379,9 @@ CREATE TABLE transcription_eval_record (
   reference_transcript        TEXT NULL,
   reference_dialogue_entries  JSONB NULL,
 
-  -- Candidate output under test
-  candidate_transcript        TEXT NOT NULL,
-  candidate_dialogue_entries  JSONB NULL,
+  -- Hypothesis output under test
+  hypothesis_transcript        TEXT NOT NULL,
+  hypothesis_dialogue_entries  JSONB NULL,
 
   -- Metrics
   wer                    DOUBLE PRECISION NULL,
@@ -391,6 +395,7 @@ CREATE TABLE transcription_eval_record (
 
   -- Latency and errors
   latency_ms            JSONB NOT NULL,   -- e.g., {"preprocess": 123, "transcribe": 456}
+  latency_recording_ratio DOUBLE PRECISION NULL,  -- latency_ms/recording_ms
   error                 JSONB NULL,       -- e.g., {"stage": "transcribe", "message": "..."}
 
   PRIMARY KEY (run_id, example_id)
@@ -436,8 +441,8 @@ CREATE TABLE summary_eval_record (
   transcription_text   TEXT NOT NULL,
   reference_summary    TEXT NULL,
 
-  candidate_summary    TEXT NOT NULL,
-  candidate_model      TEXT NOT NULL,
+  hypothesis_summary    TEXT NOT NULL,
+  hypothesis_model      TEXT NOT NULL,
   prompt_version       TEXT NOT NULL,
   generation_config    JSONB NOT NULL,  -- {"temperature": ..., "max_tokens": ...}
 
