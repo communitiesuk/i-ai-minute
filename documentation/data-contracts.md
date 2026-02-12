@@ -127,27 +127,29 @@ erDiagram
     TEXT run_id PK
     TIMESTAMPTZ timestamp
     TEXT example_id PK
-    TEXT model_version
+    TEXT engine_version
     TEXT reference_transcript
     JSONB reference_dialogue_entries
     TEXT hypothesis_transcript
     JSONB hypothesis_dialogue_entries
-    DOUBLE wer
-    DOUBLE speaker_attributed_wer
-    DOUBLE word_diarisation_error_rate
-    DOUBLE speaker_confusion_rate
-    INT speaker_count_pred
-    INT speaker_count_ref
+    JSONB metrics
     JSONB latency_ms
     DOUBLE latency_recording_ratio
     JSONB error
+  }
+
+  transcription_eval_metric_result {
+    TEXT run_id PK
+    TEXT example_id PK
+    TEXT metric_name PK
+    DOUBLE score
   }
 
   transcription_eval_run_summary {
     TEXT run_id PK
     TIMESTAMPTZ timestamp
     TEXT dataset_version
-    TEXT model_version
+    TEXT engine_version
     TEXT split
     INT n_examples
     DOUBLE overall_score
@@ -186,7 +188,7 @@ erDiagram
   summary_eval_run_summary {
     TEXT run_id PK
     TEXT dataset_version
-    TEXT model_version
+    TEXT engine_version
     TEXT prompt_version
     TEXT split
     INT n_examples
@@ -197,6 +199,7 @@ erDiagram
     JSONB output_tokens
   }
 
+  transcription_eval_record ||--o{ transcription_eval_metric_result : metrics
   transcription_eval_record }o--|| transcription_eval_run_summary : aggregates
 
   summary_eval_record ||--o{ summary_eval_metric_result : metrics
@@ -373,7 +376,7 @@ CREATE TABLE transcription_eval_record (
   run_id               TEXT NOT NULL,
   timestamp            TIMESTAMPTZ NOT NULL,
   example_id           TEXT NOT NULL REFERENCES transcription(id) ON DELETE CASCADE,
-  model_version        TEXT NOT NULL,
+  engine_version        TEXT NOT NULL,
 
   -- Ground truth
   reference_transcript        TEXT NULL,
@@ -383,15 +386,8 @@ CREATE TABLE transcription_eval_record (
   hypothesis_transcript        TEXT NOT NULL,
   hypothesis_dialogue_entries  JSONB NULL,
 
-  -- Metrics
-  wer                    DOUBLE PRECISION NULL,
-  speaker_attributed_wer DOUBLE PRECISION NULL,
-
-  -- Diarization sanity / quality
-  word_diarisation_error_rate DOUBLE PRECISION NULL,
-  speaker_confusion_rate      DOUBLE PRECISION NULL,
-  speaker_count_pred          INTEGER NULL,
-  speaker_count_ref           INTEGER NULL,
+  -- Metrics (normalised into transcription_eval_metric_result)
+  metrics              JSONB NOT NULL,  -- map metric_name -> {"score": ..., ...}
 
   -- Latency and errors
   latency_ms            JSONB NOT NULL,   -- e.g., {"preprocess": 123, "transcribe": 456}
@@ -402,7 +398,24 @@ CREATE TABLE transcription_eval_record (
 );
 ```
 
-### 3.2 Summary output: run-level transcription eval summary
+### 3.2 Optional normalization: metric results
+
+Metric results (metric_name as a row).
+
+```sql
+CREATE TABLE transcription_eval_metric_result (
+  run_id               TEXT NOT NULL,
+  example_id           TEXT NOT NULL,
+
+  metric_name          TEXT NOT NULL,  -- e.g., wer, speaker_attributed_wer, word_diarisation_error_rate, speaker_confusion_rate
+  score                DOUBLE PRECISION NOT NULL
+
+  PRIMARY KEY (run_id, example_id, metric_name),
+  FOREIGN KEY (run_id, example_id) REFERENCES transcription_eval_record(run_id, example_id) ON DELETE CASCADE
+);
+```
+
+### 3.3 Summary output: run-level transcription eval summary
 
 Run-level transcription eval results. Summarises transcription_eval_record for the run_id.
 
@@ -412,7 +425,7 @@ CREATE TABLE transcription_eval_run_summary (
   timestamp            TIMESTAMPTZ NOT NULL,
 
   dataset_version      TEXT NOT NULL,
-  model_version        TEXT NOT NULL,
+  engine_version        TEXT NOT NULL,
 
   split                TEXT NULL,
   n_examples           INTEGER NOT NULL,
@@ -467,11 +480,11 @@ CREATE TABLE summary_eval_metric_result (
   example_id           TEXT NOT NULL,
 
   metric_name          TEXT NOT NULL,
-  prompt_version       TEXT NOT NULL,
+  prompt_version       TEXT NULL,  -- some metrics may not use LLMs
   score                DOUBLE PRECISION NOT NULL,
-  reason               TEXT NOT NULL,
-  input_tokens         INTEGER NOT NULL,
-  output_tokens        INTEGER NOT NULL,
+  reason               TEXT NULL,  -- some metrics may not use LLMs
+  input_tokens         INTEGER NULL,  -- some metrics may not use LLMs
+  output_tokens        INTEGER NULL,  -- some metrics may not use LLMs
 
   PRIMARY KEY (run_id, example_id, metric_name),
   FOREIGN KEY (run_id, example_id) REFERENCES summary_eval_record(run_id, example_id) ON DELETE CASCADE
@@ -487,7 +500,7 @@ CREATE TABLE summary_eval_run_summary (
   run_id               TEXT PRIMARY KEY,
 
   dataset_version      TEXT NOT NULL,
-  model_version        TEXT NOT NULL,
+  engine_version        TEXT NOT NULL,
   prompt_version       TEXT NOT NULL,
 
   split                TEXT NOT NULL,
