@@ -7,7 +7,7 @@ Text can assigned to a wide variety of voices across different personas.
 
 ## Voice Variety
 
-Excellent. Over 3000+ community shared voices. Voices can also be created either by either providing a prompt or an audio file for approximation (cloning).
+Excellent. Over 3000+ community shared voices. Voices can also be created either by providing a prompt or an audio file for approximation (cloning).
 
 ## Realism of Speaker Transitions
 
