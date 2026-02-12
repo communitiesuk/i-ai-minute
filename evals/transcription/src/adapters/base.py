@@ -3,21 +3,14 @@ import logging
 import time
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import TypedDict
 
 from common.services.transcription_services.adapter import (
     TranscriptionAdapter as CommonTranscriptionAdapter,
 )
 
+from evals.transcription.src.models import TranscriptionResult
+
 logger = logging.getLogger(__name__)
-
-
-class TranscriptionResult(TypedDict):
-    """Result from a transcription operation."""
-
-    text: str
-    duration_sec: float
-    debug_info: dict[str, object]
 
 
 class EvalsTranscriptionAdapter(ABC):
@@ -61,21 +54,25 @@ class ServiceTranscriptionAdapter(EvalsTranscriptionAdapter):
 
             if not dialogue_entries:
                 logger.error("%s returned an empty transcript for %s", self._service_name, wav_path)
-                return {
-                    "text": "",
-                    "duration_sec": (end_time - start_time),
-                    "debug_info": {"error": "Empty transcript"},
-                }
+                return TranscriptionResult(
+                    text="",
+                    duration_sec=(end_time - start_time),
+                    debug_info={"error": "Empty transcript"},
+                )
 
             full_text = " ".join(entry["text"] for entry in dialogue_entries).strip()
 
-            return {"text": full_text, "duration_sec": (end_time - start_time), "debug_info": {}}
+            return TranscriptionResult(
+                text=full_text,
+                duration_sec=(end_time - start_time),
+                debug_info={},
+            )
 
         except Exception as error:
             logger.error("%s transcription failed: %s", self._service_name, error)
             end_time = time.time()
-            return {
-                "text": "",
-                "duration_sec": (end_time - start_time),
-                "debug_info": {"error": str(error)},
-            }
+            return TranscriptionResult(
+                text="",
+                duration_sec=(end_time - start_time),
+                debug_info={"error": str(error)},
+            )

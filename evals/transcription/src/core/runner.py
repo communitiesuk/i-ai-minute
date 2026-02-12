@@ -57,40 +57,40 @@ def run_engines_parallel(
 
         example = dataset[int(index)]
         wav_path = wav_write_fn(example, int(index))
-        ref_raw = example["text"]
+        ref_raw = example.text
         audio_seconds = float(duration_fn(wav_path))
 
         result = adapter.transcribe(wav_path)
-        hyp_raw = result["text"]
-        process_seconds = float(result["duration_sec"])
-        debug_info = result["debug_info"]
+        hyp_raw = result.text
+        process_seconds = float(result.duration_sec)
+        debug_info = result.debug_info
 
         reference_normalized = normalise_text(ref_raw)
         hypothesis_normalized = normalise_text(hyp_raw)
         per_metrics = compute_wer_metrics([reference_normalized], [hypothesis_normalized])
-        per_sample_wer = per_metrics["wer"] * 100.0
-        diff_operations: DiffOps = {
-            "equal": per_metrics["hits"],
-            "replace": per_metrics["substitutions"],
-            "delete": per_metrics["deletions"],
-            "insert": per_metrics["insertions"],
-        }
+        per_sample_wer = per_metrics.wer * 100.0
+        diff_operations = DiffOps(
+            equal=per_metrics.hits,
+            replace=per_metrics.substitutions,
+            delete=per_metrics.deletions,
+            insert=per_metrics.insertions,
+        )
 
-        row: SampleRow = {
-            "engine": label,
-            "dataset_index": int(index),
-            "wav_path": wav_path,
-            "audio_sec": audio_seconds,
-            "process_sec": process_seconds,
-            "processing_speed_ratio": (process_seconds / audio_seconds) if audio_seconds else None,
-            "wer_pct": float(per_sample_wer),
-            "diff_ops": diff_operations,
-            "ref_raw": ref_raw,
-            "hyp_raw": hyp_raw,
-            "ref_norm": reference_normalized,
-            "hyp_norm": hypothesis_normalized,
-            "engine_debug": debug_info,
-        }
+        row = SampleRow(
+            engine=label,
+            dataset_index=int(index),
+            wav_path=wav_path,
+            audio_sec=audio_seconds,
+            process_sec=process_seconds,
+            processing_speed_ratio=(process_seconds / audio_seconds) if audio_seconds else None,
+            wer_pct=float(per_sample_wer),
+            diff_ops=diff_operations,
+            ref_raw=ref_raw,
+            hyp_raw=hyp_raw,
+            ref_norm=reference_normalized,
+            hyp_norm=hypothesis_normalized,
+            engine_debug=debug_info,
+        )
 
         with progress_bar_lock:
             progress_bar.update(1)
@@ -99,9 +99,7 @@ def run_engines_parallel(
         return label, index, row, audio_seconds, process_seconds
 
     for adapter_config in adapters_config:
-        results[adapter_config["adapter"].name] = EngineResults(
-            {"rows": [], "timing": TimingAccumulator()}
-        )
+        results[adapter_config["adapter"].name] = EngineResults(rows=[], timing=TimingAccumulator())
 
     workers = max_workers if max_workers is not None else len(adapters_config)
     with ThreadPoolExecutor(max_workers=workers) as executor:
@@ -113,37 +111,37 @@ def run_engines_parallel(
 
         for future in as_completed(futures):
             label, index, row, audio_seconds, process_seconds = future.result()
-            results[label]["rows"].append(row)
-            results[label]["timing"].add(audio_seconds, process_seconds)
+            results[label].rows.append(row)
+            results[label].timing.add(audio_seconds, process_seconds)
 
     progress_bar.close()
 
     output_results: list[EngineOutput] = []
     for adapter_config in adapters_config:
         label = adapter_config["adapter"].name
-        rows = sorted(results[label]["rows"], key=lambda row: row["dataset_index"])
-        timing = results[label]["timing"]
+        rows = sorted(results[label].rows, key=lambda row: row.dataset_index)
+        timing = results[label].timing
 
         overall_metrics = compute_wer_metrics(
-            [row["ref_raw"] for row in rows],
-            [row["hyp_raw"] for row in rows],
+            [row.ref_raw for row in rows],
+            [row.hyp_raw for row in rows],
         )
-        overall_wer = overall_metrics["wer"] * 100.0
-        per_sample_wers = [row["wer_pct"] for row in rows]
+        overall_wer = overall_metrics.wer * 100.0
+        per_sample_wers = [row.wer_pct for row in rows]
 
-        summary: Summary = {
-            "engine": label,
-            "num_samples": len(indices),
-            "overall_wer_pct": float(overall_wer),
-            "processing_speed_ratio": float(timing.processing_speed_ratio),
-            "process_sec": float(timing.process_sec),
-            "audio_sec": float(timing.audio_sec),
-            "per_sample_wer_min": float(numpy.min(per_sample_wers)),
-            "per_sample_wer_max": float(numpy.max(per_sample_wers)),
-            "per_sample_wer_mean": float(numpy.mean(per_sample_wers)),
-        }
+        summary = Summary(
+            engine=label,
+            num_samples=len(indices),
+            overall_wer_pct=float(overall_wer),
+            processing_speed_ratio=float(timing.processing_speed_ratio),
+            process_sec=float(timing.process_sec),
+            audio_sec=float(timing.audio_sec),
+            per_sample_wer_min=float(numpy.min(per_sample_wers)),
+            per_sample_wer_max=float(numpy.max(per_sample_wers)),
+            per_sample_wer_mean=float(numpy.mean(per_sample_wers)),
+        )
 
-        output_results.append({"summary": summary, "samples": rows})
+        output_results.append(EngineOutput(summary=summary, samples=rows))
 
     return output_results
 
@@ -155,8 +153,10 @@ def save_results(results: list[EngineOutput], output_path: Path) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     combined = {
-        "summaries": [result["summary"] for result in results],
-        "engines": {result["summary"]["engine"]: result["samples"] for result in results},
+        "summaries": [result.summary.model_dump() for result in results],
+        "engines": {
+            result.summary.engine: [s.model_dump() for s in result.samples] for result in results
+        },
     }
 
     with output_path.open("w", encoding="utf-8") as file_handle:

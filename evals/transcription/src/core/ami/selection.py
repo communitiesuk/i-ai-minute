@@ -1,19 +1,8 @@
 import logging
-from dataclasses import dataclass
 
-from evals.transcription.src.core.ami.metadata import MeetingMetadata
+from evals.transcription.src.models import MeetingMetadata, MeetingSegment
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class MeetingSegment:
-    """
-    Represents a meeting segment with optional utterance cutoff time.
-    """
-
-    meeting_id: str
-    utterance_cutoff_time: float | None = None
 
 
 def select_segments(
@@ -26,8 +15,8 @@ def select_segments(
     duration fraction. Returns a list of MeetingSegment objects representing the selected
     segments for evaluation.
     """
-    meeting_ids = metadata["meeting_ids"]
-    durations = metadata["durations_sec"]
+    meeting_ids = metadata.meeting_ids
+    durations = metadata.durations_sec
 
     if not meeting_ids:
         return []

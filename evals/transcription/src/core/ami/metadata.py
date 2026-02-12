@@ -2,22 +2,13 @@ import json
 import logging
 from collections import defaultdict
 from pathlib import Path
-from typing import TypedDict, cast
 
 from datasets import load_dataset
 
 from evals.transcription.src.core.ami.constants import AMI_DATASET_NAME
+from evals.transcription.src.models import MeetingMetadata
 
 logger = logging.getLogger(__name__)
-
-
-class MeetingMetadata(TypedDict):
-    """
-    Metadata containing meeting IDs and their durations.
-    """
-
-    meeting_ids: list[str]
-    durations_sec: dict[str, float]
 
 
 def load_or_build_metadata(
@@ -34,9 +25,10 @@ def load_or_build_metadata(
     if metadata_cache_path.exists():
         logger.info("Loading cached meeting metadata...")
         with metadata_cache_path.open("r") as file_handle:
-            metadata = json.load(file_handle)
-        logger.info("Found %d meetings in cache", len(metadata["meeting_ids"]))
-        return cast(MeetingMetadata, metadata)
+            metadata_dict = json.load(file_handle)
+        metadata = MeetingMetadata(**metadata_dict)
+        logger.info("Found %d meetings in cache", len(metadata.meeting_ids))
+        return metadata
 
     logger.info("Loading AMI dataset (%s configuration)...", config)
     logger.info("This may take a while on first run (downloading full dataset)...")
@@ -63,13 +55,13 @@ def load_or_build_metadata(
             max_end_time = max(utterance.get("end_time", 0) for utterance in utterances)
             meeting_durations[meeting_id] = max_end_time
 
-    new_metadata: MeetingMetadata = {
-        "meeting_ids": meeting_ids_sorted,
-        "durations_sec": meeting_durations,
-    }
+    new_metadata = MeetingMetadata(
+        meeting_ids=meeting_ids_sorted,
+        durations_sec=meeting_durations,
+    )
 
     logger.info("Caching meeting metadata...")
     with metadata_cache_path.open("w") as file_handle:
-        json.dump(new_metadata, file_handle)
+        json.dump(new_metadata.model_dump(), file_handle)
 
     return new_metadata

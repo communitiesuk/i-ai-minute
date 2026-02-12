@@ -1,7 +1,6 @@
 import logging
 import tempfile
 from pathlib import Path
-from typing import cast
 
 import soundfile
 from common.audio.ffmpeg import convert_to_mp3
@@ -39,14 +38,11 @@ def prepare_audio_for_transcription(example: DatasetItem, index: int) -> str:
     Converts the input audio to MP3 format using ffmpeg.
     Caches the processed audio and returns the path to the processed file.
     """
-    if "path" in example["audio"]:
-        cached_path = example["audio"]["path"]
-        if Path(cached_path).exists():
-            return cast(str, cached_path)
+    if example.audio.path and Path(example.audio.path).exists():
+        return example.audio.path
 
-    audio = example["audio"]
-    audio_data = audio["array"]
-    sample_rate = audio["sampling_rate"]
+    audio_data = example.audio.array
+    sample_rate = example.audio.sampling_rate
 
     output_path = AUDIO_DIR / f"sample_{index:06d}.mp3"
 

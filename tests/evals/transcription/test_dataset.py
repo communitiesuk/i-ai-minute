@@ -1,18 +1,20 @@
 from __future__ import annotations
 
-from unittest.mock import Mock
-
 import numpy as np
 import pytest
 
 from evals.transcription.src.core.dataset import prepare_audio_for_transcription
+from evals.transcription.src.models import AudioSample, DatasetItem
 
 
 def test_prepare_audio_for_transcription_uses_cached_path(tmp_path, monkeypatch):
     cached = tmp_path / "cached.wav"
     cached.write_bytes(b"RIFFfake")
 
-    example = {"audio": {"path": str(cached), "array": Mock(), "sampling_rate": 16000}}
+    example = DatasetItem(
+        audio=AudioSample(path=str(cached), array=np.array([0.0]), sampling_rate=16000),
+        text="test",
+    )
 
     def _fail(*_args, **_kwargs):
         msg = "ffmpeg should not be invoked when cached path exists"
@@ -43,7 +45,7 @@ def test_prepare_audio_for_transcription_downmixes_stereo_and_returns_path(tmp_p
     monkeypatch.setattr("evals.transcription.src.core.dataset.soundfile.write", fake_write)
     monkeypatch.setattr("evals.transcription.src.core.dataset.convert_to_mp3", fake_convert_to_mp3)
 
-    example = {"audio": {"array": samples, "sampling_rate": 16000}}
+    example = DatasetItem(audio=AudioSample(array=samples, sampling_rate=16000, path=""), text="test")
     output_path = prepare_audio_for_transcription(example, 1)
 
     assert output_path == str(audio_dir / "sample_000001.mp3")
@@ -71,7 +73,7 @@ def test_prepare_audio_for_transcription_cleans_temp_on_ffmpeg_error(tmp_path, m
     monkeypatch.setattr("evals.transcription.src.core.dataset.soundfile.write", fake_write)
     monkeypatch.setattr("evals.transcription.src.core.dataset.convert_to_mp3", fake_convert_to_mp3_error)
 
-    example = {"audio": {"array": np.zeros((2, 2)), "sampling_rate": 16000}}
+    example = DatasetItem(audio=AudioSample(array=np.zeros((2, 2)), sampling_rate=16000, path=""), text="test")
 
     with pytest.raises(RuntimeError):
         prepare_audio_for_transcription(example, 2)

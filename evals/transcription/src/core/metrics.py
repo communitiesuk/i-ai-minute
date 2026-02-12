@@ -1,15 +1,6 @@
-from typing import TypedDict
-
 import jiwer
 
-
-class Metrics(TypedDict):
-    wer: float
-    hits: int
-    substitutions: int
-    deletions: int
-    insertions: int
-
+from evals.transcription.src.models import Metrics
 
 _jiwer_transform = jiwer.Compose(
     [
@@ -45,13 +36,13 @@ def compute_wer_metrics(refs: list[str], hyps: list[str]) -> Metrics:
         hypothesis_transform=_jiwer_transform,
     )
 
-    return {
-        "wer": float(word_output.wer),
-        "hits": int(word_output.hits),
-        "substitutions": int(word_output.substitutions),
-        "deletions": int(word_output.deletions),
-        "insertions": int(word_output.insertions),
-    }
+    return Metrics(
+        wer=float(word_output.wer),
+        hits=int(word_output.hits),
+        substitutions=int(word_output.substitutions),
+        deletions=int(word_output.deletions),
+        insertions=int(word_output.insertions),
+    )
 
 
 class TimingAccumulator:

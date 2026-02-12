@@ -77,8 +77,8 @@ def run_evaluation(
     for result in results:
         logger.info(
             "%s WER: %.2f%%",
-            result["summary"]["engine"],
-            result["summary"]["overall_wer_pct"],
+            result.summary.engine,
+            result.summary.overall_wer_pct,
         )
     logger.info("Results saved to: %s", output_path)
 

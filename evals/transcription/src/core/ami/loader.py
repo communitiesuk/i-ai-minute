@@ -13,6 +13,7 @@ from evals.transcription.src.core.ami.metadata import load_or_build_metadata
 from evals.transcription.src.core.ami.selection import MeetingSegment, select_segments
 from evals.transcription.src.core.ami.types import AMIDatasetSample, RawDatasetRow
 from evals.transcription.src.core.types import DatasetProtocol
+from evals.transcription.src.models import AudioSample
 
 logger = logging.getLogger(__name__)
 
@@ -69,18 +70,18 @@ def _build_sample(
     """
     Builds a dataset sample dictionary containing the mixed audio, transcript text, and metadata.
     """
-    return {
-        "audio": {
-            "array": mixed_audio,
-            "sampling_rate": TARGET_SAMPLE_RATE,
-            "path": str(wav_path),
-        },
-        "text": text,
-        "meeting_id": segment.meeting_id,
-        "dataset_index": index,
-        "duration_sec": audio.compute_duration(mixed_audio),
-        "num_utterances": num_utterances,
-    }
+    return AMIDatasetSample(
+        audio=AudioSample(
+            array=mixed_audio,
+            sampling_rate=TARGET_SAMPLE_RATE,
+            path=str(wav_path),
+        ),
+        text=text,
+        meeting_id=segment.meeting_id,
+        dataset_index=index,
+        duration_sec=audio.compute_duration(mixed_audio),
+        num_utterances=num_utterances,
+    )
 
 
 class AMIDatasetLoader(DatasetProtocol):
@@ -193,7 +194,7 @@ class AMIDatasetLoader(DatasetProtocol):
         logger.info(
             "Cache hit: %s (%.2f sec, %d words)",
             segment.meeting_id,
-            sample["duration_sec"],
+            sample.duration_sec,
             word_count,
         )
         return sample
@@ -221,8 +222,8 @@ class AMIDatasetLoader(DatasetProtocol):
         logger.info(
             "Cache miss: mixed %s (%d utterances, %.2f sec, %d words)",
             segment.meeting_id,
-            sample["num_utterances"],
-            sample["duration_sec"],
+            sample.num_utterances,
+            sample.duration_sec,
             word_count,
         )
         return sample
@@ -232,7 +233,7 @@ class AMIDatasetLoader(DatasetProtocol):
         Logs progress every 5 segments or at the end of processing.
         """
         if (index + 1) % 5 == 0 or (index + 1) == total:
-            accumulated = sum(sample["duration_sec"] for sample in self.samples)
+            accumulated = sum(sample.duration_sec for sample in self.samples)
             logger.info("Processed %d/%d segments, %.2f sec total", index + 1, total, accumulated)
 
     @property

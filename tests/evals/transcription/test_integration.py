@@ -85,15 +85,15 @@ def test_adapter_contracts(tmp_path, monkeypatch):
 
     azure = AzureSTTAdapter()
     result = azure.transcribe(str(wav_a))
-    assert isinstance(result["text"], str)
-    assert isinstance(result["duration_sec"], float)
-    assert isinstance(result["debug_info"], dict)
+    assert isinstance(result.text, str)
+    assert isinstance(result.duration_sec, float)
+    assert isinstance(result.debug_info, dict)
 
     whisper = WhisperAdapter()
     result = whisper.transcribe(str(wav_b))
-    assert isinstance(result["text"], str)
-    assert isinstance(result["duration_sec"], float)
-    assert isinstance(result["debug_info"], dict)
+    assert isinstance(result.text, str)
+    assert isinstance(result.duration_sec, float)
+    assert isinstance(result.debug_info, dict)
 
 
 def test_run_evaluation_requires_azure_credentials(monkeypatch, tmp_path):
