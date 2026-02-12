@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from evals.transcription.src.core.runner import run_engines_parallel
-from tests.transcription_evals.conftest import FakeAdapter, FakeDataset
+from tests.evals.transcription.conftest import FakeAdapter, FakeDataset
 
 
 def test_run_engines_parallel_bookkeeping(tmp_path):

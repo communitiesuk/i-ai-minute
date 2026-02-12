@@ -10,7 +10,7 @@ import soundfile as sf
 from evals.transcription.src.adapters.azure import AzureSTTAdapter
 from evals.transcription.src.adapters.whisper import WhisperAdapter
 from evals.transcription.src.evaluate import run_evaluation
-from tests.transcription_evals.conftest import FakeAdapter, FakeDataset
+from tests.evals.transcription.conftest import FakeAdapter, FakeDataset
 
 
 def test_run_evaluation_with_fake_adapters(tmp_path, monkeypatch):
