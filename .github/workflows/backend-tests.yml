@@ -64,14 +64,14 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: coverage-report
+          name: backend-coverage-report
           path: htmlcov/
 
       - name: Upload backend coverage XML
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: coverage-xml
+          name: backend-coverage-xml
           path: coverage.xml
 
       - name: Coverage summary
