@@ -10,6 +10,6 @@ A function interface for interacting with the database is kept in `common/databa
 
 We use SQLAlchemy for database connections, and alembic for tracking migrations. The `alembic.ini` file at the root of the project handles alembic configuration and the connection string to the db to action against.
 
-_When adding new models, import each model into `alembic/env.py` so that alembic reads it into the config._
+*When adding new models, import each model into `alembic/env.py` so that alembic reads it into the config.*
 
 Run `poetry run alembic revision --autogenerate` to generate a new migration, and `poetry run alembic upgrade head` to run the upgrade to apply the new migration.
