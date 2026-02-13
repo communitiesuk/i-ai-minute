@@ -6,7 +6,12 @@
       "type": "debugpy",
       "request": "launch",
       "module": "uvicorn",
-      "args": ["backend.main:app", "--reload", "--port", "8080"],
+      "args": [
+        "backend.main:app",
+        "--reload",
+        "--port",
+        "8080"
+      ],
       "jinja": true,
       "cwd": "${workspaceFolder}",
       "python": "${command:python.interpreterPath}",
@@ -23,13 +28,18 @@
       "request": "launch",
       "cwd": "${workspaceFolder}/frontend",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "debug"],
+      "runtimeArgs": [
+        "run",
+        "debug"
+      ],
       "sourceMaps": true,
       "resolveSourceMapLocations": [
         "${workspaceFolder}/frontend/**",
         "!**/node_modules/**"
       ],
-      "skipFiles": ["<node_internals>/**"],
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
       "console": "integratedTerminal"
     },
     {
@@ -44,7 +54,10 @@
     },
     {
       "name": "Next.js: debug full stack",
-      "compounds": ["Next.js: debug server-side", "Next.js: debug client-side"],
+      "compounds": [
+        "Next.js: debug server-side",
+        "Next.js: debug client-side"
+      ],
       "presentation": {
         "hidden": false,
         "group": "Next.js",

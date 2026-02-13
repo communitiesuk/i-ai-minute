@@ -8,6 +8,12 @@ repos:
         name: Check for files larger than 5 MB
         args: ["--maxkb=5120"]
 
+  # - repo: https://github.com/Yelp/detect-secrets
+  #   rev: v1.4.0
+  #   hooks:
+  #     - id: detect-secrets
+  #       exclude: (poetry.lock|.env.example|.env.test|^.github/workflows/|.cruft.json|aws_architecture)
+
   - repo: local
     hooks:
       - id: detect-ip
@@ -24,6 +30,13 @@ repos:
         pass_filenames: false
         files: ^frontend/
         types: [file]
+
+      # - id: python-tests
+      #   name: Run Python tests
+      #   entry: poetry run pytest
+      #   language: system
+      #   types: [python]
+      #   pass_filenames: false
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.8.2

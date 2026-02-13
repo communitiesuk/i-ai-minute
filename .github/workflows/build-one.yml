@@ -23,6 +23,7 @@ on:
       DOCKERHUB_TOKEN:
         required: false
 
+
 jobs:
   set-vars:
     if: false # TODO: JIRA-241 Re-enable when AWS secrets are configured (also re-enable build.yml backend/worker jobs)
@@ -72,7 +73,7 @@ jobs:
     with:
       APP_NAME: ${{ needs.set-vars.outputs.app-name }}
       RUNNER_LABEL: ${{ needs.start-runner.outputs.label }}
-      INFRASTRUCTURE_FOLDER: 'terraform'
+      INFRASTRUCTURE_FOLDER: "terraform"
       DOCKER_BUILD_INSTANCE: ${{ needs.set-vars.outputs.docker-build-instance }}
       SERVICE: ${{ inputs.service }}
       COMMIT_HASH: ${{ github.sha }}
