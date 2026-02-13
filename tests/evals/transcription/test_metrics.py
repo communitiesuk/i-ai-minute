@@ -5,50 +5,55 @@ import pytest
 from evals.transcription.src.core.metrics import compute_wer_metrics, normalise_text
 
 
-def test_normalise_text_edge_cases():
-    assert normalise_text("") == ""
-    assert normalise_text("  Hello,   WORLD!!  ") == "hello world"
+@pytest.mark.parametrize(
+    ("input_text", "expected"),
+    [
+        ("", ""),
+        ("  Hello,   WORLD!!  ", "hello world"),
+    ],
+)
+def test_normalise_text_edge_cases(input_text, expected):
+    assert normalise_text(input_text) == expected
 
 
-def test_compute_wer_metrics_empty_reference_raises_error():
+@pytest.mark.parametrize(
+    ("reference", "hypothesis"),
+    [
+        ([""], ["hello world"]),
+        ([""], [""]),
+        ([], []),
+    ],
+)
+def test_compute_wer_metrics_empty_reference_raises_error(reference, hypothesis):
     with pytest.raises(ValueError, match=".*"):
-        compute_wer_metrics([""], ["hello world"])
-
-    with pytest.raises(ValueError, match=".*"):
-        compute_wer_metrics([""], [""])
-
-    with pytest.raises(ValueError, match=".*"):
-        compute_wer_metrics([], [])
+        compute_wer_metrics(reference, hypothesis)
 
 
-def test_compute_wer_metrics_empty_hypothesis():
-    metrics = compute_wer_metrics(["hello world"], [""])
-    assert metrics.wer == 1.0
-    assert metrics.hits == 0
-    assert metrics.deletions == 2
-    assert metrics.insertions == 0
-
-
-def test_compute_wer_metrics_perfect_match():
-    metrics = compute_wer_metrics(["hello world"], ["hello world"])
-    assert metrics.wer == 0.0
-    assert metrics.hits == 2
-    assert metrics.substitutions == 0
-    assert metrics.deletions == 0
-    assert metrics.insertions == 0
-
-
-def test_compute_wer_metrics_all_substitutions():
-    metrics = compute_wer_metrics(["hello world"], ["goodbye universe"])
-    assert metrics.wer == 1.0
-    assert metrics.hits == 0
-    assert metrics.substitutions == 2
-    assert metrics.deletions == 0
-    assert metrics.insertions == 0
-
-
-def test_compute_wer_metrics_small_example():
-    metrics = compute_wer_metrics(["hello world"], ["hello there world"])
-    assert metrics.insertions == 1
-    assert metrics.deletions == 0
-    assert metrics.substitutions == 0
+@pytest.mark.parametrize(
+    ("reference", "hypothesis", "expected_metrics"),
+    [
+        (
+            ["hello world"],
+            [""],
+            {"wer": 1.0, "hits": 0, "deletions": 2, "insertions": 0},
+        ),
+        (
+            ["hello world"],
+            ["hello world"],
+            {"wer": 0.0, "hits": 2, "substitutions": 0, "deletions": 0, "insertions": 0},
+        ),
+        (
+            ["hello world"],
+            ["goodbye universe"],
+            {"wer": 1.0, "hits": 0, "substitutions": 2, "deletions": 0, "insertions": 0},
+        ),
+        (
+            ["hello world"],
+            ["hello there world"],
+            {"insertions": 1, "deletions": 0, "substitutions": 0},
+        ),
+    ],
+)
+def test_compute_wer_metrics(reference, hypothesis, expected_metrics):
+    metrics = compute_wer_metrics(reference, hypothesis)
+    assert expected_metrics == {k: getattr(metrics, k) for k in expected_metrics}

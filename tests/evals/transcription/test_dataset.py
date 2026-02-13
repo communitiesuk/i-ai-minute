@@ -39,11 +39,8 @@ def test_prepare_audio_for_transcription_downmixes_stereo_and_returns_path(tmp_p
     def fake_write(path, data, sr, subtype=None):  # noqa: ARG001
         captured["data"] = data
 
-    def fake_convert_to_mp3(_input_path, output_path):
-        return output_path
-
     monkeypatch.setattr("evals.transcription.src.core.dataset.soundfile.write", fake_write)
-    monkeypatch.setattr("evals.transcription.src.core.dataset.convert_to_mp3", fake_convert_to_mp3)
+    monkeypatch.setattr("evals.transcription.src.core.dataset.convert_to_mp3", lambda _input, output: output)
 
     example = DatasetItem(audio=AudioSample(array=samples, sampling_rate=16000, path=""), text="test")
     output_path = prepare_audio_for_transcription(example, 1)

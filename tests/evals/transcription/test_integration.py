@@ -59,41 +59,41 @@ def test_run_evaluation_with_fake_adapters(tmp_path, monkeypatch):
         assert [s["dataset_index"] for s in samples_out] == [0, 1]
         for sample in samples_out:
             assert sample["engine"] in {"Azure Speech-to-Text", "Whisper"}
-            assert sample["audio_sec"] == 1.0
-            assert sample["process_sec"] == 0.25
+            expected_sample = {
+                "audio_sec": 1.0,
+                "process_sec": 0.25,
+            }
+            assert expected_sample == {k: sample[k] for k in expected_sample}
             assert sample["processing_speed_ratio"] == pytest.approx(0.25)
             assert sample["ref_raw"]
             assert sample["hyp_raw"]
             assert sample["ref_norm"]
             assert sample["hyp_norm"]
-            assert isinstance(sample["diff_ops"], dict)
             assert {"equal", "replace", "delete", "insert"}.issubset(sample["diff_ops"])
             assert "engine_debug" in sample
 
 
-def test_adapter_contracts(tmp_path, monkeypatch):
+@pytest.mark.parametrize(
+    ("adapter_class", "monkeypatch_target"),
+    [
+        (AzureSTTAdapter, "evals.transcription.src.adapters.azure.CommonAzureAdapter.start"),
+        (WhisperAdapter, "evals.transcription.src.adapters.whisper.WhisplyLocalAdapter.start"),
+    ],
+)
+def test_adapter_contracts(tmp_path, monkeypatch, adapter_class, monkeypatch_target):
     async def fake_start(_path):
         return SimpleNamespace(transcript=[{"text": "hello"}, {"text": "world"}])
 
-    monkeypatch.setattr("evals.transcription.src.adapters.azure.CommonAzureAdapter.start", fake_start)
-    monkeypatch.setattr("evals.transcription.src.adapters.whisper.WhisplyLocalAdapter.start", fake_start)
+    monkeypatch.setattr(monkeypatch_target, fake_start)
 
-    wav_a = tmp_path / "a.wav"
-    wav_b = tmp_path / "b.wav"
-    sf.write(wav_a, [0.0, 0.0], 16000, subtype="PCM_16")
-    sf.write(wav_b, [0.0, 0.0], 16000, subtype="PCM_16")
+    wav_file = tmp_path / "test.wav"
+    sf.write(wav_file, [0.0, 0.0], 16000, subtype="PCM_16")
 
-    azure = AzureSTTAdapter()
-    result = azure.transcribe(str(wav_a))
-    assert isinstance(result.text, str)
-    assert isinstance(result.duration_sec, float)
-    assert isinstance(result.debug_info, dict)
-
-    whisper = WhisperAdapter()
-    result = whisper.transcribe(str(wav_b))
-    assert isinstance(result.text, str)
-    assert isinstance(result.duration_sec, float)
-    assert isinstance(result.debug_info, dict)
+    adapter = adapter_class()
+    result = adapter.transcribe(str(wav_file))
+    assert result.text == "hello world"
+    assert result.duration_sec >= 0
+    assert result.debug_info == {}
 
 
 def test_run_evaluation_requires_azure_credentials(monkeypatch, tmp_path):
