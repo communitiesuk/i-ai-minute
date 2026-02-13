@@ -1,4 +1,5 @@
 import logging
+import os
 import uuid
 from typing import cast
 from uuid import UUID
@@ -42,7 +43,10 @@ settings = get_settings()
 
 logger = logging.getLogger(__name__)
 
-THRESHOLD_FOR_PASSING_ACCURACY_CHECK = 0.7  # This can be adjusted based on requirements
+THRESHOLD_FOR_PASSING_ACCURACY_CHECK = os.getenv("NEXT_PUBLIC_GUARDRAIL_THRESHOLD", "0.8")
+
+
+# This can be adjusted based on requirements
 
 
 class MinuteGenerationFailedError(Exception):
