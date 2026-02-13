@@ -2,8 +2,9 @@ DEFAULT_VOICES = [
     # "JBFqnCBsd6RMkjVDRZzb",
     # "EXAVITQu4vr4xnSDxMaL",
     # "AZnzlk1XvdvUeBnXmlld",    storyteller
-    "snf0TZa0mc0w5XJsWQBI",  # created social worker, prompt below
-    "21m00Tcm4TlvDq8ikWAM",  # narrator
+    # "snf0TZa0mc0w5XJsWQBI",  # Social care worker
+    "qimfC2HPDJhhTmdOzs2z", # Eastern European man
+    "hhDdiMwM9dWfw6qEFzju", # Young Mancunian
 ]
 
 """

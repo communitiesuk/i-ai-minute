@@ -8,8 +8,12 @@ def save_audio(full_audio: bytes, output_file: str):
     caller_file = Path(caller_frame.filename)
     caller_dir = caller_file.parent
 
+
+    audio_dir = caller_dir / "generated_audio_files" 
+    audio_dir.mkdir(parents=True, exist_ok=True)
+
     # Ensure .mp3 extension
-    path = caller_dir / output_file
+    path = audio_dir / output_file
     if path.suffix == "":
         path = path.with_suffix(".mp3")
 
