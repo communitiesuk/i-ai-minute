@@ -43,7 +43,7 @@ settings = get_settings()
 
 logger = logging.getLogger(__name__)
 
-THRESHOLD_FOR_PASSING_ACCURACY_CHECK = os.getenv("NEXT_PUBLIC_GUARDRAIL_THRESHOLD", "0.8")
+THRESHOLD_FOR_PASSING_ACCURACY_CHECK = float(os.getenv("NEXT_PUBLIC_GUARDRAIL_THRESHOLD", "0.8") or "0.8")
 
 
 # This can be adjusted based on requirements
