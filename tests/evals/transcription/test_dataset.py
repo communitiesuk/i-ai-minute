@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from unittest.mock import Mock
+
 import numpy as np
 import pytest
 
@@ -16,15 +18,19 @@ def test_prepare_audio_for_transcription_uses_cached_path(tmp_path, monkeypatch)
         text="test",
     )
 
-    def _fail(*_args, **_kwargs):
-        msg = "ffmpeg should not be invoked when cached path exists"
-        raise AssertionError(msg)
+    mock_input = Mock()
+    mock_output = Mock()
+    mock_run = Mock()
 
-    monkeypatch.setattr("ffmpeg.input", _fail)
-    monkeypatch.setattr("ffmpeg.output", _fail)
-    monkeypatch.setattr("ffmpeg.run", _fail)
+    monkeypatch.setattr("ffmpeg.input", mock_input)
+    monkeypatch.setattr("ffmpeg.output", mock_output)
+    monkeypatch.setattr("ffmpeg.run", mock_run)
 
     assert prepare_audio_for_transcription(example, 0) == str(cached)
+
+    mock_input.assert_not_called()
+    mock_output.assert_not_called()
+    mock_run.assert_not_called()
 
 
 def test_prepare_audio_for_transcription_downmixes_stereo_and_returns_path(tmp_path, monkeypatch):
