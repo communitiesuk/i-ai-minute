@@ -12,6 +12,7 @@ on:
 
 jobs:
   check_for_update:
+    if: false # TODO: JIRA-241 Re-enable when AWS_GITHUBRUNNER_PAT and COOKIECUTTER_SSH_PRIVATE_KEY secrets are configured
     uses: i-dot-ai/i-dot-ai-core-github-actions/.github/workflows/cruft-update-repo.yml@main
     secrets:
       AWS_GITHUBRUNNER_PAT: ${{ secrets.AWS_GITHUBRUNNER_PAT}}
