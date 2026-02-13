@@ -38,10 +38,10 @@ jobs:
           name: frontend-coverage-html
           path: frontend/coverage
 
-      - name: Upload frontend LCOV
+      - name: Upload frontend coverage XML
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: frontend-coverage-lcov
-          path: frontend/coverage/lcov.info
+          name: frontend-coverage-xml
+          path: frontend/coverage/cobertura-coverage.xml 
 

@@ -60,14 +60,14 @@ jobs:
       - name: Run tests with coverage
         run: make test-cov
 
-      - name: Upload coverage HTML report
+      - name: Upload backend coverage HTML 
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: coverage-report
           path: htmlcov/
 
-      - name: Upload coverage XML
+      - name: Upload backend coverage XML
         uses: actions/upload-artifact@v4
         if: always()
         with:

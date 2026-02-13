@@ -5,7 +5,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       enabled: true,
-      reporter: ['text', 'html', 'lcov'],
+      reporter: ['text', 'html', 'cobertura'],
       reportsDirectory: './coverage',
     },
   },

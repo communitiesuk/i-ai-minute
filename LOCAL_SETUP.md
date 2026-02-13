@@ -66,11 +66,6 @@ message=ChatCompletionMessage(content="Hello, APIM Test Team! 👋 Hope you're a
 
 ```
 
-
-
-
-
-
 ### Access the app at http://localhost:3000
 
 > **Note**: The first transcription will take significantly longer as it downloads 2 annotation models and 1 transcription model (3 large files). These files are cached locally and only need to be downloaded once.
