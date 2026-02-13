@@ -5,12 +5,7 @@ import os
 from audio_transformation.audio_effects import mix_audio_with_effects, mp3_to_bytes
 from dotenv import load_dotenv
 from pydub import AudioSegment
-from pydub.playback import play
 
-
-def play_audio_bytes(audio_bytes: bytes):
-    audio = AudioSegment.from_file(io.BytesIO(audio_bytes), format="mp3")
-    play(audio)
 
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
