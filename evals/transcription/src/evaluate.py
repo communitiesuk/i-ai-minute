@@ -27,7 +27,7 @@ def run_evaluation(
     max_workers: int | None = None,
 ) -> None:
     """
-    Run transcription evaluation on AMI dataset with Azure and Whisper adapters.
+    Runs transcription evaluation on AMI dataset with Azure and Whisper adapters.
     """
     output_dir = WORKDIR / "results"
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -85,7 +85,7 @@ def run_evaluation(
 
 def main() -> None:
     """
-    Parse command-line arguments and run transcription evaluation.
+    Parses command-line arguments and runs transcription evaluation.
     """
     parser = argparse.ArgumentParser(description="Run transcription evaluation")
     parser.add_argument(

@@ -13,7 +13,7 @@ def load_ami_dataset(
     sample_duration_fraction: float | None = None,
 ) -> AMIDatasetLoader:
     """
-    Loads the AMI dataset with optional sampling of meetings and duration fractions.
+    Loads and prepares the AMI dataset with optional sampling of meetings and duration fractions.
     """
     loader = AMIDatasetLoader(cache_dir, num_samples, sample_duration_fraction)
     samples: list[AMIDatasetSample] = loader.prepare()

@@ -37,7 +37,7 @@ def run_engines_parallel(
     max_workers: int | None = None,
 ) -> list[EngineOutput]:
     """
-    Run multiple transcription adapters in parallel on dataset samples and compute WER metrics.
+    Runs multiple transcription adapters in parallel on dataset samples and computes WER metrics.
     """
     total_tasks = len(indices) * len(adapters_config)
     progress_bar = tqdm(total=total_tasks, desc="Processing all engines", unit="task")
@@ -50,7 +50,7 @@ def run_engines_parallel(
         index: int,
     ) -> tuple[str, int, SampleRow, float, float]:
         """
-        Transcribe a single sample and compute WER metrics.
+        Transcribes a single sample and computes WER metrics.
         """
         adapter = adapter_config["adapter"]
         label = adapter.name
@@ -148,7 +148,7 @@ def run_engines_parallel(
 
 def save_results(results: list[EngineOutput], output_path: Path) -> None:
     """
-    Save evaluation results to JSON file with summaries and per-sample details.
+    Saves evaluation results to JSON file with summaries and per-sample details.
     """
     output_path.parent.mkdir(parents=True, exist_ok=True)
 

@@ -20,7 +20,7 @@ def load_benchmark_dataset(
     num_samples: int | None, sample_duration_fraction: float | None = None
 ) -> AMIDatasetLoader:
     """
-    Loads the AMI dataset with optional sampling of meetings and duration fractions.
+    Loads the AMI benchmark dataset with optional sampling of meetings and duration fractions.
     """
     logger.info("Loading AMI dataset with %d samples...", num_samples)
     logger.info("Using cache directory: %s", CACHE_DIR)
@@ -35,8 +35,7 @@ def load_benchmark_dataset(
 
 def prepare_audio_for_transcription(example: DatasetItem, index: int) -> str:
     """
-    Converts the input audio to MP3 format using ffmpeg.
-    Caches the processed audio and returns the path to the processed file.
+    Converts the input audio to MP3 format using ffmpeg and caches it.
     """
     if example.audio.path and Path(example.audio.path).exists():
         return example.audio.path
