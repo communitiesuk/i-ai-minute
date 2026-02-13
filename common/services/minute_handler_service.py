@@ -73,7 +73,7 @@ class MinuteHandlerService:
     ) -> None:
         with SessionLocal() as session:
             # Determine Pass/Fail based on a threshold (e.g. 0.7)
-            passed = score.score > THRESHOLD_FOR_PASSING_ACCURACY_CHECK
+            passed = score.score >= THRESHOLD_FOR_PASSING_ACCURACY_CHECK
 
             guardrail_result = GuardrailResult(
                 minute_version_id=minute_version_id,
