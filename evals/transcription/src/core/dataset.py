@@ -11,7 +11,7 @@ from evals.transcription.src.constants import (
 )
 from evals.transcription.src.core.ami.loader import AMIDatasetLoader
 from evals.transcription.src.core.ami_dataset import load_ami_dataset
-from evals.transcription.src.core.types import DatasetItem
+from evals.transcription.src.models import DatasetItem
 
 logger = logging.getLogger(__name__)
 

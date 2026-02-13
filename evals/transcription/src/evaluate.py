@@ -7,12 +7,12 @@ from common.audio.ffmpeg import get_duration
 from common.settings import get_settings
 
 from evals.transcription.src.adapters import AzureSTTAdapter, WhisperAdapter
+from evals.transcription.src.adapters.base import AdapterConfig
 from evals.transcription.src.core.dataset import (
     load_benchmark_dataset,
     prepare_audio_for_transcription,
 )
 from evals.transcription.src.core.runner import run_engines_parallel, save_results
-from evals.transcription.src.core.types import AdapterConfig
 
 settings = get_settings()
 WORKDIR = Path(__file__).resolve().parent.parent

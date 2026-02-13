@@ -2,7 +2,7 @@ import logging
 from pathlib import Path
 
 from evals.transcription.src.core.ami import AMIDatasetLoader
-from evals.transcription.src.core.ami.types import AMIDatasetSample
+from evals.transcription.src.models import AMIDatasetSample
 
 logger = logging.getLogger(__name__)
 

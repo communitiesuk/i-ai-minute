@@ -4,7 +4,7 @@ from typing import List
 import numpy
 from common.constants import TARGET_SAMPLE_RATE
 
-from evals.transcription.src.core.ami.types import RawDatasetRow
+from evals.transcription.src.models import RawDatasetRow
 
 logger = logging.getLogger(__name__)
 
@@ -19,18 +19,18 @@ def mix_utterances(
     if not utterances:
         return numpy.array([], dtype=numpy.float32), ""
 
-    utterances_sorted = sorted(utterances, key=lambda x: x["begin_time"])
+    utterances_sorted = sorted(utterances, key=lambda x: x.begin_time)
 
-    max_end_time = max(utterance["end_time"] for utterance in utterances_sorted)
+    max_end_time = max(utterance.end_time for utterance in utterances_sorted)
     total_samples = int(numpy.ceil(max_end_time * target_sample_rate))
 
     mixed_audio = numpy.zeros(total_samples, dtype=numpy.float32)
     text_parts = []
 
     for utterance in utterances_sorted:
-        audio_array = utterance["audio"]["array"]
-        begin_time = utterance["begin_time"]
-        text = utterance["text"]
+        audio_array = utterance.audio.array
+        begin_time = utterance.begin_time
+        text = utterance.text
 
         start_sample = int(begin_time * target_sample_rate)
         end_sample = start_sample + len(audio_array)

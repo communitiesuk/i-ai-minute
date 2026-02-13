@@ -7,13 +7,9 @@ from threading import Lock
 import numpy
 from tqdm import tqdm
 
-from evals.transcription.src.core.metrics import (
-    TimingAccumulator,
-    compute_wer_metrics,
-    normalise_text,
-)
-from evals.transcription.src.core.types import (
-    AdapterConfig,
+from evals.transcription.src.adapters.base import AdapterConfig
+from evals.transcription.src.core.metrics import compute_wer_metrics, normalise_text
+from evals.transcription.src.models import (
     DatasetProtocol,
     DiffOps,
     DurationFn,
@@ -21,6 +17,7 @@ from evals.transcription.src.core.types import (
     EngineResults,
     SampleRow,
     Summary,
+    TimingAccumulator,
     WavWriteFn,
 )
 

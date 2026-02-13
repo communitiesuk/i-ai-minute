@@ -11,9 +11,12 @@ from evals.transcription.src.core.ami import audio, cache
 from evals.transcription.src.core.ami.constants import AMI_DATASET_NAME
 from evals.transcription.src.core.ami.metadata import load_or_build_metadata
 from evals.transcription.src.core.ami.selection import MeetingSegment, select_segments
-from evals.transcription.src.core.ami.types import AMIDatasetSample, RawDatasetRow
-from evals.transcription.src.core.types import DatasetProtocol
-from evals.transcription.src.models import AudioSample
+from evals.transcription.src.models import (
+    AMIDatasetSample,
+    AudioSample,
+    DatasetProtocol,
+    RawDatasetRow,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -44,12 +47,12 @@ def _apply_cutoff(
     if cutoff_time is None:
         return utterances
 
-    utterances_sorted = sorted(utterances, key=lambda x: x["begin_time"])
+    utterances_sorted = sorted(utterances, key=lambda x: x.begin_time)
     result: List[RawDatasetRow] = []
     accumulated = 0.0
 
     for utterance in utterances_sorted:
-        duration = utterance["end_time"] - utterance["begin_time"]
+        duration = utterance.end_time - utterance.begin_time
         if accumulated + duration <= cutoff_time:
             result.append(utterance)
             accumulated += duration
