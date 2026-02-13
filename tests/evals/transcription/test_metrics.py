@@ -56,4 +56,5 @@ def test_compute_wer_metrics_empty_reference_raises_error(reference, hypothesis)
 )
 def test_compute_wer_metrics(reference, hypothesis, expected_metrics):
     metrics = compute_wer_metrics(reference, hypothesis)
-    assert expected_metrics == {k: getattr(metrics, k) for k in expected_metrics}
+    actual_metrics = {k: getattr(metrics, k) for k in expected_metrics}
+    assert expected_metrics == actual_metrics

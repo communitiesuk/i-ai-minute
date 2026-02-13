@@ -59,18 +59,30 @@ def test_run_evaluation_with_fake_adapters(tmp_path, monkeypatch):
         assert [s["dataset_index"] for s in samples_out] == [0, 1]
         for sample in samples_out:
             assert sample["engine"] in {"Azure Speech-to-Text", "Whisper"}
-            expected_sample = {
-                "audio_sec": 1.0,
-                "process_sec": 0.25,
-            }
-            assert expected_sample == {k: sample[k] for k in expected_sample}
+            assert sample["ref_raw"] in ["hello world", "good morning"]
+            assert sample["ref_norm"] in ["hello world", "good morning"]
+
+            if sample["engine"] == "Azure Speech-to-Text":
+                expected_sample = {
+                    "audio_sec": 1.0,
+                    "process_sec": 0.25,
+                    "hyp_raw": "hello world",
+                    "hyp_norm": "hello world",
+                    "engine_debug": {"label": "Azure Speech-to-Text"},
+                }
+            else:
+                expected_sample = {
+                    "audio_sec": 1.0,
+                    "process_sec": 0.25,
+                    "hyp_raw": "good morning",
+                    "hyp_norm": "good morning",
+                    "engine_debug": {"label": "Whisper"},
+                }
+
+            actual_sample = {k: sample[k] for k in expected_sample}
+            assert expected_sample == actual_sample
             assert sample["processing_speed_ratio"] == pytest.approx(0.25)
-            assert sample["ref_raw"]
-            assert sample["hyp_raw"]
-            assert sample["ref_norm"]
-            assert sample["hyp_norm"]
             assert {"equal", "replace", "delete", "insert"}.issubset(sample["diff_ops"])
-            assert "engine_debug" in sample
 
 
 @pytest.mark.parametrize(
