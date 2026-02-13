@@ -1,12 +1,16 @@
 import inspect
+import io
 from pathlib import Path
-from pydub import AudioSegment
-import io   
 
-def mix_audio_with_effects(speech_audio: bytes, effects_audio: bytes, speech_name: str, sfx_name:str) -> bytes:
+from pydub import AudioSegment
+
+
+def mix_audio_with_effects(
+    speech_audio: bytes, effects_audio: bytes, speech_name: str, sfx_name: str
+) -> bytes:
     """
     Mixes the speech audio with the background sound effects audio using pydub.
-    
+
     """
     caller_frame = inspect.stack()[1]
     caller_file = Path(caller_frame.filename)
@@ -24,9 +28,9 @@ def mix_audio_with_effects(speech_audio: bytes, effects_audio: bytes, speech_nam
     # Loop background to match or exceed dialogue length
     if len(background) < len(dialogue):
         loops_needed = (len(dialogue) // len(background)) + 1
-        background = background * loops_needed 
+        background = background * loops_needed
 
-        background = background[:len(dialogue)]  
+        background = background[: len(dialogue)]
 
     final = background.overlay(dialogue)
     output_path = audio_dir / f"{speech_name}_mixed{sfx_name}.mp3"
@@ -43,7 +47,7 @@ def mp3_to_bytes(mp3_path: str | Path) -> tuple[str, bytes]:
 
     if not path.exists():
         raise FileNotFoundError(f"MP3 file not found: {path}")
-    
+
     name = Path(mp3_path).stem
 
-    return name.split("_", 1)[0] , path.read_bytes()
+    return name.split("_", 1)[0], path.read_bytes()

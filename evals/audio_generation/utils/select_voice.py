@@ -3,8 +3,8 @@ DEFAULT_VOICES = [
     # "EXAVITQu4vr4xnSDxMaL",
     # "AZnzlk1XvdvUeBnXmlld",    storyteller
     # "snf0TZa0mc0w5XJsWQBI",  # Social care worker
-    "qimfC2HPDJhhTmdOzs2z", # Eastern European man
-    "hhDdiMwM9dWfw6qEFzju", # Young Mancunian
+    "qimfC2HPDJhhTmdOzs2z",  # Eastern European man
+    "hhDdiMwM9dWfw6qEFzju",  # Young Mancunian
 ]
 
 """
