@@ -40,12 +40,3 @@ Deploy dedicated runners specifically for evaluation workloads (e.g. self-hosted
 * Bad, because requires infrastructure setup and maintenance.
 * Bad, because adds complexity for orchestration and CI/CD integration.
 
-## Sign-off Required
-
-### Dedicated CI/CD Runners
-
-Using dedicated runners requires sign-off for:
-
-* Infrastructure costs: Compute resources for self-hosted runners.
-* Maintenance overhead: Managing runner infrastructure, updates, and security.
-* Network configuration: VPC setup and access controls if required.
