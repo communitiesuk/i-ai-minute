@@ -19,7 +19,7 @@ When should evaluations run throughout the development and deployment lifecycle?
 
 ## Decision Outcome
 
-All options except commit checks, to be re-evaluated based on costs associated with the datasets we secure. This approach addresses different failure modes across the lifecycle while maintaining quality, though the final implementation will depend on resource constraints.
+We will implement scheduled live regression monitoring and pre deployment checks. Scope may expand or costs reduce via a pre deployment flag, depending on evaluation running costs. Alternative provider monitoring is not a current priority and will be considered later, subject to cost. Commit checks will be added only if costs are low and lack of granularity impacts delivery speed.
 
 ## Pros and Cons of the Options
 
