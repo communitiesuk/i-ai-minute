@@ -39,4 +39,5 @@ Deploy dedicated runners specifically for evaluation workloads (e.g. self-hosted
 * Good, because provides control over secrets management and network policies.
 * Bad, because requires infrastructure setup and maintenance.
 * Bad, because adds complexity for orchestration and CI/CD integration.
+* Bad, because certain stages can trigger running code by a member of the public.
 
