@@ -45,6 +45,9 @@ jobs:
       - name: Install dependencies
         run: poetry install --no-root --no-ansi --with dev --sync
 
+      - name: Install ElevenLabs SDK
+        run: poetry run pip install elevenlabs
+
       - name: Copy env file
         run: cp .env.example .env
 
