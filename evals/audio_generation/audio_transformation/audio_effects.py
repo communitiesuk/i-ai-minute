@@ -40,6 +40,10 @@ def mix_audio_with_effects(
 
 
 def mp3_to_bytes(mp3_path: str | Path) -> tuple[str, bytes]:
+    '''
+    Reads an MP3 file and returns its name and content as bytes.
+    '''
+    
     caller_file = Path(inspect.stack()[1].filename)
     caller_dir = caller_file.parent
 
