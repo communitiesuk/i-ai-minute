@@ -14,6 +14,10 @@ logger = logging.getLogger(__name__)
 def eleven_text_to_speech(
     api_key: str, transcript_content: str, transcript_file: str, model_id: str
 ):
+    """
+    Converts text to speech using the Eleven Labs API.
+    """
+
     if not api_key:
         logger.warning("No Eleven Labs API key provided. Audio generation will be skipped.")
         return
