@@ -10,7 +10,9 @@
     "lint": "next lint",
     "openapi-ts": "openapi-ts",
     "prettier:fix": "prettier --write .",
-    "test": "vitest run"
+    "prettier:check": "prettier --check .",
+    "test": "vitest run",
+    "test:cov": "vitest run --coverage"
   },
   "dependencies": {
     "@hey-api/client-next": "^0.5.1",
@@ -66,6 +68,7 @@
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@vitest/coverage-v8": "^4.0.17",
     "eslint": "^8.57.1",
     "eslint-config-next": "^15.3.3",
     "eslint-config-prettier": "^10.1.5",
