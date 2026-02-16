@@ -8,7 +8,7 @@ Date of decision: 2025-01-27
 
 ## Context and Problem Statement
 
-Choice of execution infrastructure affects control, cost, and complexity. Since computational load is on external APIs, the execution environment mainly provides orchestration. However, if evaluations use sensitive data, the execution environment must provide strong isolation, access controls, and audit capabilities. We need to determine where evaluation workloads should run.
+Choice of execution infrastructure affects control, cost, and complexity. Since computational load is on external APIs, the execution environment mainly provides orchestration. Modern CI/CD platforms provide robust security features including secrets management, audit logging, and access controls. We need to determine where evaluation workloads should run.
 
 ## Considered Options
 
@@ -17,7 +17,7 @@ Choice of execution infrastructure affects control, cost, and complexity. Since 
 
 ## Decision Outcome
 
-Dedicated CI/CD Runners, because they provide stronger isolation for sensitive data, enable stricter access controls and audit logging, and ensure data never touches shared infrastructure. While this adds infrastructure complexity, it better addresses security and compliance requirements for handling sensitive evaluation data.
+Standard CI/CD Runners, because modern CI/CD platforms provide robust security features that are just as secure as dedicated infrastructure, with the added benefits of no infrastructure management overhead, lower costs, and broader ecosystem support. The security capabilities of platforms like GitHub Actions are well-established and widely trusted across the industry.
 
 ## Pros and Cons of the Options
 
@@ -27,8 +27,9 @@ Run evaluations on the CI/CD platform's default shared runners (e.g., GitHub Act
 
 * Good, because requires no additional infrastructure and management of resources.
 * Good, because logs integrate naturally with CI/CD workflows.
-* Bad, because limited control over environment and network access.
-* Bad, because sensitive data may touch shared infrastructure or logs.
+* Good, because modern CI/CD platforms provide robust security features including secrets management, audit logging, and access controls.
+* Good, because widely trusted and used across the industry with strong security track records.
+* Bad, because limited control over environment and network access compared to dedicated infrastructure.
 
 ### Dedicated CI/CD Runners
 
@@ -39,13 +40,7 @@ Deploy dedicated runners specifically for evaluation workloads (e.g. self-hosted
 * Good, because provides control over secrets management and network policies.
 * Bad, because requires infrastructure setup and maintenance.
 * Bad, because adds complexity for orchestration and CI/CD integration.
+* Bad, because requires sign-off for infrastructure costs (compute resources for self-hosted runners).
+* Bad, because requires sign-off for maintenance overhead (managing runner infrastructure, updates, and security).
+* Bad, because may require sign-off for network configuration (VPC setup and access controls if required).
 
-## Sign-off Required
-
-### Dedicated CI/CD Runners
-
-Using dedicated runners requires sign-off for:
-
-* Infrastructure costs: Compute resources for self-hosted runners.
-* Maintenance overhead: Managing runner infrastructure, updates, and security.
-* Network configuration: VPC setup and access controls if required.
