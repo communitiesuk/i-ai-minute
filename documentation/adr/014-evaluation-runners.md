@@ -17,7 +17,7 @@ Choice of execution infrastructure affects control, cost, and complexity. Since 
 
 ## Decision Outcome
 
-Standard CI/CD Runners, because modern CI/CD platforms provide robust security features that are just as secure as dedicated infrastructure, with the added benefits of no infrastructure management overhead, lower costs, and broader ecosystem support. The security capabilities of platforms like GitHub Actions are well-established and widely trusted across the industry.
+Standard CI/CD Runners, because they provide robust security features comparable to dedicated infrastructure while avoiding infrastructure management overhead and costs.
 
 ## Pros and Cons of the Options
 
@@ -43,4 +43,5 @@ Deploy dedicated runners specifically for evaluation workloads (e.g. self-hosted
 * Bad, because requires sign-off for infrastructure costs (compute resources for self-hosted runners).
 * Bad, because requires sign-off for maintenance overhead (managing runner infrastructure, updates, and security).
 * Bad, because may require sign-off for network configuration (VPC setup and access controls if required).
+* Bad, because certain stages can trigger running code by a member of the public.
 
