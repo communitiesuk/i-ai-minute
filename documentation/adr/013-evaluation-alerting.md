@@ -48,12 +48,3 @@ Store evaluation results without implementing automated alerting, relying on man
 * Good, because avoids alert fatigue.
 * Bad, because major issues may go unnoticed.
 
-## Sign-off Required
-
-### Dedicated Monitoring and Alerting Systems
-
-Using dedicated monitoring platforms requires sign-off for:
-
-* Subscription costs: Additional monitoring platform licenses or usage fees.
-* Integration effort: Development time to integrate evaluation results with monitoring systems.
-* Access management: Managing credentials and permissions for monitoring platforms.
