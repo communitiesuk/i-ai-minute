@@ -105,6 +105,12 @@ azure-identity = "^1.23.1"
 [tool.poetry.group.local-dev.dependencies]
 whisply = "^0.13.1"
 
+[tool.poetry.group.evals.dependencies]
+datasets = "^3.0.0"
+jiwer = "^3.0.0"
+soundfile = "^0.12.0"
+librosa = "^0.10.0"
+
 [tool.poetry.group.dev.dependencies]
 bumpversion = "^0.6.0"
 pre-commit = "^3.8.0"
@@ -175,7 +181,7 @@ select = [
     "TCH", "TD", "TID", "UP", "YTT"
 ]
 # TODO: Decide on a structure for evals folder and add ruff support properly
-exclude = ["out/*", "viewer/*", "alembic/*"]
+exclude = ["out/*", "viewer/*", "alembic/*", "evals/src/*"]
 ignore = ["COM812", "DJ001", "RET505", "RET508", "PLR0913", "S318","ISC001","PLR0912","C901","PLR0912"]
 
 [tool.ruff.lint.isort]
@@ -187,6 +193,9 @@ known-first-party = ["backend", "frontend"]
 "*/tests_playwright/*" = ["S101", "S106", "PLR0913", "PLR2004", "TD003"]
 
 [tool.mypy]
+# packages = ["evals"] 
+explicit_package_bases = true
+
 warn_unused_configs = true
 warn_return_any = true
 warn_unused_ignores = true
@@ -197,4 +206,18 @@ check_untyped_defs = true
 no_implicit_optional = true
 # terraform: non production diagram scripts using untyped diagrams
 # TODO: Decide on a structure for evals and viewer folder and add mypy support properly
-exclude = ["alembic/*", "tests/*", "terraform/*", "viewer/*", "evals/*"]
+exclude = ["alembic/*", "tests/*", "terraform/*", "viewer/*", "evals/src/*"]
+
+
+[[tool.mypy.overrides]]
+module = "soundfile.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "datasets.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "ffmpeg.*"
+ignore_missing_imports = true
+
