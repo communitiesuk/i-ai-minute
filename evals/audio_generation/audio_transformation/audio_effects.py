@@ -2,12 +2,12 @@ import inspect
 import io
 from pathlib import Path
 
-from pydub import AudioSegment
+from pydub import AudioSegment  # type: ignore
 
 
 def mix_audio_with_effects(
     speech_audio: bytes, effects_audio: bytes, speech_name: str, sfx_name: str
-) -> bytes:
+) -> AudioSegment:
     """
     Mixes the speech audio with the background sound effects audio using pydub.
 

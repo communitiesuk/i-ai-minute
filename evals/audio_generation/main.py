@@ -1,11 +1,13 @@
 import logging
 import os
 
-from audio_transformation.audio_effects import mix_audio_with_effects, mp3_to_bytes
 from dotenv import load_dotenv
-from transcripts.transcript_utils import get_transcripts
-
-from audio_generation.eleven_labs.eleven_labs import eleven_text_to_speech
+from evals.audio_generation.audio_transformation.audio_effects import (
+    mix_audio_with_effects,
+    mp3_to_bytes,
+)
+from evals.audio_generation.eleven_labs.eleven_labs import eleven_text_to_speech
+from evals.audio_generation.transcripts.transcript_utils import get_transcripts
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 
@@ -37,6 +39,6 @@ sfx_name, sfx_bytes = mp3_to_bytes(f"background_sfx/{audio_sfx}")
 mix_audio_with_effects(audio_bytes, sfx_bytes, speech_name, sfx_name)
 
 
-def main():
+def main() -> None:
     transcript = get_transcripts(transcript_file)
     eleven_text_to_speech(api_key or "", transcript, transcript_file, model_id)

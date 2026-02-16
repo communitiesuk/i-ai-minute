@@ -2,18 +2,18 @@ import logging
 import re
 
 from elevenlabs.client import ElevenLabs
-from utils.build_pattern import build_pattern
-from utils.extract_speakers import extract_speakers
-from utils.save_audio import save_audio
-from utils.select_voice import get_voice_for_speaker
-from utils.trim_suffix import trim_suffix
+from evals.audio_generation.utils.build_pattern import build_pattern
+from evals.audio_generation.utils.extract_speakers import extract_speakers
+from evals.audio_generation.utils.save_audio import save_audio
+from evals.audio_generation.utils.select_voice import get_voice_for_speaker
+from evals.audio_generation.utils.trim_suffix import trim_suffix
 
 logger = logging.getLogger(__name__)
 
 
 def eleven_text_to_speech(
     api_key: str, transcript_content: str, transcript_file: str, model_id: str
-):
+) -> None:
     """
     Converts text to speech using the Eleven Labs API.
     """

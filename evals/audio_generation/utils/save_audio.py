@@ -2,7 +2,7 @@ import inspect
 from pathlib import Path
 
 
-def save_audio(full_audio: bytes, output_file: str):
+def save_audio(full_audio: bytes, output_file: str) -> str:
     # Get the file path of the module that called this function
     caller_frame = inspect.stack()[1]
     caller_file = Path(caller_frame.filename)

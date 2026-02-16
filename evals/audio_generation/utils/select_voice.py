@@ -1,3 +1,5 @@
+from typing import List
+
 DEFAULT_VOICES = [
     # "JBFqnCBsd6RMkjVDRZzb",
     # "EXAVITQu4vr4xnSDxMaL",
@@ -16,7 +18,7 @@ Should be confident, assuring & sound natural
 PYTHONHASHSEED = 0
 
 
-def get_voice_for_speaker(speaker: str, fallback_pool=DEFAULT_VOICES) -> str:
+def get_voice_for_speaker(speaker: str, fallback_pool: List[str] = DEFAULT_VOICES) -> str:
     # if speaker in voice_map:
     #     return voice_map[speaker]
     # assign a fallback voice deterministically
