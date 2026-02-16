@@ -1,3 +1,14 @@
+[project]
+name = "minute"
+authors = [
+    { name = "i.AI", email = "i-dot-ai-enquiries@cabinetoffice.gov.uk"}
+]
+license = "MIT"
+readme = "README.md"
+version = "2.0.0"
+requires-python = ">=3.12,<3.13"
+dynamic = [ "dependencies" ]
+
 [tool.cruft]
 skip = [
     # general_paths
@@ -13,20 +24,15 @@ testpaths = [
 ]
 
 [tool.poetry]
-name = "minute"
-authors = ["i.AI <i-dot-ai-enquiries@cabinetoffice.gov.uk>"]
-license = "MIT"
-readme = "README.md"
 packages = [
     {include = "worker"},
     {include = "backend"},
     {include = "common"},
 ]
-version = "2.0.0"
+requires-poetry = "=2.3.2"
 
 # add common dependencies here
 [tool.poetry.dependencies]
-python = ">=3.12,<3.13"
 cryptography = "^44.0.2"
 pydantic-settings = "^2.5.2"
 alembic = "^1.13.3"
@@ -63,6 +69,12 @@ azure-identity = "^1.23.1"
 
 [tool.poetry.group.local-dev.dependencies]
 whisply = "^0.13.1"
+
+[tool.poetry.group.evals.dependencies]
+datasets = "^3.0.0"
+jiwer = "^3.0.0"
+soundfile = "^0.12.0"
+librosa = "^0.10.0"
 
 [tool.poetry.group.dev.dependencies]
 bumpversion = "^0.6.0"
@@ -113,7 +125,7 @@ types-botocore = "^1.0.2"
 types-boto3 = "^1.42.34"
 
 [build-system]
-requires = ["poetry-core"]
+requires = ["poetry-core>=2.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.ruff]
@@ -133,7 +145,7 @@ select = [
     "TCH", "TD", "TID", "UP", "YTT"
 ]
 # TODO: Decide on a structure for evals folder and add ruff support properly
-exclude = ["out/*", "viewer/*", "alembic/*"]
+exclude = ["out/*", "viewer/*", "alembic/*", "evals/src/*"]
 ignore = ["COM812", "DJ001", "RET505", "RET508", "PLR0913", "S318","ISC001","PLR0912","C901","PLR0912"]
 
 [tool.ruff.lint.isort]
@@ -145,14 +157,32 @@ known-first-party = ["backend", "frontend"]
 "*/tests_playwright/*" = ["S101", "S106", "PLR0913", "PLR2004", "TD003"]
 
 [tool.mypy]
+# packages = ["evals"] 
+explicit_package_bases = true
+
 warn_unused_configs = true
 warn_return_any = true
 warn_unused_ignores = true
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
 strict_optional = true
+
 check_untyped_defs = true
 no_implicit_optional = true
 # terraform: non production diagram scripts using untyped diagrams
 # TODO: Decide on a structure for evals and viewer folder and add mypy support properly
-exclude = ["alembic/*", "tests/*", "terraform/*", "viewer/*", "evals/*"]
+exclude = ["alembic/*", "tests/*", "terraform/*", "viewer/*", "evals/src/*"]
+
+
+[[tool.mypy.overrides]]
+module = "soundfile.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "datasets.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "ffmpeg.*"
+ignore_missing_imports = true
+
