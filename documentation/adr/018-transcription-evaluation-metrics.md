@@ -25,7 +25,7 @@ When evaluating speech-to-text systems against reference transcripts (golden or 
 
 ## Decision Outcome
 
-WER, WDER, Speaker Count Deviation and Accuracy, Jaccard Word Error Rate, and Bidirectional Entailment, because they provide comprehensive coverage of transcription quality from word-level accuracy (WER), speaker attribution (WDER), basic diarization validation (Speaker Count), vocabulary coverage (Jaccard), and semantic preservation (Bidirectional Entailment).
+WER, WDER, and Speaker Count Accuracy, because they provide focused, non-noisy coverage of transcription quality from word-level accuracy (WER), speaker attribution (WDER), and basic diarization validation (Speaker Count) while remaining simple to compute and interpret for comparing providers.
 
 ## Pros and Cons of the Options
 
@@ -118,6 +118,7 @@ Uses NLI models to check bidirectional entailment between reference and hypothes
 * Good, because it can define a clear failure mode.
 * Bad, because if we identify issues, there is very little we can do about the system, especially if other metrics indicate this is the best available option.
 * Bad, because it requires significant computational power (e.g., basic AI-capable GPU).
+* Bad, because it makes comparing providers difficult due to the complexity and variability of NLI model outputs.
 
 ### Hedging, Modality, and Register Shift Detection
 
@@ -130,6 +131,7 @@ Detects shifts in linguistic features such as hedging (certainty level), modalit
 * Good, because these shifts can have significant impact on meaning while preserving much of the original semantic content.
 * Bad, because addressing these problems is unclear when other metrics show the system is optimal.
 * Bad, because it requires significant computational power (e.g., basic AI-capable GPU).
+* Bad, because it makes comparing providers difficult due to the complexity and variability of linguistic analysis outputs.
 
 ### Named Entity Recognition (NER) Comparison
 
@@ -141,4 +143,5 @@ Compares the sets of named entities detected in reference and hypothesis transcr
 * Good, because it can quickly spot mistakes by comparing entities present in reference but not in hypothesis, and vice versa.
 * Bad, because addressing these problems is unclear when other metrics show the system is optimal.
 * Bad, because it requires significant computational power (e.g., basic AI-capable GPU).
+* Bad, because it makes comparing providers difficult due to the complexity and variability of NER model outputs.
 
