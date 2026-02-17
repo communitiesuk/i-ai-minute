@@ -22,8 +22,16 @@ test:
 	poetry run pytest --cov --cov-report=term-missing 
 
 test-cov:
-	poetry run pytest --cov --cov-report=html --cov-report=xml --cov-report=term-missing
-	@echo "Coverage report generated in htmlcov/index.html"
+	poetry run pytest --cov --cov-report=html:htmlcov/cov --cov-report=xml --cov-report=term-missing --ignore=test/evals
+	@echo "Coverage report generated in htmlcov/cov , use test-all to include evals"
+
+test-evals:
+	poetry run pytest tests/evals/ --cov=evals --cov-report=html:htmlcov/evals --cov-report=xml --cov-report=term-missing -o addopts=
+	@echo "Coverage report generated in htmlcov/evals"
+
+test-all:
+	poetry run pytest --cov --cov-report=html:htmlcov/cov-all --cov-report=xml --cov-report=term-missing 
+	@echo "Coverage report generated in htmlcov/cov-all"
 
 run_frontend:
 	cd frontend && npm run dev

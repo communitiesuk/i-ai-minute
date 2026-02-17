@@ -33,6 +33,7 @@ default-groups = ["dev"]
 [dependency-groups]
 dev = [
   "ruff>=0.6.9",
+  "mypy (>=1.19.1,<2.0.0)",
 ]
 
 [tool.ruff]
