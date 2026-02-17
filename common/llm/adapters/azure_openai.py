@@ -54,7 +54,9 @@ class OpenAIModelAdapter(ModelAdapter):
             max_tokens=16384,
         )
         choice = response.choices[0]
-        self.choice_incomplete(choice, response)
+        if self.choice_incomplete(choice, response):
+            msg = "OpenAI response may be incomplete due to max token limit"
+            raise ValueError(msg)
         message_content = choice.message.content
         if message_content is None:
             msg = "OpenAI response.content is None"

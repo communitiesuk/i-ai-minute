@@ -11,6 +11,7 @@ from common.services.queue_services import get_queue_service
 from common.settings import get_settings
 from common.types import (
     EditMessageData,
+    GuardrailResultResponse,
     MinuteListItem,
     MinutesCreateRequest,
     MinuteVersionCreateRequest,
@@ -97,7 +98,10 @@ async def list_minute_versions(
     result = await session.exec(
         select(Minute)
         .where(Minute.id == minute_id)
-        .options(selectinload(Minute.minute_versions), selectinload(Minute.transcription))
+        .options(
+            selectinload(Minute.minute_versions).selectinload(MinuteVersion.guardrail_results),
+            selectinload(Minute.transcription),
+        )
     )
     minute = result.first()
     if not minute or not minute.transcription.user_id or minute.transcription.user_id != user.id:
@@ -113,6 +117,17 @@ async def list_minute_versions(
             ai_edit_instructions=version.ai_edit_instructions,
             html_content=version.html_content,
             content_source=version.content_source,
+            guardrail_results=[
+                GuardrailResultResponse(
+                    id=guardrail_result.id,
+                    guardrail_type=guardrail_result.guardrail_type,
+                    passed=guardrail_result.passed,
+                    score=guardrail_result.score,
+                    reasoning=guardrail_result.reasoning,
+                    error=guardrail_result.error,
+                )
+                for guardrail_result in version.guardrail_results
+            ],
         )
         for version in minute.minute_versions
     ]
@@ -152,6 +167,17 @@ async def create_minute_version(
         ai_edit_instructions=minute_version.ai_edit_instructions,
         html_content=minute_version.html_content,
         content_source=minute_version.content_source,
+        guardrail_results=[
+            GuardrailResultResponse(
+                id=result.id,
+                guardrail_type=result.guardrail_type,
+                passed=result.passed,  # Also fix this from "result"
+                score=result.score,
+                reasoning=result.reasoning,
+                error=result.error,
+            )
+            for result in minute_version.guardrail_results
+        ],
     )
 
 

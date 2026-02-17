@@ -37,8 +37,11 @@ class AzureAPIMModelAdapter(ModelAdapter):
             messages=cast(list[ChatCompletionMessageParam], messages),
             response_format=response_format,
         )
-
-        parsed = response.choices[0].message.parsed
+        choice = response.choices[0]
+        if self.choice_incomplete(choice, response):
+            msg = "Azure APIM response may be incomplete due to max token limit"
+            raise ValueError(msg)
+        parsed = choice.message.parsed
         if parsed is None:
             msg = "Azure APIM response.parsed is None"
             raise ValueError(msg)
@@ -53,7 +56,9 @@ class AzureAPIMModelAdapter(ModelAdapter):
         )
 
         choice = response.choices[0]
-        self.choice_incomplete(choice, response)
+        if self.choice_incomplete(choice, response):
+            msg = "Azure APIM response may be incomplete due to max token limit"
+            raise ValueError(msg)
         message_content = choice.message.content
         if message_content is None:
             msg = "Azure APIM message.content is None"
@@ -63,7 +68,7 @@ class AzureAPIMModelAdapter(ModelAdapter):
     @staticmethod
     def choice_incomplete(choice: Choice, response: ChatCompletion) -> bool:
         if choice.finish_reason == "length":
-            logger.warning(
+            logger.error(
                 "max output tokens reached: ID: %s prompt_tokens: %s completion_tokens %s",
                 response.id,
                 response.usage.prompt_tokens if response.usage else None,

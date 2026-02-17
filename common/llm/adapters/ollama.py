@@ -50,9 +50,52 @@ class OllamaModelAdapter(ModelAdapter):
             error_msg = f"Invalid role: {role}"
             raise ValueError(error_msg)
 
+    @staticmethod
+    def _generate_example_obj(properties: dict[str, Any]) -> dict[str, Any]:
+        """Generates a dummy JSON object based on schema properties for prompting."""
+        example_obj: dict[str, Any] = {}
+        for field_name, field_info in properties.items():
+            field_type = field_info.get("type", "string")
+            if field_type == "number":
+                example_obj[field_name] = 0.85
+            elif field_type == "string":
+                example_obj[field_name] = "Example text here"
+            elif field_type == "boolean":
+                example_obj[field_name] = True
+            else:
+                example_obj[field_name] = "value"
+        return example_obj
+
     async def structured_chat(self, messages: list[dict[str, str]], response_format: type[T]) -> T:
         schema = response_format.model_json_schema()
-        json_instruction = f"\n\nRespond with valid JSON matching this schema:\n{schema}"
+
+        # Build a clearer instruction that explains what fields to include
+        properties = schema.get("properties", {})
+        required_fields = schema.get("required", [])
+
+        field_descriptions = []
+        for field_name, field_info in properties.items():
+            field_type = field_info.get("type", "string")
+            field_desc = field_info.get("description", "")
+            is_required = "REQUIRED" if field_name in required_fields else "optional"
+            field_descriptions.append(f'  - "{field_name}" ({field_type}, {is_required}): {field_desc}')
+
+        fields_text = "\n".join(field_descriptions)
+
+        example_obj = self._generate_example_obj(properties)
+        example_json = json.dumps(example_obj, indent=2)
+
+        json_instruction = f"""
+
+You must respond with ONLY valid JSON. Do not include any explanatory text before or after the JSON.
+
+Your JSON response must include these fields:
+{fields_text}
+
+Example format (replace with your actual values):
+{example_json}
+
+Remember: Respond with ONLY the JSON object containing your actual analysis, not the schema or example."""
 
         modified_messages = messages.copy()
         if modified_messages:
@@ -62,11 +105,13 @@ class OllamaModelAdapter(ModelAdapter):
 
         openai_messages = [self._convert_to_openai_message(msg) for msg in modified_messages]
 
+        temperature = float(self._kwargs.get("temperature", 0.0))
+
         response = await self.async_client.chat.completions.create(
             model=self._model,
             messages=openai_messages,
             response_format={"type": "json_object"},
-            temperature=self._kwargs.get("temperature", 0.0),
+            temperature=temperature,
         )
 
         content = response.choices[0].message.content
@@ -78,6 +123,7 @@ class OllamaModelAdapter(ModelAdapter):
             return response_format.model_validate(json_data)
         except Exception as e:
             logger.error("Ollama JSON parsing/validation failed: %s: %s", type(e).__name__, str(e))
+            logger.error("Raw response was: %s", content)
             raise
 
     async def chat(self, messages: list[dict[str, str]]) -> str:

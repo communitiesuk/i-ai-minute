@@ -1,0 +1,464 @@
+
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <title>Guardrail Flow Explanation</title>
+            <style>
+                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; 
+                       margin: 40px; line-height: 1.6; max-width: 900px; }
+                h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+                h2 { color: #34495e; margin-top: 30px; }
+                h3 { color: #7f8c8d; }
+                code { background-color: #f4f4f4; padding: 2px 6px; border-radius: 3px; 
+                       font-family: 'Courier New', monospace; }
+                pre { background-color: #f4f4f4; padding: 15px; border-radius: 5px; 
+                      overflow-x: auto; border: 1px solid #ddd; }
+                table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+                th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+                th { background-color: #3498db; color: white; }
+                blockquote { border-left: 4px solid #3498db; padding-left: 20px; 
+                             margin: 20px 0; color: #555; background-color: #f8f9fa; padding: 15px; }
+                @media print {
+                    body { margin: 20px; }
+                    pre { page-break-inside: avoid; }
+                }
+            </style>
+        </head>
+        <body>
+            <pre style="white-space: pre-wrap; background: white; border: none; font-family: inherit;">
+# Guardrail Process Flow: Database to GUI
+
+This document explains the complete guardrail process in the i-ai-minute codebase, tracing the flow from PostgreSQL table definitions through backend processing to frontend GUI display.
+
+---
+
+## 1. Database Layer (PostgreSQL)
+
+### Table Definition: `guardrail_result`
+
+**Location**: [postgres_models.py](file:///Users/robertfox1/Documents/i-ai-minute/common/database/postgres_models.py#L225-L236)
+
+```python
+class GuardrailResult(BaseTableMixin, table=True):
+    __tablename__ = "guardrail_result"
+    created_datetime: datetime
+    updated_datetime: datetime
+    minute_version_id: UUID | None  # Foreign key to minute_version
+    minute_version: "MinuteVersion"  # Relationship back to MinuteVersion
+    guardrail_type: GuardrailType    # Enum: HALLUCINATION, TOXICITY, COMPLETENESS
+    passed: bool                      # Whether the check passed
+    score: float | None               # Confidence score (0.0 - 1.0)
+    reasoning: str | None             # Explanation for the result
+    error: str | None                 # Error message if check failed
+```
+
+### Supporting Enums
+
+**Location**: [postgres_models.py](file:///Users/robertfox1/Documents/i-ai-minute/common/database/postgres_models.py#L53-L56)
+
+```python
+class GuardrailType(StrEnum):
+    HALLUCINATION = auto()
+    TOXICITY = auto()
+    COMPLETENESS = auto()
+```
+
+### Relationship to MinuteVersion
+
+**Location**: [postgres_models.py](file:///Users/robertfox1/Documents/i-ai-minute/common/database/postgres_models.py#L67-L69)
+
+```python
+class MinuteVersion(BaseTableMixin, table=True):
+    # ... other fields ...
+    guardrail_results: Mapped[list["GuardrailResult"]] = Relationship(
+        back_populates="minute_version", cascade_delete=True
+    )
+```
+
+---
+
+## 2. Backend Processing Layer
+
+### Step 1: Minute Generation Triggers Guardrail Check
+
+**Location**: [minute_handler_service.py](file:///Users/robertfox1/Documents/i-ai-minute/common/services/minute_handler_service.py#L168-L209)
+
+When a minute is generated (either initial generation or AI edit), the process follows this sequence:
+
+```python
+async def process_minute_generation_message(cls, minute_version_id: UUID) -> None:
+    # 1. Generate the minute content
+    html_content, hallucinations = await cls.generate_minutes(meeting_type, minute_version.minute)
+    
+    # 2. Run guardrail check BEFORE marking as completed
+    try:
+        accuracy_score = await cls.calculate_accuracy_score(
+            minute=html_content,
+            transcript=dialogue_entries,
+        )
+        cls.save_guardrail_result(minute_version.id, accuracy_score)
+    except Exception as e:
+        # Save error to database if guardrail check fails
+        cls.save_guardrail_error(minute_version.id, str(e))
+    
+    # 3. Update minute version to COMPLETED status
+    cls.update_minute_version(
+        minute_version.id,
+        html_content=html_content,
+        hallucinations=hallucinations,
+        status=JobStatus.COMPLETED,
+    )
+```
+
+> [!IMPORTANT]
+> The guardrail check runs **before** the minute is marked as `COMPLETED`. This ensures the frontend doesn't display the summary until guardrail results are available.
+
+### Step 2: Calculate Accuracy Score via LLM
+
+**Location**: [minute_handler_service.py](file:///Users/robertfox1/Documents/i-ai-minute/common/services/minute_handler_service.py#L359-L371)
+
+```python
+async def calculate_accuracy_score(
+    cls,
+    minute: str,
+    transcript: list[DialogueEntry],
+) -> GuardrailScore:
+    # Use FAST model (Gemini Flash / Llama 3) for speed
+    chatbot = create_default_chatbot(FastOrBestLLM.FAST)
+    
+    return await chatbot.structured_chat(
+        messages=get_accuracy_check_messages(minute, transcript),
+        response_format=GuardrailScore,
+    )
+```
+
+### Step 3: LLM Prompt for Accuracy Check
+
+**Location**: [prompts.py](file:///Users/robertfox1/Documents/i-ai-minute/common/prompts.py#L105-L118)
+
+```python
+def get_accuracy_check_messages(minute: str, transcript: list[DialogueEntry]) -> list[dict[str, str]]:
+    return [
+        {
+            "role": "system",
+            "content": """You are a Quality Assurance auditor. Your task is to evaluate 
+            the accuracy of a meeting minute summary against the original transcript.
+            You must provide a confidence score between 0.0 and 1.0, where 1.0 means 
+            the summary is perfectly accurate and complete based on the transcript, 
+            and 0.0 means it is completely inaccurate or hallucinated.
+            You must also provide a reasoning for your score, explaining any 
+            discrepancies, missing key information, or hallucinations found.""",
+        },
+        get_transcript_messages(transcript),
+        {
+            "role": "user",
+            "content": f"Here is the generated summary to evaluate:\n{minute}",
+        },
+    ]
+```
+
+### Step 4: Save Guardrail Result to Database
+
+**Location**: [minute_handler_service.py](file:///Users/robertfox1/Documents/i-ai-minute/common/services/minute_handler_service.py#L65-L82)
+
+```python
+@staticmethod
+def save_guardrail_result(
+    minute_version_id: UUID,
+    score: GuardrailScore,
+) -> None:
+    with SessionLocal() as session:
+        # Determine Pass/Fail based on threshold (0.7)
+        passed = score.score > THRESHOLD_FOR_PASSING_ACCURACY_CHECK
+        
+        guardrail_result = GuardrailResult(
+            minute_version_id=minute_version_id,
+            guardrail_type=GuardrailType.HALLUCINATION,
+            passed=passed,
+            score=score.score,
+            reasoning=score.reasoning,
+        )
+        session.add(guardrail_result)
+        session.commit()
+```
+
+**Threshold**: `THRESHOLD_FOR_PASSING_ACCURACY_CHECK = 0.7` (70%)
+
+### Step 5: Error Handling
+
+**Location**: [minute_handler_service.py](file:///Users/robertfox1/Documents/i-ai-minute/common/services/minute_handler_service.py#L84-L99)
+
+If the guardrail check encounters a system error (timeout, API failure, etc.):
+
+```python
+@staticmethod
+def save_guardrail_error(minute_version_id: UUID, error_message: str) -> None:
+    with SessionLocal() as session:
+        guardrail_result = GuardrailResult(
+            minute_version_id=minute_version_id,
+            guardrail_type=GuardrailType.HALLUCINATION,
+            passed=False,
+            score=0.0,
+            reasoning="System Error: Could not verify accuracy.",
+            error=error_message,
+        )
+        session.add(guardrail_result)
+        session.commit()
+```
+
+---
+
+## 3. API Layer (FastAPI)
+
+### Endpoint: List Minute Versions
+
+**Location**: [minutes.py](file:///Users/robertfox1/Documents/i-ai-minute/backend/api/routes/minutes.py#L94-L133)
+
+```python
+@minutes_router.get("/minutes/{minute_id}/versions")
+async def list_minute_versions(
+    minute_id: uuid.UUID, session: SQLSessionDep, user: UserDep
+) -> list[MinuteVersionResponse]:
+    # Load minute with guardrail_results relationship
+    result = await session.exec(
+        select(Minute)
+        .where(Minute.id == minute_id)
+        .options(
+            selectinload(Minute.minute_versions).selectinload(MinuteVersion.guardrail_results),
+            selectinload(Minute.transcription),
+        )
+    )
+    minute = result.first()
+    
+    # Transform to response format
+    return [
+        MinuteVersionResponse(
+            id=version.id,
+            minute_id=minute_id,
+            status=version.status,
+            # ... other fields ...
+            guardrail_results=[
+                GuardrailResultResponse(
+                    id=result.id,
+                    guardrail_type=result.guardrail_type,
+                    passed=result.passed,
+                    score=result.score,
+                    reasoning=result.reasoning,
+                    error=result.error,
+                )
+                for result in version.guardrail_results
+            ],
+        )
+        for version in minute.minute_versions
+    ]
+```
+
+### Response Type Definitions
+
+**Location**: [types.py](file:///Users/robertfox1/Documents/i-ai-minute/common/types.py#L140-L177)
+
+```python
+class GuardrailResultResponse(BaseModel):
+    id: uuid.UUID
+    guardrail_type: str
+    passed: bool
+    score: float | None
+    reasoning: str | None
+    error: str | None
+
+class MinuteVersionResponse(BaseModel):
+    id: uuid.UUID
+    minute_id: uuid.UUID
+    status: JobStatus
+    created_datetime: datetime
+    html_content: str
+    error: str | None
+    ai_edit_instructions: str | None
+    content_source: ContentSource
+    guardrail_results: list[GuardrailResultResponse] = []
+    hallucinations: list[LLMHallucination] | None = None
+```
+
+---
+
+## 4. Frontend Layer (React/TypeScript)
+
+### Step 1: Fetch Minute Versions
+
+**Location**: [minute-editor.tsx](file:///Users/robertfox1/Documents/i-ai-minute/frontend/app/transcriptions/[transcriptionId]/MinuteTab/minute-editor/minute-editor.tsx#L54-L66)
+
+```typescript
+const { data: minuteVersions = [], isLoading } = useQuery({
+  ...listMinuteVersionsMinutesMinuteIdVersionsGetOptions({
+    path: { minute_id: minute.id! },
+  }),
+  // Poll every 1 second while generating
+  refetchInterval: (query) =>
+    query.state.data &&
+    query.state.data.length > 0 &&
+    ['awaiting_start', 'in_progress'].includes(
+      query.state.data[version].status
+    )
+      ? 1000
+      : false,
+})
+```
+
+### Step 2: Pass Guardrail Data to Component
+
+**Location**: [minute-editor.tsx](file:///Users/robertfox1/Documents/i-ai-minute/frontend/app/transcriptions/[transcriptionId]/MinuteTab/minute-editor/minute-editor.tsx#L297-L306)
+
+```typescript
+{!minuteVersion.html_content?.includes(
+  'Short meeting detected. Minutes not available.'
+) && (
+  <>
+    <GuardrailResponseComponent
+      guardrailResults={minuteVersion.guardrail_results}
+      hallucinations={minuteVersion.hallucinations}
+    />
+  </>
+)}
+```
+
+### Step 3: Display Guardrail Results
+
+**Location**: [guardrail-response-component.tsx](file:///Users/robertfox1/Documents/i-ai-minute/frontend/app/transcriptions/[transcriptionId]/MinuteTab/minute-editor/guardrail-response-component.tsx)
+
+#### Component Logic
+
+```typescript
+export function GuardrailResponseComponent({
+  guardrailResults = [],
+  hallucinations = [],
+}: GuardrailProps) {
+  // Separate results into warnings and passes
+  const { warnings, passes } = useMemo(() => {
+    const w: GuardrailResultResponse[] = []
+    const p: GuardrailResultResponse[] = []
+    
+    guardrailResults.forEach((r) => {
+      const isLowScore =
+        r.score !== null &&
+        r.score !== undefined &&
+        r.score < GUARDRAIL_THRESHOLD
+      if (r.passed === false || isLowScore) {
+        w.push(r)
+      } else {
+        p.push(r)
+      }
+    })
+    return { warnings: w, passes: p }
+  }, [guardrailResults])
+  
+  // ... render logic
+}
+```
+
+#### Threshold Configuration
+
+**Location**: [guardrail-response-component.tsx](file:///Users/robertfox1/Documents/i-ai-minute/frontend/app/transcriptions/[transcriptionId]/MinuteTab/minute-editor/guardrail-response-component.tsx#L20-L21)
+
+```typescript
+const GUARDRAIL_THRESHOLD =
+  Number(process.env.NEXT_PUBLIC_GUARDRAIL_THRESHOLD) || 0.8
+```
+
+> [!NOTE]
+> The frontend threshold (0.8) is **higher** than the backend threshold (0.7). This means:
+> - Backend marks as `passed=true` if score > 0.7
+> - Frontend shows as **warning** if score < 0.8
+> - Results between 0.7-0.8 are marked as passed but displayed as warnings
+
+#### Display Categories
+
+The component displays three categories in priority order:
+
+1. **Hallucinations** (Red, Error) - Highest priority
+   - Detected by LLM hallucination check
+   - Shows hallucination type, text, and reason
+
+2. **Warnings/Hard Fails** (Yellow/Red, Warning)
+   - Hard Fail: `passed === false` (score ≤ 0.7)
+   - Warning: `score < 0.8` (but > 0.7)
+   - Shows guardrail type, reasoning, and confidence score
+
+3. **Successes** (Green, Success)
+   - Only shown if no hallucinations or warnings
+   - Shows passed guardrail checks
+
+---
+
+## 5. Complete Flow Diagram
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Frontend
+    participant API
+    participant Worker
+    participant LLM
+    participant DB
+
+    User->>Frontend: Request minute generation
+    Frontend->>API: POST /transcription/{id}/minutes
+    API->>DB: Create Minute & MinuteVersion
+    API->>Worker: Publish to queue
+    Worker->>LLM: Generate minute content
+    LLM-->>Worker: Return HTML content
+    Worker->>LLM: Calculate accuracy score
+    LLM-->>Worker: Return GuardrailScore
+    Worker->>DB: Save GuardrailResult
+    Worker->>DB: Update MinuteVersion (COMPLETED)
+    Frontend->>API: Poll GET /minutes/{id}/versions
+    API->>DB: Load with guardrail_results
+    DB-->>API: MinuteVersion + GuardrailResults
+    API-->>Frontend: MinuteVersionResponse
+    Frontend->>Frontend: Render GuardrailResponseComponent
+    Frontend->>User: Display minute + guardrail status
+```
+
+---
+
+## 6. Key Configuration Points
+
+| Component | Configuration | Default Value | Location |
+|-----------|--------------|---------------|----------|
+| Backend Threshold | `THRESHOLD_FOR_PASSING_ACCURACY_CHECK` | 0.7 | [minute_handler_service.py:45](file:///Users/robertfox1/Documents/i-ai-minute/common/services/minute_handler_service.py#L45) |
+| Frontend Threshold | `NEXT_PUBLIC_GUARDRAIL_THRESHOLD` | 0.8 | [.env](file:///Users/robertfox1/Documents/i-ai-minute/.env) |
+| LLM Model | `FastOrBestLLM.FAST` | Gemini Flash / Llama 3 | [minute_handler_service.py:366](file:///Users/robertfox1/Documents/i-ai-minute/common/services/minute_handler_service.py#L366) |
+
+---
+
+## 7. Error Handling Strategy
+
+The system gracefully handles guardrail failures:
+
+1. **LLM Timeout/API Failure**: Saves error to `GuardrailResult.error` field
+2. **System Errors**: Sets `passed=false`, `score=0.0`, reasoning indicates system error
+3. **Minute Generation Continues**: Even if guardrail fails, the minute is still marked as `COMPLETED`
+4. **Frontend Display**: Errors are shown in the warning section
+
+> [!CAUTION]
+> If the guardrail check fails due to a system error, the minute will still be marked as completed and displayed to the user, but with a warning indicating the accuracy could not be verified.
+
+---
+
+## 8. Testing
+
+**Location**: [test_guardrail.py](file:///Users/robertfox1/Documents/i-ai-minute/tests/test_guardrail.py)
+
+The test suite verifies:
+- Guardrail results are saved during minute generation
+- System handles guardrail failures gracefully
+- Minute generation completes even if guardrail check raises an exception
+
+            </pre>
+            <script>
+                // Auto-print when opened (optional)
+                // window.onload = function() { window.print(); }
+            </script>
+        </body>
+        </html>
+        
