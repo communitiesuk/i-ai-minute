@@ -64,7 +64,7 @@ class MinuteVersion(BaseTableMixin, table=True):
     minute: Mapped["Minute"] = Relationship(back_populates="minute_versions")
     hallucinations: Mapped[list["Hallucination"]] = Relationship(back_populates="minute_version", cascade_delete=True)
     html_content: str = Field(default="", sa_column_kwargs={"server_default": ""})
-    guardrail_results: Mapped[list["GuardrailResult"]] = Relationship(  # Add Mapped here
+    guardrail_results: Mapped[list["GuardrailResult"]] = Relationship(
         back_populates="minute_version", cascade_delete=True
     )
     status: JobStatus = Field(

@@ -21,23 +21,15 @@ class OpenAIModelAdapter(ModelAdapter):
         api_key: str,
         azure_endpoint: str,
         azure_deployment: str,
-        api_version: str = "2024-10-21",
+        api_version: str = "2024-08-01-preview",
         **kwargs: Any,
     ) -> None:
         self._model = model
-
-        if not azure_endpoint:
-            msg = "Azure Endpoint is required for Azure OpenAI"
-            raise ValueError(msg)
-        if not azure_deployment:
-            msg = "Azure Deployment name is required for Azure OpenAI"
-            raise ValueError(msg)
-        endpoint = azure_endpoint.rstrip("/")
-        base_url = f"{endpoint}/endpoint/deployments/{azure_deployment}"
         self.async_azure_client = AsyncAzureOpenAI(
-            base_url=base_url,
-            api_version=api_version,
+            azure_endpoint=azure_endpoint,
             api_key=api_key,
+            api_version=api_version,
+            azure_deployment=azure_deployment,
         )
         self._kwargs = kwargs
 
@@ -62,7 +54,9 @@ class OpenAIModelAdapter(ModelAdapter):
             max_tokens=16384,
         )
         choice = response.choices[0]
-        self.choice_incomplete(choice, response)
+        if self.choice_incomplete(choice, response):
+            msg = "OpenAI response may be incomplete due to max token limit"
+            raise ValueError(msg)
         message_content = choice.message.content
         if message_content is None:
             msg = "OpenAI response.content is None"

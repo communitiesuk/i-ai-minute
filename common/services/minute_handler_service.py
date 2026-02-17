@@ -1,5 +1,4 @@
 import logging
-import os
 import uuid
 from typing import cast
 from uuid import UUID
@@ -9,8 +8,6 @@ from sqlalchemy.orm import selectinload
 
 from common.convert_american_to_british_spelling import convert_american_to_british_spelling
 from common.database.postgres_database import SessionLocal
-
-# Ensure these imports match your actual file structure
 from common.database.postgres_models import (
     DialogueEntry,
     GuardrailResult,
@@ -43,10 +40,7 @@ settings = get_settings()
 
 logger = logging.getLogger(__name__)
 
-THRESHOLD_FOR_PASSING_ACCURACY_CHECK = float(os.getenv("NEXT_PUBLIC_GUARDRAIL_THRESHOLD", "0.8") or "0.8")
-
-
-# This can be adjusted based on requirements
+THRESHOLD_FOR_PASSING_ACCURACY_CHECK = settings.NEXT_PUBLIC_GUARDRAIL_THRESHOLD
 
 
 class MinuteGenerationFailedError(Exception):
@@ -87,9 +81,6 @@ class MinuteHandlerService:
 
     @staticmethod
     def save_guardrail_error(minute_version_id: UUID, error_message: str) -> None:
-        """
-        New helper to save system errors (Patryk's Request)
-        """
         with SessionLocal() as session:
             guardrail_result = GuardrailResult(
                 minute_version_id=minute_version_id,
@@ -169,6 +160,27 @@ class MinuteHandlerService:
             return minute.minute_versions[0]
 
     @classmethod
+    async def _run_accuracy_guardrail(
+        cls,
+        minute_version_id: UUID,
+        minute_id: UUID,
+        content: str,
+        transcript: list[DialogueEntry],
+        label: str,
+    ) -> None:
+        """Helper to run accuracy check and handle result/error logging."""
+        try:
+            accuracy_score = await cls.calculate_accuracy_score(
+                minute=content,
+                transcript=transcript,
+            )
+            cls.save_guardrail_result(minute_version_id, accuracy_score)
+            logger.info("%s: Saved guardrail result for %s: %s", minute_id, label, accuracy_score)
+        except Exception as e:
+            logger.exception("%s: Failed to run guardrail check for %s", minute_id, label)
+            cls.save_guardrail_error(minute_version_id, str(e))
+
+    @classmethod
     async def process_minute_generation_message(cls, minute_version_id: UUID) -> None:
         try:
             minute_version = await cls.get_minute_version(minute_version_id=minute_version_id)
@@ -185,21 +197,14 @@ class MinuteHandlerService:
             logger.info("%s: Predicted minute version %s", minute_version.minute_id, meeting_type)
             html_content, hallucinations = await cls.generate_minutes(meeting_type, minute_version.minute)
 
-            # 1. Post-processing: Run Guardrail Check BEFORE marking as completed
-            # This ensures the frontend doesn't show the summary until guardrails are ready
-            try:
-                accuracy_score = await cls.calculate_accuracy_score(
-                    minute=html_content,
-                    transcript=dialogue_entries,
-                )
-                cls.save_guardrail_result(minute_version.id, accuracy_score)
-                logger.info("%s: Saved guardrail result: %s", minute_version.minute_id, accuracy_score)
-            except Exception as e:
-                # Catch system errors (Timeout, API fail) and save them to DB
-                logger.exception("%s: Failed to run guardrail check", minute_version.minute_id)
-                cls.save_guardrail_error(minute_version.id, str(e))
+            await cls._run_accuracy_guardrail(
+                minute_version_id=minute_version.id,
+                minute_id=minute_version.minute_id,
+                content=html_content,
+                transcript=dialogue_entries,
+                label="generation",
+            )
 
-            # 2. Update the Minute (Success) - Now it becomes available to the frontend
             cls.update_minute_version(
                 minute_version.id,
                 html_content=html_content,
@@ -239,19 +244,14 @@ class MinuteHandlerService:
                 transcript=transcript,
             )
 
-            # 1. Run Guardrails on the Edited Version BEFORE marking as completed
-            try:
-                accuracy_score = await cls.calculate_accuracy_score(
-                    minute=edited_string,
-                    transcript=transcript,
-                )
-                cls.save_guardrail_result(target_minute_version.id, accuracy_score)
-                logger.info("%s: Saved guardrail result for edit: %s", target_minute_version.minute_id, accuracy_score)
-            except Exception as e:
-                logger.exception("%s: Failed to run guardrail check for edit", target_minute_version.minute_id)
-                cls.save_guardrail_error(target_minute_version.id, str(e))
+            await cls._run_accuracy_guardrail(
+                minute_version_id=target_minute_version.id,
+                minute_id=target_minute_version.minute_id,
+                content=edited_string,
+                transcript=transcript,
+                label="edit",
+            )
 
-            # 2. Update Minute (Success) - Now it becomes available to the frontend
             cls.update_minute_version(
                 minute_version_id=target_minute_version.id,
                 status=JobStatus.COMPLETED,
@@ -337,7 +337,7 @@ class MinuteHandlerService:
     def predict_meeting(cls, dialogue_entries: list[DialogueEntry]) -> MeetingType:
         word_count = sum(len(entry["text"].split()) for entry in dialogue_entries)
         match word_count:
-            case n if n < settings.MIN_WORD_COUNT_FOR_SUMMARY:
+            case n if n < settings.NEXT_PUBLIC_MIN_WORD_COUNT_FOR_SUMMARY:
                 return MeetingType.too_short
             case n if n < settings.MIN_WORD_COUNT_FOR_FULL_SUMMARY:
                 return MeetingType.short

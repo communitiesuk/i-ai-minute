@@ -119,14 +119,14 @@ async def list_minute_versions(
             content_source=version.content_source,
             guardrail_results=[
                 GuardrailResultResponse(
-                    id=result.id,
-                    guardrail_type=result.guardrail_type,
-                    passed=result.passed,
-                    score=result.score,
-                    reasoning=result.reasoning,
-                    error=result.error,
+                    id=guardrail_result.id,
+                    guardrail_type=guardrail_result.guardrail_type,
+                    passed=guardrail_result.passed,
+                    score=guardrail_result.score,
+                    reasoning=guardrail_result.reasoning,
+                    error=guardrail_result.error,
                 )
-                for result in version.guardrail_results
+                for guardrail_result in version.guardrail_results
             ],
         )
         for version in minute.minute_versions

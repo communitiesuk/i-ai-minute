@@ -1,0 +1,5 @@
+export const MIN_WORD_COUNT_FOR_SUMMARY = 
+  Number(process.env.NEXT_PUBLIC_MIN_WORD_COUNT_FOR_SUMMARY) || 200;
+
+export const GUARDRAIL_THRESHOLD = 
+  Number(process.env.NEXT_PUBLIC_GUARDRAIL_THRESHOLD) || 0.8;

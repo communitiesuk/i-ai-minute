@@ -164,7 +164,7 @@ class Settings(BaseSettings):
         default=False,
     )
 
-    MIN_WORD_COUNT_FOR_SUMMARY: int = Field(
+    NEXT_PUBLIC_MIN_WORD_COUNT_FOR_SUMMARY: int = Field(
         default=200, description="Transcript must have at least this many words to be passed to summary stage"
     )
     MIN_WORD_COUNT_FOR_FULL_SUMMARY: int = Field(
@@ -173,6 +173,10 @@ class Settings(BaseSettings):
             "Transcript must have at least this many words to be passed to complex summary stage. "
             "Note, this is disabled by default as is lower than the MIN_WORD_COUNT_FOR_SUMMARY"
         ),
+    )
+    NEXT_PUBLIC_GUARDRAIL_THRESHOLD: float = Field(
+        default=0.8,
+        description="Guardrail threshold for LLM responses",
     )
 
     LOCAL_STORAGE_PATH: str = Field(

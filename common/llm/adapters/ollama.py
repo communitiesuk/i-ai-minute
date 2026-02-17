@@ -50,6 +50,22 @@ class OllamaModelAdapter(ModelAdapter):
             error_msg = f"Invalid role: {role}"
             raise ValueError(error_msg)
 
+    @staticmethod
+    def _generate_example_obj(properties: dict[str, Any]) -> dict[str, Any]:
+        """Generates a dummy JSON object based on schema properties for prompting."""
+        example_obj: dict[str, Any] = {}
+        for field_name, field_info in properties.items():
+            field_type = field_info.get("type", "string")
+            if field_type == "number":
+                example_obj[field_name] = 0.85
+            elif field_type == "string":
+                example_obj[field_name] = "Example text here"
+            elif field_type == "boolean":
+                example_obj[field_name] = True
+            else:
+                example_obj[field_name] = "value"
+        return example_obj
+
     async def structured_chat(self, messages: list[dict[str, str]], response_format: type[T]) -> T:
         schema = response_format.model_json_schema()
 
@@ -66,18 +82,7 @@ class OllamaModelAdapter(ModelAdapter):
 
         fields_text = "\n".join(field_descriptions)
 
-        example_obj: dict[str, Any] = {}
-        for field_name, field_info in properties.items():
-            field_type = field_info.get("type", "string")
-            if field_type == "number":
-                example_obj[field_name] = 0.85
-            elif field_type == "string":
-                example_obj[field_name] = "Example text here"
-            elif field_type == "boolean":
-                example_obj[field_name] = True
-            else:
-                example_obj[field_name] = "value"
-
+        example_obj = self._generate_example_obj(properties)
         example_json = json.dumps(example_obj, indent=2)
 
         json_instruction = f"""

@@ -3,7 +3,7 @@
 import SimpleEditor from '@/app/transcriptions/[transcriptionId]/MinuteTab/components/editor/tiptap-editor'
 import { RatingButton } from '@/app/transcriptions/[transcriptionId]/MinuteTab/components/rating-dialog/rating-dialog'
 import { AiEditPopover } from '@/app/transcriptions/[transcriptionId]/MinuteTab/minute-editor/ai-edit-popover'
-import { GuardrailResponseComponent } from '@/app/transcriptions/[transcriptionId]/MinuteTab/minute-editor/guardrail-response-component'
+import { GuardrailResponseComponent } from '@/app/transcriptions/[transcriptionId]/MinuteTab/components/editor/guardrail-response-component'
 import { MinuteVersionSelect } from '@/app/transcriptions/[transcriptionId]/MinuteTab/minute-editor/minute-version-select'
 import { NewMinuteDialog } from '@/app/transcriptions/[transcriptionId]/MinuteTab/NewMinuteDialog'
 import { Button } from '@/components/ui/button'
@@ -37,6 +37,7 @@ import {
 import posthog from 'posthog-js'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
+import { MIN_WORD_COUNT_FOR_SUMMARY } from '@/app/settings/constants';
 
 type MinuteEditorForm = {
   html: string
@@ -50,6 +51,13 @@ export function MinuteEditor({
   minute: MinuteListItem
 }) {
   const [version, setVersion] = useState(0)
+  const wordCount = useMemo(() => {
+    return (
+      transcription.dialogue_entries?.reduce((acc, entry) => {
+        return acc + (entry.text?.split(/\s+/).filter(Boolean).length || 0)
+      }, 0) || 0
+    )
+  }, [transcription.dialogue_entries])
   const [hideCitations, setHideCitations] = useState(false)
   const { data: minuteVersions = [], isLoading } = useQuery({
     ...listMinuteVersionsMinutesMinuteIdVersionsGetOptions({
@@ -57,10 +65,10 @@ export function MinuteEditor({
     }),
     refetchInterval: (query) =>
       query.state.data &&
-      query.state.data.length > 0 &&
-      ['awaiting_start', 'in_progress'].includes(
-        query.state.data[version].status
-      )
+        query.state.data.length > 0 &&
+        ['awaiting_start', 'in_progress'].includes(
+          query.state.data[version].status
+        )
         ? 1000
         : false,
   })
@@ -93,7 +101,7 @@ export function MinuteEditor({
   const hasCitations = useMemo(() => {
     return !!htmlContent?.match(citationRegex)
   }, [htmlContent])
-  useEffect(() => {}, [htmlContent])
+  useEffect(() => { }, [htmlContent])
   const { mutate: saveEdit } = useMutation({
     ...createMinuteVersionMinutesMinuteIdVersionsPostMutation(),
   })
@@ -220,6 +228,10 @@ export function MinuteEditor({
       </div>
     )
   }
+
+  const minWordCount = Number(MIN_WORD_COUNT_FOR_SUMMARY)
+  const isTooShort = wordCount < minWordCount
+
   return (
     <div className="pt-2">
       <div className="mb-2 flex flex-wrap justify-between gap-y-2">
@@ -294,9 +306,7 @@ export function MinuteEditor({
         </div>
       </div>
 
-      {!minuteVersion.html_content?.includes(
-        'Short meeting detected. Minutes not available.'
-      ) && (
+      {!isTooShort && (
         <>
           <GuardrailResponseComponent
             guardrailResults={minuteVersion.guardrail_results}

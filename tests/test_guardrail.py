@@ -37,6 +37,10 @@ async def test_calculate_accuracy_score():
         assert len(kwargs["messages"]) == 3
         assert kwargs["messages"][0]["role"] == "system"
         assert "Quality Assurance auditor" in kwargs["messages"][0]["content"]
+        assert kwargs["messages"][1]["role"] == "user"
+        assert "A: Hello" in kwargs["messages"][1]["content"]
+        assert kwargs["messages"][2]["role"] == "user"
+        assert minute_text in kwargs["messages"][2]["content"]
 
 
 @patch("common.services.minute_handler_service.SessionLocal")
@@ -57,6 +61,7 @@ def test_save_guardrail_result(mock_session_local):
     assert saved_obj.score == 0.8
     assert saved_obj.reasoning == "Good"
     assert saved_obj.passed is True
+    assert saved_obj.error is None
 
     mock_session.commit.assert_called_once()
 
