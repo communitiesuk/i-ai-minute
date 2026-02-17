@@ -37,7 +37,7 @@ import {
 import posthog from 'posthog-js'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
-import { MIN_WORD_COUNT_FOR_SUMMARY } from '@/app/settings/constants';
+import { MIN_WORD_COUNT_FOR_SUMMARY } from '@/app/settings/constants'
 
 type MinuteEditorForm = {
   html: string
@@ -65,10 +65,10 @@ export function MinuteEditor({
     }),
     refetchInterval: (query) =>
       query.state.data &&
-        query.state.data.length > 0 &&
-        ['awaiting_start', 'in_progress'].includes(
-          query.state.data[version].status
-        )
+      query.state.data.length > 0 &&
+      ['awaiting_start', 'in_progress'].includes(
+        query.state.data[version].status
+      )
         ? 1000
         : false,
   })
@@ -101,7 +101,7 @@ export function MinuteEditor({
   const hasCitations = useMemo(() => {
     return !!htmlContent?.match(citationRegex)
   }, [htmlContent])
-  useEffect(() => { }, [htmlContent])
+  useEffect(() => {}, [htmlContent])
   const { mutate: saveEdit } = useMutation({
     ...createMinuteVersionMinutesMinuteIdVersionsPostMutation(),
   })

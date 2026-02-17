@@ -1,6 +1,6 @@
 import { XCircle } from 'lucide-react'
-import { StatusSection } from './StatusSection' // Assuming you moved this to a UI folder
-import { formatLabel } from '@/lib/utils'     // Assuming you moved this to a utils file
+import { StatusSection } from './statussection' // Assuming you moved this to a UI folder
+import { formatLabel } from '@/lib/utils' // Assuming you moved this to a utils file
 
 export type LLMHallucination = {
   hallucination_type: string
@@ -12,7 +12,9 @@ interface HallucinationsListProps {
   hallucinations?: LLMHallucination[] | null
 }
 
-export function HallucinationsList({ hallucinations }: HallucinationsListProps) {
+export function HallucinationsList({
+  hallucinations,
+}: HallucinationsListProps) {
   // Guard clause: If there are no hallucinations, don't render anything
   if (!hallucinations || hallucinations.length === 0) return null
 

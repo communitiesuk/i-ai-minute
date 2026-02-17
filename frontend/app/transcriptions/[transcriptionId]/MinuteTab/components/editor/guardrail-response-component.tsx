@@ -9,7 +9,8 @@ interface GuardrailProps {
   hallucinations?: any[] | null // Assuming type is handled in the sub-component
 }
 
-const GUARDRAIL_THRESHOLD = Number(process.env.NEXT_PUBLIC_GUARDRAIL_THRESHOLD) || 0.8
+const GUARDRAIL_THRESHOLD =
+  Number(process.env.NEXT_PUBLIC_GUARDRAIL_THRESHOLD) || 0.8
 
 export function GuardrailResponseComponent({
   guardrailResults = [],
@@ -17,17 +18,17 @@ export function GuardrailResponseComponent({
 }: GuardrailProps) {
   const { warnings, passes } = useMemo(() => {
     const isWarning = (r: GuardrailResultResponse) => {
-      const isLowScore = r.score != null && r.score < GUARDRAIL_THRESHOLD;
-      return r.passed === false || isLowScore;
-    };
+      const isLowScore = r.score != null && r.score < GUARDRAIL_THRESHOLD
+      return r.passed === false || isLowScore
+    }
 
     return {
       warnings: guardrailResults.filter(isWarning),
       passes: guardrailResults.filter((r) => !isWarning(r)),
-    };
-  }, [guardrailResults]);
+    }
+  }, [guardrailResults])
 
-  const hasHallucinations = (hallucinations?.length ?? 0) > 0 
+  const hasHallucinations = (hallucinations?.length ?? 0) > 0
   const hasWarnings = warnings.length > 0
 
   if (!guardrailResults.length && !hasHallucinations) return null
@@ -38,9 +39,9 @@ export function GuardrailResponseComponent({
 
       <WarningsList warnings={warnings} />
 
-      <VerifiedGuardrailsList 
-        passes={passes} 
-        isVisible={!hasWarnings && !hasHallucinations} 
+      <VerifiedGuardrailsList
+        passes={passes}
+        isVisible={!hasWarnings && !hasHallucinations}
       />
     </div>
   )

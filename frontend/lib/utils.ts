@@ -6,8 +6,6 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export const formatLabel = (str: string) => {
-  const spaced = str.replace(/_/g, ' ').toLowerCase();
-  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
-};
-
-
+  const spaced = str.replace(/_/g, ' ').toLowerCase()
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1)
+}

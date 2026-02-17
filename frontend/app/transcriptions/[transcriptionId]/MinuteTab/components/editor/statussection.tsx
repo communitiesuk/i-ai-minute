@@ -21,10 +21,12 @@ export function StatusSection({
   icon: Icon,
   variant,
   children,
-  className = "",
+  className = '',
 }: StatusSectionProps) {
   return (
-    <div className={`mb-4 flex flex-col gap-2 rounded-md border p-4 ${styles[variant]} ${className}`}>
+    <div
+      className={`mb-4 flex flex-col gap-2 rounded-md border p-4 ${styles[variant]} ${className}`}
+    >
       <div className="flex items-center gap-2 font-semibold">
         <Icon className="h-5 w-5" />
         <span>{title}</span>
