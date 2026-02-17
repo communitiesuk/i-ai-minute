@@ -48,7 +48,7 @@ If you have access to a supported LLM and Transcription provider, you will need 
 ##### In `.env`
 
 - Transcription: `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION`
-- LLM: `AZURE_APIM_URL`, `AZURE_APIM_DEPLOYMENT`, `AZURE_APIM_API_VERSION`, `AZURE_APIM_ACCESS_TOKEN`, and `AZURE_APIM_SUBSCRIPTION_KEY`.
+- LLM: `AZURE_APIM_URL`, `AZURE_APIM_API_VERSION`, `AZURE_APIM_ACCESS_TOKEN`, and `AZURE_APIM_SUBSCRIPTION_KEY`.
 
 Note:
 
@@ -164,10 +164,10 @@ Simply put them in the [templates](backend/templates) directory, and they will a
 ```bash
 poetry install --with dev
 
-poetry run mypy .                
+poetry run mypy .
 # check entire project
 
-poetry run mypy path/to/file.py  
+poetry run mypy path/to/file.py
 # check a specific file
 ```
 
