@@ -52,6 +52,11 @@ jobs:
       - name: Verify package builds 
         run: uv build 
 
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: latest
+
       - name: Run evals tests
         working-directory: .
         run: make test-evals
