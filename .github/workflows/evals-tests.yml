@@ -58,9 +58,8 @@ jobs:
           version: latest
 
       - name: Install dependencies
-        run: |
-          poetry lock --check
-          poetry install --with dev
+        working-directory: .
+        run: poetry install --with dev
 
       - name: Run evals tests
         working-directory: .
