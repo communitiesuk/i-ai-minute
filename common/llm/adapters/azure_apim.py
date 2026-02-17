@@ -23,7 +23,7 @@ class AzureAPIMModelAdapter(ModelAdapter):
         self._model = model
         self._api_version = api_version
         self.async_apim_client = AsyncOpenAI(
-            base_url=url + self._model, # APIM URL expects model here
+            base_url=url + self._model,  # APIM URL expects model here
             api_key=access_token,
             default_headers={
                 "Ocp-Apim-Subscription-Key": subscription_key,
