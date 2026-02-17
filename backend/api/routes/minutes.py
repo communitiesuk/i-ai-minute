@@ -169,14 +169,14 @@ async def create_minute_version(
         content_source=minute_version.content_source,
         guardrail_results=[
             GuardrailResultResponse(
-                id=result.id,
-                guardrail_type=result.guardrail_type,
-                passed=result.passed,  # Also fix this from "result"
-                score=result.score,
-                reasoning=result.reasoning,
-                error=result.error,
+                id=guardrail_result.id,
+                guardrail_type=guardrail_result.guardrail_type,
+                passed=guardrail_result.passed,
+                score=guardrail_result.score,
+                reasoning=guardrail_result.reasoning,
+                error=guardrail_result.error,
             )
-            for result in minute_version.guardrail_results
+            for guardrail_result in minute_version.guardrail_results
         ],
     )
 
