@@ -3,55 +3,58 @@
 # ADR-019: S3 Data Retention Policy for Audio and Transcripts
 
 ## Status
-
 Proposed
 
-Date of decision: 2026-02-18
+**Date of decision:** 2026-02-18
 
 ## Context and Problem Statement
+The "Minute" application processes "Official-Sensitive" audio recordings to generate transcripts and summaries. Currently, these files are stored in S3 indefinitely. 
 
-The "Minute" application processes "Official-Sensitive" audio recordings and generates transcripts. Currently, these files are stored in S3 indefinitely. To comply with UK GDPR "Data Minimisation" principles and the Department's security policies, we must implement an automated deletion policy. 
+To comply with the **UK GDPR "Storage Limitation" principle (Article 5(1)(e))** and Departmental security policies regarding Official-Sensitive data, we must implement an automated deletion policy. We cannot justify holding raw audio binaries indefinitely when the primary value is extracted (transcribed) within minutes.
 
-The challenge is balancing the security requirement to delete sensitive data as soon as possible against the operational requirement to retain data long enough to allow for retries in the event of a pipeline failure (e.g., LLM API downtime or Worker crashes). 
+The challenge is balancing the security requirement to minimize the data footprint against the operational requirement to allow for service recovery. If the transcription pipeline fails (e.g., Worker crash, LLM API downtime), engineers need the source audio to retry the job.
 
-How long should we retain raw audio binaries and transcripts before automated permanent deletion?
+How long should we retain raw audio binaries versus generated transcripts before automated permanent deletion?
 
 ## Considered Options
 
-* **Option 1: 24-hour retention for raw audio; 30-day retention for transcripts.**
-* **Option 2: 7-day retention for raw audio; 30-day retention for transcripts.**
-* **Option 3: 30-day retention for all data.**
+*   **Option 1: 24-hour retention for audio; 30-day retention for transcripts.**
+*   **Option 2: 7-day retention for audio; 30-day retention for transcripts.**
+*   **Option 3: 30-day retention for all data.**
 
 ## Decision Outcome
 
-**Option 2**, because it provides a sufficient "Retry Window" to handle system failures that occur over weekends or bank holidays, while significantly reducing the Department's data footprint compared to the current "indefinite" state.
+**Option 2**, because it provides a sufficient "Retry Window" to handle system failures that occur over weekends or bank holidays, while still significantly reducing the Department's liability compared to the current "indefinite" state.
+
+Transcripts are retained longer (30 days) to allow users to review, edit, and download the output before the record is cleared.
 
 ## Pros and Cons of the Options
 
 ### Option 1: 24-hour retention for raw audio
-
 This is the most aggressive stance for privacy and data minimisation.
 
-* **Good**, because it minimizes the window of risk for the most sensitive data (audio binaries) to the absolute minimum.
-* **Bad**, because it creates a high risk of permanent data loss. If a transcription job fails on a Friday afternoon, the raw audio would be deleted by Saturday afternoon, making it impossible for engineers to investigate and re-run the job on Monday.
+*   **Good:** Minimizes the window of risk for the most sensitive data (audio binaries) to the absolute minimum.
+*   **Bad:** Creates a high risk of unrecoverable failure. If a transcription job fails on a Friday afternoon, the raw audio would be deleted by Saturday, making it impossible for engineers to investigate or re-drive the job on Monday.
 
 ### Option 2: 7-day retention for raw audio (Selected)
-
 A middle-ground approach designed for operational resilience.
 
-* **Good**, because it covers all "non-working day" scenarios, including long weekends and bank holidays, ensuring engineers have time to recover from pipeline failures without losing the source data.
-* **Good**, because 7 days is still a significantly improved security posture over the current indefinite storage.
-* **Neutral**, because it requires a slightly higher storage cost than Option 1 (though negligible for speech-to-text volumes).
+*   **Good:** Covers all "non-working day" scenarios (including Bank Holidays), ensuring engineers have time to recover from pipeline failures without losing the source data.
+*   **Good:** Reduces storage costs and liability significantly compared to the current indefinite state.
+*   **Bad:** Retains sensitive audio binaries for 6 days longer than strictly required for a "happy path" transaction.
 
 ### Option 3: 30-day retention for all data
+A conservative approach often used as a default in legacy projects.
 
-A conservative approach often used as a default in MHCLG projects.
-
-* **Good**, because it provides a massive buffer for any manual auditing or quality assurance checks.
-* **Bad**, because holding sensitive audio binaries for 30 days when they are typically processed in minutes is difficult to justify under GDPR "storage limitation" clauses.
+*   **Good:** Provides a massive buffer for manual auditing or quality assurance checks.
+*   **Bad:** Hard to justify under GDPR "Data Minimisation." Keeping raw audio for 30 days when processing takes minutes creates an unnecessary accumulation of sensitive data.
 
 ## More Information
 
-The implementation will utilize **S3 Lifecycle Configurations** targeting specific prefixes (`app_data/user-uploads/` for audio and `app_data/transcripts/` for text) to ensure that the logic is applied granularly based on data type.
+### Implementation
+The policy will utilize **S3 Lifecycle Configurations** targeting specific prefixes:
+*   `app_data/user-uploads/`: **Expire after 7 days.**
+*   `app_data/transcripts/`: **Expire after 30 days.**
 
-***
+### Application Behavior
+The application logic must handle cases where a user attempts to access a file that has been lifecycle-deleted. The frontend will display a "File Expired" status for historical records where the metadata exists in Postgres but the S3 object has been purged.
