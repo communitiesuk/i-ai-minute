@@ -1,16 +1,22 @@
+***
+
 # ADR-019: S3 Data Retention Policy for Audio and Transcripts
 
 ## Status
+
 Proposed
 
 **Date of decision:** 2026-02-18
 
 ## Context and Problem Statement
-The "Minute" application processes "Official-Sensitive" audio recordings to generate transcripts and summaries. Currently, these files are stored in S3 indefinitely. 
+
+The "Minute" application processes "Official-Sensitive" audio recordings to generate transcripts and summaries. Currently, these files are stored in S3 indefinitely.
 
 To comply with the **UK GDPR "Storage Limitation" principle (Article 5(1)(e))** and Departmental security policies regarding Official-Sensitive data, we must implement an automated deletion policy. We cannot justify holding raw audio binaries indefinitely when the primary value is extracted (transcribed) within minutes.
 
 The challenge is balancing the security requirement to minimize the data footprint against the operational requirement to allow for service recovery. If the transcription pipeline fails (e.g., Worker crash, LLM API downtime), engineers need the source audio to retry the job.
+
+Analysis of the codebase confirms that transcript text is stored exclusively within Aurora PostgreSQL JSONB columns. The S3 bucket serves only as a temporary landing zone for raw audio binaries.
 
 How long should we retain raw audio binaries versus generated transcripts before automated permanent deletion?
 
@@ -24,7 +30,9 @@ How long should we retain raw audio binaries versus generated transcripts before
 
 **Option 2**, because it provides a sufficient "Retry Window" to handle system failures that occur over weekends or bank holidays, while still significantly reducing the Department's liability compared to the current "indefinite" state.
 
-Transcripts are retained longer (30 days) to allow users to review, edit, and download the output before the record is cleared.
+We adopt a **Tiered Retention Strategy**:
+1.  **Binaries (S3):** Expire after 7 days via S3 Lifecycle Rules. This minimizes the risk of voice-data leaks while allowing a window for pipeline retries.
+2.  **Records (Aurora):** Retained according to Departmental Policy (e.g., 30 days), handled via a separate database cleanup process.
 
 ## Pros and Cons of the Options
 
