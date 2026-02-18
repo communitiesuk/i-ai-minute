@@ -21,12 +21,11 @@ minversion = "8.3"
 testpaths = [
     "tests"
 ]
-adopts = [
+addopts = [
     "-ra -q",
     "--cov=backend",               
     "--cov=common",
-    "--cov=evals", 
-    "--cov-worker",                 
+    "--cov=evals",                 
     "--cov-report=term-missing",   
     "--cov-report=html",             
     ]
