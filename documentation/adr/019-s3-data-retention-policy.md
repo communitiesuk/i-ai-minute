@@ -1,5 +1,3 @@
-***
-
 # ADR-019: S3 Data Retention Policy for Audio and Transcripts
 
 ## Status
