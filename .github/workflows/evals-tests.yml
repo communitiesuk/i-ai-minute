@@ -64,8 +64,9 @@ jobs:
       - name: Run evals tests
         working-directory: .
         run: |
+          export $(cat .env.example | grep -v '^#' | xargs)
           echo "--- Environment Variables ---"
-          env | grep POSTGRES
+          env | grep POSTGRES  
           make test-evals
 
       - name: Upload evals coverage
