@@ -8,12 +8,11 @@ from threading import Lock
 from tqdm import tqdm
 
 from evals.transcription.src.adapters.base import EvalsTranscriptionAdapter
-from evals.transcription.src.core.formatting_helpers import (
+from evals.transcription.src.core.formatting import (
     format_segments_with_speakers,
 )
 from evals.transcription.src.core.metrics import (
     aggregate_metrics,
-    compute_jaccard_wer,
     compute_speaker_count_metrics,
     compute_wder,
     compute_wer_metrics,
@@ -75,7 +74,6 @@ def run_engines_parallel(
         hypothesis_normalized = normalise_text(hyp_raw)
 
         wer_metrics = compute_wer_metrics([reference_normalized], [hypothesis_normalized])
-        jaccard_metrics = compute_jaccard_wer([ref_raw], [hyp_raw])
 
         metrics = SampleMetrics(
             wer=wer_metrics.wer,
@@ -83,8 +81,10 @@ def run_engines_parallel(
             substitutions=wer_metrics.substitutions,
             deletions=wer_metrics.deletions,
             insertions=wer_metrics.insertions,
-            jaccard_wer=jaccard_metrics["jaccard_wer"],
         )
+
+        ref_diar_dicts: list[DiarizationSegment] = []
+        hyp_diar_dicts: list[DiarizationSegment] = []
 
         if reference_diarization and dialogue_entries:
             ref_diar_dicts = _convert_to_diarization_format(reference_diarization)
@@ -100,13 +100,11 @@ def run_engines_parallel(
             metrics.hyp_speaker_count = int(speaker_metrics["hyp_speaker_count"])
 
         ref_normalized_with_speakers = (
-            format_segments_with_speakers(reference_diarization) if reference_diarization else ""
+            format_segments_with_speakers(ref_diar_dicts) if ref_diar_dicts else ""
         )
         hyp_normalized_with_speakers = (
-            format_segments_with_speakers(
-                dialogue_entries, reference_segments=reference_diarization
-            )
-            if dialogue_entries
+            format_segments_with_speakers(hyp_diar_dicts, reference_segments=ref_diar_dicts)
+            if hyp_diar_dicts
             else ""
         )
 
