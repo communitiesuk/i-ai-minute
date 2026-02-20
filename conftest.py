@@ -1,7 +1,7 @@
 import asyncio
 
 import pytest
-from dotenv import load_dotenv
+
 
 @pytest.fixture(scope="session")
 def event_loop_policy() -> asyncio.AbstractEventLoopPolicy:
