@@ -37,23 +37,14 @@ class ServiceTranscriptionAdapter(EvalsTranscriptionAdapter):
     """
 
     def __init__(self, service_adapter: type[CommonTranscriptionAdapter], service_name: str):
-        """
-        Initializes the service transcription adapter with the given adapter class and name.
-        """
         self._adapter = service_adapter
         self._service_name = service_name
 
     @property
     def name(self) -> str:
-        """
-        Returns the name of the transcription service.
-        """
         return self._service_name
 
     def transcribe(self, wav_path: str) -> TranscriptionResult:
-        """
-        Transcribes the audio file at the given path and returns the result with timing information.
-        """
         start_time = time.time()
 
         try:
@@ -76,6 +67,7 @@ class ServiceTranscriptionAdapter(EvalsTranscriptionAdapter):
                 text=full_text,
                 duration_sec=(end_time - start_time),
                 debug_info={},
+                dialogue_entries=[dict(entry) for entry in dialogue_entries],
             )
 
         except Exception as error:
@@ -89,6 +81,4 @@ class ServiceTranscriptionAdapter(EvalsTranscriptionAdapter):
 
 
 class AdapterConfig(TypedDict):
-    """Configuration for a transcription adapter."""
-
     adapter: EvalsTranscriptionAdapter
