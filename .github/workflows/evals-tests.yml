@@ -47,7 +47,7 @@ jobs:
       
       - name: Run mypy 
         continue-on-error: true
-        run: uv run mypy --pretty --error-summary
+        run: uv run mypy . --pretty --error-summary
 
       - name: Verify package builds 
         run: uv build 
