@@ -32,6 +32,12 @@ variable "access_s3_log_expiration_days" {
   default     = 365
 }
 
+variable "expiration_days" {
+  type        = number
+  description = "Optional. Days after which current object versions in the main bucket expire. S3 permits only one lifecycle configuration per bucket, so this must be set here rather than by adding a second aws_s3_bucket_lifecycle_configuration elsewhere."
+  default     = null
+}
+
 variable "policy" {
   description = "optional policy json to append to default bucket enforce ssl policy"
   type        = string
