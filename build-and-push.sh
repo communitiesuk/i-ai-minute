@@ -4,7 +4,7 @@ set -euo pipefail
 usage() {
   echo "Usage: $0 --environment <environment> --tag <tag> [frontend] [backend] [worker]"
   echo ""
-  echo "  --environment  Environment name (default: development)"
+  echo "  --environment  One of: development, staging, production (default: development)"
   echo "  --tag          Image tag to apply (default: current git short SHA)"
   echo ""
   echo "  Optionally specify one or more services to build (default: all)"
@@ -24,6 +24,18 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+case "$ENVIRONMENT" in
+  development|staging|production) ;;
+  *) echo "Error: unknown environment '${ENVIRONMENT}' (must be development, staging, or production)"; usage ;;
+esac
+
+REPO_ROOT="$(cd "$(dirname "$0")" && pwd)"
+TF_DIR="${REPO_ROOT}/terraform/${ENVIRONMENT}"
+
+if [[ ! -d "$TF_DIR" ]]; then
+  echo "Error: no terraform configuration found at ${TF_DIR}"
+  exit 1
+fi
 
 if [[ -z "${TF_VAR_alarm_email_address:-}" ]]; then
   echo "Error: TF_VAR_alarm_email_address is not set"
@@ -35,21 +47,49 @@ if [[ ${#SERVICES[@]} -eq 0 ]]; then
   SERVICES=(frontend backend worker)
 fi
 
+for SERVICE in "${SERVICES[@]}"; do
+  case "$SERVICE" in
+    frontend|backend|worker) ;;
+    *) echo "Error: unknown service '${SERVICE}' (must be frontend, backend, or worker)"; exit 1 ;;
+  esac
+done
+
 REGION="eu-west-2"
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+
+# Guard against building and pushing into the wrong account. The expected account
+# is read from the environment's Terraform config so there is a single source of
+# truth; Terraform enforces the same value via allowed_account_ids.
+EXPECTED_ACCOUNT_ID=$(sed -n 's/^[[:space:]]*aws_account_id[[:space:]]*=[[:space:]]*"\([0-9]*\)".*/\1/p' "${TF_DIR}/main.tf")
+
+if [[ -z "$EXPECTED_ACCOUNT_ID" ]]; then
+  echo "Warning: ${ENVIRONMENT} does not declare aws_account_id in its Terraform config, so the target account cannot be verified."
+elif [[ "$ACCOUNT_ID" != "$EXPECTED_ACCOUNT_ID" ]]; then
+  echo "Error: authenticated against AWS account ${ACCOUNT_ID}, but ${ENVIRONMENT} expects ${EXPECTED_ACCOUNT_ID}."
+  echo "Check AWS_PROFILE and try again."
+  exit 1
+fi
+
+echo "Environment: ${ENVIRONMENT}"
+echo "AWS account: ${ACCOUNT_ID}"
+echo "Image tag:   ${TAG}"
+
+if [[ "$ENVIRONMENT" == "production" ]]; then
+  echo ""
+  echo "This will build and push images to PRODUCTION and then plan and apply Terraform against it."
+  read -r -p "Type 'production' to continue: " confirm_env
+  if [[ "$confirm_env" != "production" ]]; then
+    echo "Aborted."
+    exit 1
+  fi
+fi
+
 REGISTRY="${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com"
 
 echo "Authenticating with ECR..."
 aws ecr get-login-password --region "$REGION" | docker login --username AWS --password-stdin "$REGISTRY"
 
-REPO_ROOT="$(cd "$(dirname "$0")" && pwd)"
-
 for SERVICE in "${SERVICES[@]}"; do
-  case "$SERVICE" in
-    frontend|backend|worker) ;;
-    *) echo "Unknown service: $SERVICE (must be frontend, backend, or worker)"; exit 1 ;;
-  esac
-
   REPO="${REGISTRY}/${ENVIRONMENT}-${SERVICE}"
   LOCAL_TAG="${ENVIRONMENT}-${SERVICE}:${TAG}"
   BUILD_ARGS=()
@@ -89,7 +129,7 @@ done
 
 echo ""
 echo "Planning Terraform..."
-cd "${REPO_ROOT}/terraform/${ENVIRONMENT}"
+cd "$TF_DIR"
 TF_VARS=(-var="image_tag=${TAG}")
 terraform plan "${TF_VARS[@]}" -out=tfplan 2>&1 | grep -v ": Refreshing state\|: Reading\|: Still reading\|: Read complete"
 
