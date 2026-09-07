@@ -3,10 +3,10 @@
 import { use, useEffect, useRef, useState } from 'react'
 import { redirect, useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
-import { LoaderCircle } from 'lucide-react'
 import { BannerNotification } from '@/components/banner-notification'
 import { GovukErrorSummary, GovukNotificationBanner } from '@/components/govuk'
 import type { ErrorItem } from '@/components/govuk/error-summary'
+import { ProcessingSpinner } from '@/components/processing-spinner'
 import { RecordingDetails } from '@/app/transcriptions/[transcriptionId]/RecordingDetails'
 import {
   isTranscriptionProcessing,
@@ -65,11 +65,7 @@ export default function AddRecordingMetadataPage(props: {
   }
 
   if (isLoading) {
-    return (
-      <div className="flex h-72 flex-col items-center justify-center">
-        <LoaderCircle size={80} className="animate-spin" aria-hidden="true" />
-      </div>
-    )
+    return <ProcessingSpinner label="Loading" />
   }
 
   if (!transcription) {
@@ -81,10 +77,7 @@ export default function AddRecordingMetadataPage(props: {
       return null
     }
     return (
-      <div className="flex h-72 flex-col items-center justify-center gap-4">
-        <LoaderCircle size={80} className="animate-spin" aria-hidden="true" />
-        <p className="govuk-body">Processing recording...</p>
-      </div>
+      <ProcessingSpinner label="Processing" message="Processing recording…" />
     )
   }
 
