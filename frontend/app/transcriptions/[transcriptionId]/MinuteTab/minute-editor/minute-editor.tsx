@@ -94,10 +94,15 @@ export function MinuteEditor({
       wasDocumentGenerating.current
     ) {
       wasDocumentGenerating.current = false
+
+      const bannerText =
+        minuteVersion.content_source === 'initial_generation'
+          ? `'${minute.template_name}' created`
+          : `AI edits to '${minute.template_name}' saved`
       setBanner({
         variant: 'success',
         title: 'Success',
-        message: `'${minute.template_name}' created`,
+        message: bannerText,
       })
     }
   }, [minuteVersion, isGenerating, wasDocumentGenerating, setBanner])
