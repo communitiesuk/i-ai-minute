@@ -23,7 +23,7 @@ import { FeatureFlags } from '@/lib/feature-flags'
 import { useQuery } from '@tanstack/react-query'
 import { LoaderCircle } from 'lucide-react'
 import { useFeatureFlagEnabled } from 'posthog-js/react'
-import { redirect } from 'next/navigation'
+import { redirect, useSearchParams } from 'next/navigation'
 import { BannerNotification } from '@/components/banner-notification'
 import { useBannerStore } from '@/stores/use-banner-store'
 import type { ErrorItem } from '@/components/govuk/error-summary'
@@ -34,6 +34,9 @@ export default function TranscriptionPage(props: {
   const params = use(props.params)
 
   const { transcriptionId } = params
+
+  const searchParams = useSearchParams()
+  const shouldOpenDetails = searchParams.get('details') === 'open'
 
   const isChatEnabled = useFeatureFlagEnabled(FeatureFlags.ChatEnabled)
   const [lineEditError, setLineEditError] = useState<string | null>(null)
@@ -189,6 +192,7 @@ export default function TranscriptionPage(props: {
       <hr className="govuk-section-break govuk-section-break--visible govuk-!-margin-top-2 govuk-!-margin-bottom-2" />
       <RecordingDetails
         dateTimeLabel={dateTimeLabel}
+        defaultOpen={shouldOpenDetails}
         transcription={transcription}
         onErrorListChange={setRecordingDetailsErrors}
       />

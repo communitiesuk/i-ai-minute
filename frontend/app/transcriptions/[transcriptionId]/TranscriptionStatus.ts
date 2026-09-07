@@ -15,7 +15,7 @@ export const notifyRecordingSaved = (
     message: 'Recording saved - ',
     link: {
       text: 'click to view',
-      href: `/transcriptions/${transcriptionId}`,
+      href: `/transcriptions/${transcriptionId}?details=open`,
     },
   })
   router.push('/')
