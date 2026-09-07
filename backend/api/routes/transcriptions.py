@@ -282,7 +282,9 @@ async def create_transcription(
         user_id=current_user.id,
         title=request.title,
         date_of_recording=(
-            recording.file_created_at.replace(tzinfo=None) if recording.file_created_at is not None else None
+            recording.file_created_at.astimezone(datetime.UTC).replace(tzinfo=None)
+            if recording.file_created_at is not None
+            else None
         ),
     )
 

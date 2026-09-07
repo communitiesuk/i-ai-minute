@@ -1,5 +1,5 @@
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta, timezone
 from unittest.mock import AsyncMock, Mock
 
 import pytest
@@ -134,6 +134,31 @@ async def test_create_transcription_leaves_date_of_recording_unset_for_live_reco
 
     added_transcription = mock_session_with_recording.add.call_args.args[0]
     assert added_transcription.date_of_recording is None
+
+
+@pytest.mark.asyncio
+async def test_create_transcription_date_of_recording_preserves_timezone_instant(
+    mock_session_with_recording,
+    mock_recording,
+    mock_user,
+    mock_transcription_queue_service,  # NOQA: ARG001
+    transcription_request,
+    mock_storage_service,  # NOQA: ARG001
+):
+    """Stripping tzinfo for storage must not shift the underlying instant, e.g. across BST/UTC."""
+    # Simulate a recording created during BST (+01:00)
+    bst = timezone(timedelta(hours=1))
+    original_time = datetime(2024, 7, 15, 14, 30, tzinfo=bst)
+    mock_recording.file_created_at = original_time
+
+    await create_transcription(transcription_request, mock_session_with_recording, mock_user)
+
+    added_transcription = mock_session_with_recording.add.call_args.args[0]
+
+    # The naive value stored is reinterpreted as UTC by the DB column, so re-attach UTC to compare instants.
+    stored_as_utc = added_transcription.date_of_recording.replace(tzinfo=UTC)
+    # 14:30 BST == 13:30 UTC
+    assert stored_as_utc == original_time.astimezone(UTC)
 
 
 @pytest.mark.parametrize("file_format", ["mp3", "wav", "m4a", "webm"])
