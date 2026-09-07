@@ -15,12 +15,13 @@ import {
 import { API_PROXY_PATH } from '@/lib/constants'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Loader2 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 export default function TermsOfUsePage() {
   const queryClient = useQueryClient()
   const userQueryOptions = getUserUsersMeGetOptions()
   const [hasSubmissionError, setHasSubmissionError] = useState(false)
+  const errorSummaryRef = useRef<HTMLDivElement | null>(null)
   const { data: user } = useQuery({
     ...userQueryOptions,
     refetchOnMount: 'always',
@@ -40,11 +41,23 @@ export default function TermsOfUsePage() {
     },
   })
 
+  useEffect(() => {
+    if (hasSubmissionError && errorSummaryRef.current) {
+      errorSummaryRef.current.focus()
+      errorSummaryRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      })
+    }
+  }, [hasSubmissionError])
+
   return (
     <div className="govuk-grid-row">
       <div className="govuk-grid-column-two-thirds">
         {hasSubmissionError && (
           <GovukErrorSummary
+            ref={errorSummaryRef}
+            tabIndex={-1}
             errorList={[
               {
                 href: '#accept-terms',
