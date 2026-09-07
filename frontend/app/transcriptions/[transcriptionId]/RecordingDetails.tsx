@@ -75,8 +75,12 @@ const formatDateTimeLocalValue = (dateString: string | null | undefined) => {
   const date = new Date(dateString)
   if (Number.isNaN(date.getTime())) return ''
 
-  const timezoneOffsetMs = date.getTimezoneOffset() * 60_000
-  return new Date(date.getTime() - timezoneOffsetMs).toISOString().slice(0, 19)
+  const millisecondsPerMinute = 60_000
+  const isoDateTimeLength = 19
+  const timezoneOffsetMs = date.getTimezoneOffset() * millisecondsPerMinute
+  return new Date(date.getTime() - timezoneOffsetMs)
+    .toISOString()
+    .slice(0, isoDateTimeLength)
 }
 
 const formatDateInputValue = (dateString: string | null | undefined) => {
