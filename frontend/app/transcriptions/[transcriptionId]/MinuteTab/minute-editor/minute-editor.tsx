@@ -41,9 +41,11 @@ type MinuteEditorForm = {
 export function MinuteEditor({
   transcription,
   minute,
+  onActivityChange,
 }: {
   transcription: TranscriptionGetResponse
   minute: Minute
+  onActivityChange?: (busy: boolean) => void
 }) {
   const [version, setVersion] = useState<string | undefined>(undefined)
   const [hideCitations, setHideCitations] = useState(false)
@@ -92,6 +94,9 @@ export function MinuteEditor({
       form.setValue('html', minuteVersion.html_content)
     }
   }, [form, minuteVersion])
+  useEffect(() => {
+    onActivityChange?.(isGenerating || isEditable)
+  }, [isGenerating, isEditable, onActivityChange])
   const htmlContent = useWatch({ name: 'html', control: form.control })
   const contentToCopy = useMemo(() => {
     return htmlContent?.replaceAll(citationRegexWithSpace, '') || ''
