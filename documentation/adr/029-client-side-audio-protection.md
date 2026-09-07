@@ -30,8 +30,9 @@ Note that it is possible to combine some options, but each option is considered 
 
 ## Decision Outcome
 
-Hybrid encryption, server-held keys, local audio decryption, because this encrypts all audio locally
-only at the cost of preventing offline playback (which we do not expect to be commonplace).
+A combination of a) hybrid encryption, server-held keys, local audio decryption and b) in-app offline recording expiry,
+because this encrypts all audio locally only at the cost of preventing offline playback (which we do not expect to be
+commonplace) and also limits the window of potential exploitation.
 
 ## Pros and Cons of the Options
 
