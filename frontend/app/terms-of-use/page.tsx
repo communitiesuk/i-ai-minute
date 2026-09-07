@@ -105,10 +105,7 @@ export default function TermsOfUsePage() {
           >
             {isPending ? (
               <span className="flex items-center gap-2">
-                <Loader2
-                  className="h-4 w-4 animate-spin"
-                  aria-hidden="true"
-                />
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
                 Accepting...
               </span>
             ) : user?.accepted_tou ? (
@@ -117,7 +114,10 @@ export default function TermsOfUsePage() {
               'Accept and continue'
             )}
           </GovukButton>
-          <GovukButtonLink href={`${API_PROXY_PATH}/signout`} variant="secondary">
+          <GovukButtonLink
+            href={`${API_PROXY_PATH}/signout`}
+            variant="secondary"
+          >
             I do not accept
           </GovukButtonLink>
         </GovukButtonGroup>
