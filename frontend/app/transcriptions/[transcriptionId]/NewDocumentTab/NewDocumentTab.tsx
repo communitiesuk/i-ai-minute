@@ -20,6 +20,7 @@ import { LoaderCircle } from 'lucide-react'
 import posthog from 'posthog-js'
 import { useEffect, useRef, useState } from 'react'
 import { MinuteEditor } from '@/app/transcriptions/[transcriptionId]/MinuteTab/minute-editor/minute-editor'
+import { LoadingSpinner } from '@/components/loading-spinner'
 
 export const NewDocumentTab = ({
   transcription,
@@ -103,15 +104,9 @@ export const NewDocumentTab = ({
   if (isCreating) {
     return (
       <div className="flex flex-col items-center">
-        {/* spinner */}
-        <div
-          aria-label="Creating document"
-          aria-live="polite"
-          role="status"
-          className="mb-5 h-28 w-28 animate-spin rounded-full border-[12px] border-gray-400 border-t-sky-700"
-        />
+        <LoadingSpinner label="Creating document" />
         <p className="govuk-body">
-          Creating ‘{selectedTemplate?.name ?? createdTemplateName}’…
+          Creating ‘{selectedTemplate?.name ?? createdTemplateName}'&hellip;
         </p>
       </div>
     )

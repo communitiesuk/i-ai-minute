@@ -7,6 +7,7 @@ import { NewMinuteDialog } from '@/app/transcriptions/[transcriptionId]/MinuteTa
 import { Button } from '@/components/ui/button'
 import { useBannerStore } from '@/stores/use-banner-store'
 import { ReviewGuardButton } from '@/components/review-guard/review-guard-button'
+import { LoadingSpinner } from '@/components/loading-spinner'
 import { citationRegex, citationRegexWithSpace } from '@/lib/citationRegex'
 import {
   Minute,
@@ -22,9 +23,9 @@ import {
 import convertAIMinutesToWordDoc from '@/lib/download-word-doc'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AiEditPopover } from '@/app/transcriptions/[transcriptionId]/MinuteTab/minute-editor/ai-edit-popover'
-import { FilePenLine, FileX2, Loader2, Undo } from 'lucide-react'
+import { FileX2, Loader2, Undo } from 'lucide-react'
 import posthog from 'posthog-js'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Controller, useForm, useWatch } from 'react-hook-form'
 import {
   GovukButton,
@@ -46,6 +47,7 @@ export function MinuteEditor({
 }) {
   const [version, setVersion] = useState<string | undefined>(undefined)
   const [hideCitations, setHideCitations] = useState(false)
+  const wasDocumentGenerating = useRef(false)
   const { setBanner } = useBannerStore()
   const {
     data: minuteVersions = [],
@@ -81,6 +83,24 @@ export function MinuteEditor({
     () => minuteVersion?.status == 'failed',
     [minuteVersion?.status]
   )
+
+  useEffect(() => {
+    if (isGenerating) {
+      wasDocumentGenerating.current = true
+    }
+
+    if (
+      minuteVersion?.status === 'completed' &&
+      wasDocumentGenerating.current
+    ) {
+      wasDocumentGenerating.current = false
+      setBanner({
+        variant: 'success',
+        title: 'Success',
+        message: `'${minute.template_name}' created`,
+      })
+    }
+  }, [minuteVersion, isGenerating, wasDocumentGenerating, setBanner])
 
   const queryClient = useQueryClient()
   const [isEditable, setIsEditable] = useState(false)
@@ -170,20 +190,9 @@ export function MinuteEditor({
   }
   if (isGenerating) {
     return (
-      <div className="pt-2">
-        <div className="mb-2 flex flex-wrap justify-between gap-y-2">
-          <div className="flex flex-wrap gap-2">
-            <MinuteVersionSelect
-              minuteVersions={minuteVersions}
-              version={version}
-              setVersion={setVersion}
-            />
-          </div>
-        </div>
-        <div className="flex h-36 animate-pulse flex-col items-center justify-center pt-12">
-          <FilePenLine />
-          Minute generating...
-        </div>
+      <div className="flex flex-col items-center pt-2">
+        <LoadingSpinner label="Creating document" />
+        <p className="govuk-body">Creating '{minute.template_name}'&hellip;</p>
       </div>
     )
   }
