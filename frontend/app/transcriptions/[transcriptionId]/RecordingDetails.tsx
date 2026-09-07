@@ -373,13 +373,14 @@ export const RecordingDetails = ({
               {isStandalone ? 'Add details' : 'Update details'}
             </GovukButton>
             {isStandalone ? (
-              <button
+              <GovukButton
                 type="button"
+                variant="link"
+                className="govuk-!-margin-bottom-2"
                 onClick={onStandaloneComplete}
-                className="govuk-link govuk-!-margin-bottom-2 bg-transparent p-0"
               >
                 Skip step
-              </button>
+              </GovukButton>
             ) : (
               <GovukButton
                 type="button"
