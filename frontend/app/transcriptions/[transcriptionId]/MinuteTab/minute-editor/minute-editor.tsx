@@ -198,7 +198,7 @@ export function MinuteEditor({
       <div className="flex flex-col items-center pt-2">
         <LoadingSpinner label="Creating document" />
         <p className="govuk-body">
-          Creating &apos;{minute.template_name}&apos;&hellip;
+          Creating &lsquo;{minute.template_name}&rsquo;&hellip;
         </p>
       </div>
     )

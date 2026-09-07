@@ -106,8 +106,8 @@ export const NewDocumentTab = ({
       <div className="flex flex-col items-center">
         <LoadingSpinner label="Creating document" />
         <p className="govuk-body">
-          Creating &apos;{selectedTemplate?.name ?? createdTemplateName}
-          &apos;&hellip;
+          Creating &lsquo;{selectedTemplate?.name ?? createdTemplateName}
+          &rsquo;&hellip;
         </p>
       </div>
     )
