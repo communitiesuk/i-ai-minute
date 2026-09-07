@@ -59,54 +59,53 @@ export default function TermsOfUsePage() {
         </GovukHeading>
 
         <GovukBody>
-          These Terms of Use set out the conditions for using Local
-          Transcribe, an AI transcription and summarisation tool provided by
-          the Ministry of Housing, Communities and Local Government (MHCLG).
-          By using Local Transcribe, you agree to comply with these terms,
-          which are designed to protect users, participating local
-          authorities, MHCLG, and the service itself.
+          These Terms of Use set out the conditions for using Local Transcribe,
+          an AI transcription and summarisation tool provided by the Ministry of
+          Housing, Communities and Local Government (MHCLG). By using Local
+          Transcribe, you agree to comply with these terms, which are designed
+          to protect users, participating local authorities, MHCLG, and the
+          service itself.
         </GovukBody>
 
         <GovukBody>
-          Local Transcribe is in private beta. The service is being tested
-          with a small number of local authorities. These terms apply during
-          the private beta period and will be reviewed with participating
-          local authorities before any wider rollout.
+          Local Transcribe is in private beta. The service is being tested with
+          a small number of local authorities. These terms apply during the
+          private beta period and will be reviewed with participating local
+          authorities before any wider rollout.
         </GovukBody>
 
         <GovukHeading as="h2" size="m">
           1. User Responsibility
         </GovukHeading>
         <GovukBody>
-          You are responsible for the content you upload to, generate using,
-          and derive from Local Transcribe. All outputs must be reviewed,
-          verified, and amended as necessary before being relied upon or
-          shared. AI-generated transcripts and summaries are not guaranteed to
-          be accurate and must not be treated as authoritative or complete
-          without human review.
+          You are responsible for the content you upload to, generate using, and
+          derive from Local Transcribe. All outputs must be reviewed, verified,
+          and amended as necessary before being relied upon or shared.
+          AI-generated transcripts and summaries are not guaranteed to be
+          accurate and must not be treated as authoritative or complete without
+          human review.
         </GovukBody>
         <GovukBody>
-          Use of Local Transcribe is at the user&apos;s discretion in any
-          given conversation. There is no expectation that it is used every
-          time. Local Transcribe does not replace human judgement,
-          professional responsibility, official records, or established
-          governance processes.
+          Use of Local Transcribe is at the user&apos;s discretion in any given
+          conversation. There is no expectation that it is used every time.
+          Local Transcribe does not replace human judgement, professional
+          responsibility, official records, or established governance processes.
         </GovukBody>
 
         <GovukHeading as="h2" size="m">
           2. Data Handling
         </GovukHeading>
         <GovukBody>
-          You are responsible for ensuring that any data processed using
-          Local Transcribe is handled in accordance with your professional
-          duties and applicable policies. Local Transcribe may be used to
-          process OFFICIAL-SENSITIVE information, including personal data,
-          where this is necessary for legitimate local government activities.
+          You are responsible for ensuring that any data processed using Local
+          Transcribe is handled in accordance with your professional duties and
+          applicable policies. Local Transcribe may be used to process
+          OFFICIAL-SENSITIVE information, including personal data, where this is
+          necessary for legitimate local government activities.
         </GovukBody>
         <GovukBody>
-          If Local Transcribe generates or exposes information that you
-          believe it should not, you must not further use or distribute that
-          information and must report the issue immediately to{' '}
+          If Local Transcribe generates or exposes information that you believe
+          it should not, you must not further use or distribute that information
+          and must report the issue immediately to{' '}
           <a className="govuk-link" href="mailto:localai@communities.gov.uk">
             localai@communities.gov.uk
           </a>
@@ -118,21 +117,21 @@ export default function TermsOfUsePage() {
         </GovukHeading>
         <GovukBody>
           Local Transcribe is intended to support drafting and preparation of
-          content rather than to produce final outputs. Users must make clear
-          to relevant participants when a conversation or meeting is being
-          recorded for automated transcription and summarisation purposes.
-          Users must ensure that responsibility for final content remains
-          with a human author.
+          content rather than to produce final outputs. Users must make clear to
+          relevant participants when a conversation or meeting is being recorded
+          for automated transcription and summarisation purposes. Users must
+          ensure that responsibility for final content remains with a human
+          author.
         </GovukBody>
 
         <GovukHeading as="h2" size="m">
           4. Compliance with Policies
         </GovukHeading>
         <GovukBody>
-          You must comply with your organisation&apos;s policies related to
-          data and AI, as well as legal and regulatory requirements from
-          GDPR, ICO guidance, and relevant ethical principles from the data
-          and AI ethics framework, when using Local Transcribe.
+          You must comply with your organisation&apos;s policies related to data
+          and AI, as well as legal and regulatory requirements from GDPR, ICO
+          guidance, and relevant ethical principles from the data and AI ethics
+          framework, when using Local Transcribe.
         </GovukBody>
 
         <GovukHeading as="h2" size="m">
@@ -142,8 +141,8 @@ export default function TermsOfUsePage() {
           When using Local Transcribe, you must follow your organisation&apos;s
           security requirements for the type and sensitivity of the data it
           stores or processes, including protecting access credentials and
-          handling outputs appropriately. Any suspected security incidents,
-          data breaches, or misuse must be reported as soon as possible to{' '}
+          handling outputs appropriately. Any suspected security incidents, data
+          breaches, or misuse must be reported as soon as possible to{' '}
           <a className="govuk-link" href="mailto:localai@communities.gov.uk">
             localai@communities.gov.uk
           </a>
@@ -155,19 +154,19 @@ export default function TermsOfUsePage() {
         </GovukHeading>
         <GovukBody>
           Users are encouraged to provide feedback on Local Transcribe&apos;s
-          performance, limitations, and errors to support continuous
-          improvement of the service. Users should provide feedback through
-          the feedback link in the beta banner, where available.
+          performance, limitations, and errors to support continuous improvement
+          of the service. Users should provide feedback through the feedback
+          link in the beta banner, where available.
         </GovukBody>
 
         <GovukHeading as="h2" size="m">
           7. Usage Restrictions
         </GovukHeading>
         <GovukBody>
-          Local Transcribe must not be used for purposes outside approved
-          local government activities. Information generated by Local
-          Transcribe must not be treated as an official record, decision, or
-          instruction without appropriate review, validation, and approval.
+          Local Transcribe must not be used for purposes outside approved local
+          government activities. Information generated by Local Transcribe must
+          not be treated as an official record, decision, or instruction without
+          appropriate review, validation, and approval.
         </GovukBody>
 
         <GovukHeading as="h2" size="m">
