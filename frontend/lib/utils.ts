@@ -48,10 +48,7 @@ export function isValidFQDN(domain: string): boolean {
  * (not an Error instance), which for FastAPI is typically `{ detail: string }`
  * or, for validation errors, `{ detail: ValidationError[] }`.
  */
-export function getApiErrorMessage(
-  error: unknown,
-  fallback: string
-): string {
+export function getApiErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error) {
     return error.message
   }
