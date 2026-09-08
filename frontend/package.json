@@ -11,6 +11,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
+    "typecheck": "tsc --incremental false",
     "fetch-openapi-spec": "curl -fsS http://localhost:8080/api/openapi.json -o openapi.json",
     "generate-client": "openapi-ts",
     "openapi-ts": "npm run fetch-openapi-spec && npm run generate-client",
