@@ -105,7 +105,13 @@ export function MinuteEditor({
         message: bannerText,
       })
     }
-  }, [minute, minuteVersion, isGenerating, wasDocumentGenerating, setBanner])
+  }, [
+    isGenerating,
+    minuteVersion?.status,
+    minuteVersion?.content_source,
+    minute.template_name,
+    setBanner,
+  ])
 
   const queryClient = useQueryClient()
   const [isEditable, setIsEditable] = useState(false)
