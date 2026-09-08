@@ -14,13 +14,13 @@ import {
   listMinutesForTranscriptionTranscriptionTranscriptionIdMinutesGetQueryKey,
   getMinuteMinutesMinutesIdGetOptions,
 } from '@/lib/client/@tanstack/react-query.gen'
+import { ProcessingSpinner } from '@/components/processing-spinner'
 import { useBannerStore } from '@/stores/use-banner-store'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { LoaderCircle } from 'lucide-react'
 import posthog from 'posthog-js'
 import { useEffect, useRef, useState } from 'react'
 import { MinuteEditor } from '@/app/transcriptions/[transcriptionId]/MinuteTab/minute-editor/minute-editor'
-import { LoadingSpinner } from '@/components/loading-spinner'
 
 export const NewDocumentTab = ({
   transcription,
@@ -103,13 +103,10 @@ export const NewDocumentTab = ({
 
   if (isCreating) {
     return (
-      <div className="flex flex-col items-center">
-        <LoadingSpinner label="Creating document" />
-        <p className="govuk-body">
-          Creating &lsquo;{selectedTemplate?.name ?? createdTemplateName}
-          &rsquo;&hellip;
-        </p>
-      </div>
+      <ProcessingSpinner
+        label="Creating document"
+        message={`Creating ‘${selectedTemplate?.name ?? createdTemplateName}’…`}
+      />
     )
   }
 
