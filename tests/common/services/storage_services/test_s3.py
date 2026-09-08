@@ -176,6 +176,26 @@ async def test_check_object_exists_false(
 
 
 @pytest.mark.asyncio
+async def test_check_object_exists_re_raises_unexpected_client_errors(
+    mock_s3_client_ctx,  # noqa: ARG001
+    mock_s3_client,
+    mock_data_s3_bucket,
+):
+    """A non-"not found" ClientError (e.g. 403 Forbidden) is a real failure and
+    must not be reported as "file does not exist"."""
+    key = "the_forbidden"
+    mock_s3_client.head_object.side_effect = ClientError(
+        {"Error": {"Code": "403", "Message": "Forbidden"}},
+        "HeadObject",
+    )
+
+    with pytest.raises(ClientError):
+        await S3StorageService.check_object_exists(key=key)
+
+    mock_s3_client.head_object.assert_awaited_once_with(Bucket=mock_data_s3_bucket, Key=key)
+
+
+@pytest.mark.asyncio
 async def test_delete(
     mock_s3_client_ctx,  # noqa: ARG001
     mock_s3_client,

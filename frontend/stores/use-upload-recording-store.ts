@@ -1,4 +1,5 @@
 import type { TranscriptionForm } from '@/hooks/use-start-transcription'
+import { getApiErrorMessage } from '@/lib/utils'
 import { create } from 'zustand'
 
 type UploadRecordingStatus = 'idle' | 'pending' | 'success' | 'error'
@@ -43,8 +44,7 @@ export const useUploadRecordingStore = create<UploadRecordingStore>((set) => ({
       set({
         status: 'error',
         transcriptionId: null,
-        error:
-          error instanceof Error ? error.message : 'Failed to upload recording',
+        error: getApiErrorMessage(error, 'Failed to upload recording'),
       })
     }
   },

@@ -42,6 +42,45 @@ export function isValidFQDN(domain: string): boolean {
   return isFQDN(domain)
 }
 
+/**
+ * Extracts a human-readable message from a value thrown by the generated API
+ * client. On error responses the client throws the parsed JSON body directly
+ * (not an Error instance), which for FastAPI is typically `{ detail: string }`
+ * or, for validation errors, `{ detail: ValidationError[] }`.
+ */
+export function getApiErrorMessage(
+  error: unknown,
+  fallback: string
+): string {
+  if (error instanceof Error) {
+    return error.message
+  }
+
+  if (error && typeof error === 'object' && 'detail' in error) {
+    const { detail } = error as { detail: unknown }
+
+    if (typeof detail === 'string') {
+      return detail
+    }
+
+    if (Array.isArray(detail)) {
+      const messages = detail
+        .map((item) =>
+          item && typeof item === 'object' && 'msg' in item
+            ? String((item as { msg: unknown }).msg)
+            : null
+        )
+        .filter((msg): msg is string => Boolean(msg))
+
+      if (messages.length > 0) {
+        return messages.join(', ')
+      }
+    }
+  }
+
+  return fallback
+}
+
 export function formatCurrentDateTime() {
   const now = new Date()
 

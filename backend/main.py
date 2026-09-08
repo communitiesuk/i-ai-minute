@@ -38,6 +38,14 @@ if settings.SENTRY_DSN:
         "traces_sample_rate": 1.0,
         "profile_session_sample_rate": 0.2 if settings.ENVIRONMENT == "prod" else 1.0,
         "profile_lifecycle": "manual" if settings.ENVIRONMENT == "prod" else "trace",
+        # By default Sentry adds `sentry-trace`/`baggage` headers to every outgoing
+        # HTTP request it instruments (including AWS SDK calls made via aiobotocore).
+        # Adding headers after a request has been SigV4-signed invalidates the
+        # signature, causing AWS to reject the request with 403 Forbidden (see
+        # https://github.com/getsentry/sentry-python/issues/7031). Restrict trace
+        # propagation to our own app so we don't corrupt signed requests to S3 or
+        # other third-party APIs (Azure, OpenAI, etc).
+        "trace_propagation_targets": [settings.APP_URL],
     }
     sentry_sdk.init(settings.SENTRY_DSN, environment=settings.ENVIRONMENT, **sentry_init_opts)
 app = FastAPI(lifespan=lifespan, openapi_url="/api/openapi.json")
