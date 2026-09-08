@@ -7,7 +7,7 @@ import { NewMinuteDialog } from '@/app/transcriptions/[transcriptionId]/MinuteTa
 import { Button } from '@/components/ui/button'
 import { useBannerStore } from '@/stores/use-banner-store'
 import { ReviewGuardButton } from '@/components/review-guard/review-guard-button'
-import { LoadingSpinner } from '@/components/loading-spinner'
+import { ProcessingSpinner } from '@/components/processing-spinner'
 import { citationRegex, citationRegexWithSpace } from '@/lib/citationRegex'
 import {
   Minute,
@@ -201,12 +201,10 @@ export function MinuteEditor({
   }
   if (isGenerating) {
     return (
-      <div className="flex flex-col items-center pt-2">
-        <LoadingSpinner label="Creating document" />
-        <p className="govuk-body">
-          Creating &lsquo;{minute.template_name}&rsquo;&hellip;
-        </p>
-      </div>
+      <ProcessingSpinner
+        label="Creating document"
+        message={`Creating '${minute.template_name}'...`}
+      />
     )
   }
   if (isError) {
