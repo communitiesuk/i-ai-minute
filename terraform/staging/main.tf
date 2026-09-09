@@ -89,9 +89,16 @@ module "frontdoor" {
     "45.150.142.210/32",
     # MHCLG
     "4.158.35.41/32",
+    # Cyberfort (temporarily allowed for pen testing)
+    "37.200.119.11/32",
+    "185.10.12.32/28",
+    "176.65.68.112/28",
+    # Accessibility audit (temporarily allowed)
+    "194.75.245.154/32",
   ]
 
-  ipv6_allowlist = []
+  # Cyberfort (temporarily allowed for pen testing)
+  ipv6_allowlist = ["2a00:1430:2106::/48"]
 
   app_host                                = local.app_host
   internal_access_oidc_client_id_name     = module.secrets.internal_access_oidc_client_id_name
@@ -153,19 +160,19 @@ module "bastion" {
 module "database" {
   source = "../modules/rds"
 
-  environment_name                 = local.environment_name
-  database_username                = local.database_username
-  database_password                = module.secrets.database_password.result
-  database_port                    = local.database_port
-  allocated_storage                = local.database_allocated_storage
-  backup_retention_period          = 7
-  db_subnet_group_name             = module.networking.db_subnet_group_name
-  instance_class                   = "db.t4g.small"
-  multi_az                         = local.multi_az
-  vpc_id                           = module.networking.vpc.id
-  backend_task_execution_role_name = module.ecs.backend_execution_task_name
-  worker_task_execution_role_name  = module.ecs.worker_execution_task_name
-  bastion_group_id                 = module.bastion.security_group_id
+  environment_name        = local.environment_name
+  database_username       = local.database_username
+  database_password       = module.secrets.database_password.result
+  database_port           = local.database_port
+  allocated_storage       = local.database_allocated_storage
+  backup_retention_period = 7
+  db_subnet_group_name    = module.networking.db_subnet_group_name
+  instance_class          = "db.t4g.small"
+  multi_az                = local.multi_az
+  vpc_id                  = module.networking.vpc.id
+  backend_task_role_name  = module.ecs.backend_task_role_name
+  worker_task_role_name   = module.ecs.worker_task_role_name
+  bastion_group_id        = module.bastion.security_group_id
 }
 
 module "sqs" {
@@ -186,11 +193,10 @@ module "ecs" {
   frontend_port               = local.frontend_port
   backend_port                = local.backend_port
 
-  database_port                = local.database_port
-  database_host                = module.database.database_url
-  database_name                = module.database.database_name
-  database_user                = local.database_username
-  database_password_secret_arn = module.secrets.database_password_secret_arn
+  database_port     = local.database_port
+  database_host     = module.database.database_url
+  database_name     = module.database.database_name
+  database_username = local.database_username
 
   lb_target_group_arn  = module.frontdoor.load_balancer.target_group_arn
   lb_security_group_id = module.frontdoor.load_balancer.security_group_id
@@ -220,11 +226,15 @@ module "ecs" {
   lb_listener_exists          = var.ssl_certs_created
 
   azure_apim_tenant_id_arn        = module.secrets.azure_apim_tenant_id_arn
+  azure_apim_url                  = "https://api.azc.test.communities.gov.uk/localtranscribe/"
   azure_apim_client_id_arn        = module.secrets.azure_apim_client_id_arn
   azure_apim_client_secret_arn    = module.secrets.azure_apim_client_secret_arn
   azure_apim_scope_arn            = module.secrets.azure_apim_scope_arn
   azure_apim_subscription_key_arn = module.secrets.azure_apim_subscription_key_arn
   sentry_dsn_arn                  = module.secrets.sentry_dsn_arn
+
+  govnotify_api_key_arn            = module.secrets.govnotify_api_key_arn
+  govnotify_invite_template_id_arn = module.secrets.govnotify_invite_template_id_arn
 }
 
 module "uploads_bucket" {

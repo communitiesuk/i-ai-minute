@@ -1,9 +1,10 @@
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta, timezone
 from unittest.mock import AsyncMock, Mock
 
 import pytest
 from fastapi import HTTPException
+from sqlalchemy.dialects import postgresql
 
 from backend.api.routes.transcriptions import (
     create_recording,
@@ -11,20 +12,56 @@ from backend.api.routes.transcriptions import (
     delete_transcription,
     get_recordings_for_transcription,
     get_transcription,
-    list_transcriptions,
+    list_labelled_transcriptions,
+    list_unlabelled_transcriptions,
     rename_speaker_everywhere,
     update_dialogue_entry_speaker,
     update_dialogue_entry_text,
+    update_transcription_metadata,
     update_transcription_title,
 )
+from backend.utils.transcription_search_filters import _transcription_search_filters
 from common.database.postgres_models import JobStatus
 from common.types import (
     RecordingCreateRequest,
     RenameSpeakerRequest,
     UpdateDialogueEntrySpeakerRequest,
     UpdateDialogueEntryTextRequest,
+    UpdateTranscriptionMetadataRequest,
     UpdateTranscriptionTitleRequest,
 )
+
+
+def _compile_filter(expression) -> str:
+    return str(expression.compile(dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}))
+
+
+def _compile_statement(mock_session, call_index: int = 1) -> str:
+    statement = mock_session.exec.call_args_list[call_index].args[0]
+    return str(statement.compile(dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}))
+
+
+def test_transcription_search_filters_support_partial_recording_dates():
+    filters = _transcription_search_filters(date_of_recording_year=2026)
+
+    assert len(filters) == 1
+    compiled_filter = _compile_filter(filters[0])
+    assert "EXTRACT(year FROM transcription.date_of_recording) = 2026" in compiled_filter
+    assert "EXTRACT(year FROM transcription.created_datetime) = 2026" in compiled_filter
+    assert "transcription.date_of_recording IS NULL" in compiled_filter
+
+
+def test_transcription_search_filters_escape_like_wildcards():
+    filters = _transcription_search_filters(
+        client_name=r"Jane_%",
+        case_id=r"CASE\_%",
+        subject=r"Planning_% meeting",
+    )
+
+    assert filters[0].right.value == r"%Jane\_\%%"
+    assert filters[1].right.value == r"%CASE\\\_\%%"
+    assert filters[2].right.value == r"%Planning\_\% meeting%"
+    assert all(search_filter.modifiers["escape"] == "\\" for search_filter in filters)
 
 
 @pytest.mark.asyncio
@@ -33,23 +70,17 @@ async def test_create_transcription_success(
     mock_session_with_recording,
     mock_user,
     mock_transcription_queue_service,
-    mock_minute,
-    mock_minute_version,
     transcription_request,
     mock_transcription,
     mock_storage_service,  # NOQA: ARG001
 ):
-    """Test successful creation of a transcription with associated minute and minute version."""
+    """Test successful creation of a transcription."""
     mocker.patch("backend.api.routes.transcriptions.Transcription", return_value=mock_transcription)
-    mocker.patch("backend.api.routes.transcriptions.Minute", return_value=mock_minute)
-    mocker.patch("backend.api.routes.transcriptions.MinuteVersion", return_value=mock_minute_version)
 
     response = await create_transcription(transcription_request, mock_session_with_recording, mock_user)
 
     assert response.id == mock_transcription.id
     mock_session_with_recording.add.assert_any_call(mock_transcription)
-    mock_session_with_recording.add.assert_any_call(mock_minute)
-    mock_session_with_recording.add.assert_any_call(mock_minute_version)
     mock_transcription_queue_service.publish_message.assert_called()
 
 
@@ -67,7 +98,67 @@ async def test_create_transcription_file_not_found(
         await create_transcription(transcription_request, mock_session_with_recording, mock_user)
 
     assert exception_info.value.status_code == 404
-    assert "Recording file not found in S3" in exception_info.value.detail
+
+
+@pytest.mark.asyncio
+async def test_create_transcription_uses_recording_file_created_at_as_date_of_recording(
+    mock_session_with_recording,
+    mock_recording,
+    mock_user,
+    mock_transcription_queue_service,  # NOQA: ARG001
+    transcription_request,
+    mock_storage_service,  # NOQA: ARG001
+):
+    """Uploaded recordings should default date_of_recording to the file's extracted creation date."""
+    mock_recording.file_created_at = datetime(2024, 3, 15, 9, 30, tzinfo=UTC)
+
+    await create_transcription(transcription_request, mock_session_with_recording, mock_user)
+
+    added_transcription = mock_session_with_recording.add.call_args.args[0]
+    assert added_transcription.date_of_recording == mock_recording.file_created_at.replace(tzinfo=None)
+
+
+@pytest.mark.asyncio
+async def test_create_transcription_leaves_date_of_recording_unset_for_live_recordings(
+    mock_session_with_recording,
+    mock_recording,
+    mock_user,
+    mock_transcription_queue_service,  # NOQA: ARG001
+    transcription_request,
+    mock_storage_service,  # NOQA: ARG001
+):
+    """Live (non-upload) recordings have no file_created_at, so date_of_recording stays unset."""
+    mock_recording.file_created_at = None
+
+    await create_transcription(transcription_request, mock_session_with_recording, mock_user)
+
+    added_transcription = mock_session_with_recording.add.call_args.args[0]
+    assert added_transcription.date_of_recording is None
+
+
+@pytest.mark.asyncio
+async def test_create_transcription_date_of_recording_preserves_timezone_instant(
+    mock_session_with_recording,
+    mock_recording,
+    mock_user,
+    mock_transcription_queue_service,  # NOQA: ARG001
+    transcription_request,
+    mock_storage_service,  # NOQA: ARG001
+):
+    """Stripping tzinfo for storage must not shift the underlying instant, e.g. across BST/UTC."""
+    # Simulate a recording created during BST (+01:00)
+    bst = timezone(timedelta(hours=1))
+    original_time = datetime(2024, 7, 15, 14, 30, tzinfo=bst)
+    mock_recording.file_created_at = original_time
+
+    await create_transcription(transcription_request, mock_session_with_recording, mock_user)
+
+    added_transcription = mock_session_with_recording.add.call_args.args[0]
+
+    # The naive value stored is reinterpreted as UTC by the DB column, so re-attach UTC to compare instants.
+    stored_as_utc = added_transcription.date_of_recording.replace(tzinfo=UTC)
+    # 14:30 BST == 13:30 UTC
+    assert stored_as_utc == original_time.astimezone(UTC)
 
 
 @pytest.mark.parametrize("file_format", ["mp3", "wav", "m4a", "webm"])
@@ -187,6 +278,113 @@ async def test_update_transcription_title_unauthorized(mock_session, mock_user, 
         await update_transcription_title(
             mock_transcription.id,
             UpdateTranscriptionTitleRequest(title="Updated title"),
+            mock_session,
+            mock_user,
+        )
+
+    assert exc.value.status_code == 404
+    mock_session.commit.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_update_transcription_metadata_success(mock_session, mock_user, mock_transcription):
+    original_created_datetime = mock_transcription.created_datetime
+    original_updated_datetime = mock_transcription.updated_datetime
+    client_date_of_birth = datetime(1985, 4, 12, tzinfo=UTC)
+    date_of_recording = datetime(2024, 6, 3, 14, 30, tzinfo=UTC)
+    mock_session.get = AsyncMock(return_value=mock_transcription)
+
+    await update_transcription_metadata(
+        mock_transcription.id,
+        UpdateTranscriptionMetadataRequest(
+            case_id="XYZ987654",
+            client_name="Jane Smith",
+            client_date_of_birth=client_date_of_birth,
+            date_of_recording=date_of_recording,
+            subject="Updated subject",
+        ),
+        mock_session,
+        mock_user,
+    )
+
+    assert mock_transcription.case_id == "XYZ987654"
+    assert mock_transcription.client_name == "Jane Smith"
+    assert mock_transcription.client_date_of_birth == client_date_of_birth.replace(tzinfo=None)
+    assert mock_transcription.date_of_recording == date_of_recording.replace(tzinfo=None)
+    assert mock_transcription.title == "Updated subject"
+    assert mock_transcription.created_datetime == original_created_datetime
+    assert mock_transcription.updated_datetime > original_updated_datetime
+    mock_session.commit.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_update_transcription_metadata_null_fields_clear_existing_values(
+    mock_session, mock_user, mock_transcription
+):
+    original_created_datetime = mock_transcription.created_datetime
+    original_updated_datetime = mock_transcription.updated_datetime
+    mock_session.get = AsyncMock(return_value=mock_transcription)
+
+    await update_transcription_metadata(
+        mock_transcription.id,
+        UpdateTranscriptionMetadataRequest(
+            case_id=None,
+            client_name=None,
+            client_date_of_birth=None,
+            date_of_recording=None,
+            subject=None,
+        ),
+        mock_session,
+        mock_user,
+    )
+
+    assert mock_transcription.title is None
+    assert mock_transcription.case_id is None
+    assert mock_transcription.client_name is None
+    assert mock_transcription.client_date_of_birth is None
+    assert mock_transcription.date_of_recording is None
+    assert mock_transcription.created_datetime == original_created_datetime
+    assert mock_transcription.updated_datetime > original_updated_datetime
+    mock_session.commit.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_update_transcription_metadata_not_found(mock_session, mock_user):
+    mock_session.get = AsyncMock(return_value=None)
+
+    with pytest.raises(HTTPException) as exc:
+        await update_transcription_metadata(
+            uuid.uuid4(),
+            UpdateTranscriptionMetadataRequest(
+                case_id=None,
+                client_name="Jane Smith",
+                client_date_of_birth=None,
+                date_of_recording=None,
+                subject=None,
+            ),
+            mock_session,
+            mock_user,
+        )
+
+    assert exc.value.status_code == 404
+    mock_session.commit.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_update_transcription_metadata_unauthorized(mock_session, mock_user, mock_transcription):
+    mock_transcription.user_id = uuid.uuid4()
+    mock_session.get = AsyncMock(return_value=mock_transcription)
+
+    with pytest.raises(HTTPException) as exc:
+        await update_transcription_metadata(
+            mock_transcription.id,
+            UpdateTranscriptionMetadataRequest(
+                case_id=None,
+                client_name="Jane Smith",
+                client_date_of_birth=None,
+                date_of_recording=None,
+                subject=None,
+            ),
             mock_session,
             mock_user,
         )
@@ -362,27 +560,130 @@ async def test_update_dialogue_entry_text_not_found(mock_session, mock_user, moc
 
 
 @pytest.mark.asyncio
-async def test_list_transcriptions(mock_session, mock_user, mock_transcription):
+async def test_list_labelled_transcriptions(mock_session, mock_user, mock_transcription):
     mock_session.exec = AsyncMock()
     mock_session.exec.side_effect = [Mock(one=Mock(return_value=1)), Mock(all=Mock(return_value=[mock_transcription]))]
     mock_transcription.dialogue_entries = [{"speaker": "Alice", "text": "Hello", "start_time": 0.0, "end_time": 1.0}]
     mock_transcription.status = JobStatus.COMPLETED
     mock_transcription.title = "Test Title"
+    mock_transcription.date_of_recording = datetime(year=2021, month=1, day=1, tzinfo=UTC)
 
-    result = await list_transcriptions(mock_session, mock_user, page=1, page_size=20)
+    result = await list_labelled_transcriptions(mock_session, mock_user, page=1, page_size=20)
     assert result.total_count == 1
-    assert result.items[0].title == "Test Title"
-    assert result.items[0].status == JobStatus.COMPLETED
+    assert result.items[0].title == mock_transcription.title
+    assert result.items[0].status == mock_transcription.status
     assert result.total_pages == 1
     assert result.items[0].created_datetime == mock_transcription.created_datetime
+    assert result.items[0].date_of_recording == mock_transcription.date_of_recording
+
+
+@pytest.mark.asyncio
+async def test_list_labelled_transcriptions_applies_search_filters(mock_session, mock_user, mock_transcription):
+    mock_session.exec = AsyncMock()
+    mock_session.exec.side_effect = [Mock(one=Mock(return_value=1)), Mock(all=Mock(return_value=[mock_transcription]))]
+    mock_transcription.dialogue_entries = [{"speaker": "Alice", "text": "Hello", "start_time": 0.0, "end_time": 1.0}]
+    mock_transcription.status = JobStatus.COMPLETED
+    mock_transcription.title = "Assessment"
+
+    await list_labelled_transcriptions(
+        mock_session,
+        mock_user,
+        page=1,
+        page_size=20,
+        client_name="Jane",
+        case_id="CASE-123",
+        subject="Assessment",
+        date_of_recording_year=2026,
+        client_date_of_birth=datetime(1985, 4, 12, tzinfo=UTC).date(),
+    )
+
+    compiled_statement = _compile_statement(mock_session)
+    assert "transcription.user_id" in compiled_statement
+    assert "transcription.client_name ILIKE '%%Jane%%'" in compiled_statement
+    assert "transcription.case_id ILIKE '%%CASE-123%%'" in compiled_statement
+    assert "transcription.title ILIKE '%%Assessment%%'" in compiled_statement
+    assert "EXTRACT(year FROM transcription.date_of_recording) = 2026" in compiled_statement
+    assert "EXTRACT(year FROM transcription.created_datetime) = 2026" in compiled_statement
+    assert "transcription.client_date_of_birth >= '1985-04-12 00:00:00'" in compiled_statement
+    assert "transcription.client_date_of_birth < '1985-04-13 00:00:00'" in compiled_statement
+
+
+@pytest.mark.asyncio
+async def test_list_unlabelled_transcriptions(mock_session, mock_user, mock_unlabelled_transcription):
+    mock_session.exec = AsyncMock()
+    mock_session.exec.side_effect = [
+        Mock(one=Mock(return_value=1)),
+        Mock(all=Mock(return_value=[mock_unlabelled_transcription])),
+    ]
+    mock_unlabelled_transcription.dialogue_entries = [
+        {"speaker": "Alice", "text": "Hello", "start_time": 0.0, "end_time": 1.0}
+    ]
+    mock_unlabelled_transcription.status = JobStatus.COMPLETED
+    mock_unlabelled_transcription.title = "Test Title"
+
+    result = await list_unlabelled_transcriptions(mock_session, mock_user)
+    assert result.total_count == 1
+    assert result.items[0].title == mock_unlabelled_transcription.title
+    assert result.items[0].status == mock_unlabelled_transcription.status
+    assert result.items[0].date_of_recording == mock_unlabelled_transcription.date_of_recording
+
+
+@pytest.mark.asyncio
+async def test_list_unlabelled_transcriptions_applies_search_filters(
+    mock_session, mock_user, mock_unlabelled_transcription
+):
+    mock_session.exec = AsyncMock()
+    mock_session.exec.side_effect = [
+        Mock(one=Mock(return_value=1)),
+        Mock(all=Mock(return_value=[mock_unlabelled_transcription])),
+    ]
+    mock_unlabelled_transcription.dialogue_entries = [
+        {"speaker": "Alice", "text": "Hello", "start_time": 0.0, "end_time": 1.0}
+    ]
+    mock_unlabelled_transcription.status = JobStatus.COMPLETED
+
+    await list_unlabelled_transcriptions(
+        mock_session,
+        mock_user,
+        client_name="Jane",
+        case_id="CASE-123",
+        subject="Assessment",
+        date_of_recording_day=9,
+        date_of_recording_month=7,
+    )
+
+    compiled_statement = _compile_statement(mock_session)
+    assert "transcription.user_id" in compiled_statement
+    assert "NOT" in compiled_statement
+    assert "transcription.client_name ILIKE '%%Jane%%'" in compiled_statement
+    assert "transcription.case_id ILIKE '%%CASE-123%%'" in compiled_statement
+    assert "transcription.title ILIKE '%%Assessment%%'" in compiled_statement
+    assert "EXTRACT(day FROM transcription.date_of_recording) = 9" in compiled_statement
+    assert "EXTRACT(month FROM transcription.date_of_recording) = 7" in compiled_statement
+    assert "EXTRACT(day FROM transcription.created_datetime) = 9" in compiled_statement
+    assert "EXTRACT(month FROM transcription.created_datetime) = 7" in compiled_statement
 
 
 @pytest.mark.asyncio
 async def test_get_transcription_success(mock_session, mock_user, mock_transcription):
     mock_session.get = AsyncMock(return_value=mock_transcription)
+    mock_session.exec = AsyncMock(return_value=Mock(all=Mock(return_value=[datetime.now(UTC)])))
     response = await get_transcription(mock_transcription.id, mock_session, mock_user)
     assert response.id == mock_transcription.id
     assert response.title == mock_transcription.title
+    assert response.is_upload is True
+
+
+@pytest.mark.asyncio
+async def test_get_transcription_sets_is_upload_false_when_file_created_at_missing(
+    mock_session, mock_user, mock_transcription
+):
+    mock_session.get = AsyncMock(return_value=mock_transcription)
+    mock_session.exec = AsyncMock(return_value=Mock(all=Mock(return_value=[None])))
+
+    response = await get_transcription(mock_transcription.id, mock_session, mock_user)
+
+    assert response.is_upload is False
 
 
 @pytest.mark.asyncio
@@ -396,13 +697,57 @@ async def test_get_transcription_not_found(mock_session, mock_user):
 
 
 @pytest.mark.asyncio
-async def test_delete_transcription(mock_session, mock_user, mock_transcription):
+async def test_delete_transcription_with_no_recordings(mock_session, mock_user, mock_transcription):
     mock_session.get = AsyncMock(return_value=mock_transcription)
+    mock_result = Mock()
+    mock_result.all.return_value = []
+    mock_session.exec = AsyncMock(return_value=mock_result)
 
     await delete_transcription(mock_transcription.id, mock_session, mock_user)
 
-    mock_session.delete.assert_awaited_once_with(mock_transcription)
+    mock_session.delete.assert_called_once_with(mock_transcription)
     mock_session.commit.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_delete_transcription_deletes_recordings_before_transcription(
+    mock_session, mock_user, mock_transcription, mock_recording, mocker
+):
+    mock_session.get = AsyncMock(return_value=mock_transcription)
+    mock_result = Mock()
+    mock_result.all.return_value = [mock_recording]
+    mock_session.exec = AsyncMock(return_value=mock_result)
+    mock_delete_recording = mocker.patch(
+        "backend.api.routes.transcriptions.delete_recording_file_and_row",
+        AsyncMock(return_value=True),
+    )
+
+    await delete_transcription(mock_transcription.id, mock_session, mock_user)
+
+    mock_delete_recording.assert_awaited_once_with(mock_session, mock_recording)
+    assert mock_session.delete.await_args_list[-1].args == (mock_transcription,)
+    mock_session.commit.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_delete_transcription_raises_when_recording_file_delete_fails(
+    mock_session, mock_user, mock_transcription, mock_recording, mocker
+):
+    mock_session.get = AsyncMock(return_value=mock_transcription)
+    mock_result = Mock()
+    mock_result.all.return_value = [mock_recording]
+    mock_session.exec = AsyncMock(return_value=mock_result)
+    mocker.patch(
+        "backend.api.routes.transcriptions.delete_recording_file_and_row",
+        AsyncMock(return_value=False),
+    )
+
+    with pytest.raises(HTTPException) as exc:
+        await delete_transcription(mock_transcription.id, mock_session, mock_user)
+
+    assert exc.value.status_code == 500
+    mock_session.delete.assert_not_awaited()
+    mock_session.commit.assert_not_awaited()
 
 
 @pytest.mark.asyncio

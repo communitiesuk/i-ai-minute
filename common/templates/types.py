@@ -23,6 +23,10 @@ class Template(Protocol):
         description: A brief description of the template.
         category: The category or grouping of the template.
         agenda_usage: Specifies the usage of the agenda within the template.
+        citations_required: Whether the generated minutes carry ``[n]`` citations into the
+            transcript. Declared on every template so callers can tell, without generating
+            anything, whether a template's output is traceable — the offline evaluation uses it to
+            decide whether citation quality is a meaningful thing to score for this template.
 
     """
 
@@ -30,6 +34,7 @@ class Template(Protocol):
     description: str
     category: str
     agenda_usage: AgendaUsage
+    citations_required: bool
     temperature: float = 0.0
 
     @classmethod
@@ -68,7 +73,11 @@ class SimpleTemplate(Template, Protocol):
     citations_required: bool
 
     @classmethod
-    def prompt(cls, transcript: list[DialogueEntry], agenda: str | None = None) -> list[dict[str, str]]:
+    def prompt(
+        cls,
+        transcript: list[DialogueEntry],
+        agenda: str | None = None,
+    ) -> list[dict[str, str]]:
         """
         Generates a formatted prompt based on a transcript of dialogue entries and an agenda.
 

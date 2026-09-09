@@ -2,8 +2,8 @@ import { MhclgLogo } from '@/components/icons/mhclg-logo'
 
 export default function GovFooter() {
   const links = {
-    '/privacy': 'Privacy',
-    '/support': 'Support',
+    '/privacy': 'Local Transcribe User Privacy Notice',
+    '/privacy/end-service-user': 'End Service User Privacy Notice',
     '/accessibility': 'Accessibility',
     '/acceptable-use-policy': 'Acceptable Use Policy',
   }

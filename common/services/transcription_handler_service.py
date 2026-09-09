@@ -5,6 +5,7 @@ from sqlalchemy.orm import selectinload
 from sqlmodel import col, select
 
 from common.audio.speakers import process_speakers_and_dialogue_entries
+from common.canaries import strip_boundary_metadata
 from common.database.postgres_database import SessionLocal
 from common.database.postgres_models import Chat, JobStatus, Minute, Transcription
 from common.generate_meeting_title import generate_meeting_title
@@ -83,6 +84,7 @@ class TranscriptionHandlerService:
                         )
 
                 chat_response = await chatbot.chat(messages=chat_history)
+                chat_response = strip_boundary_metadata(chat_response)
                 chat_response = combine_consecutive_citations(chat_response)
                 chat.assistant_content = chat_response
                 chat.status = JobStatus.COMPLETED
@@ -144,18 +146,22 @@ class TranscriptionHandlerService:
                 transcription.dialogue_entries = transcript
             if error:
                 transcription.error = error
-            if title:
+            # The title passed here is AI-generated, so it must not clobber a title the
+            # user has already set themselves (the "subject" field on the details form).
+            if title and not transcription.title:
                 transcription.title = title
             session.add(transcription)
             session.commit()
 
     @classmethod
     async def process_transcription(
-        cls, minute_id: UUID, async_transcription_message_data: TranscriptionJobMessageData | None = None
+        cls,
+        transcription_id: UUID,
+        async_transcription_message_data: TranscriptionJobMessageData | None = None,
     ) -> TranscriptionJobMessageData:
         """Process a transcription job and save results. Returns True if job is complete, False otherwise."""
         try:
-            transcription = cls.get_transcription_from_minute_id(minute_id)
+            transcription = cls.get_transcription(transcription_id)
         except Exception as e:
             raise TranscriptionFailedError from e
 

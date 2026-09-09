@@ -1,6 +1,8 @@
 import tempfile
+from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import Mock, patch
+from uuid import uuid4
 
 import pytest
 
@@ -105,6 +107,7 @@ def manager(mock_settings, mock_adapters):  # noqa: ARG001
 def mock_recording():
     """Create mock recording for testing."""
     recording = Mock(spec=Recording)
+    recording.id = uuid4()
     recording.s3_file_key = "test_file.mp3"
     return recording
 
@@ -113,6 +116,7 @@ def mock_recording():
 def mock_transcription(mock_recording):
     """Create mock transcription for testing."""
     transcription = Mock(spec=Transcription)
+    transcription.id = uuid4()
     transcription.recordings = [mock_recording]
     return transcription
 
@@ -224,7 +228,19 @@ class TestTranscriptionServiceManager:
         with (
             tempfile.NamedTemporaryFile(suffix=".mp3") as temp_file,
             patch.object(manager, "get_recording_to_process") as mock_get_recording,
+            patch("common.services.transcription_services.transcription_manager.SessionLocal") as mock_session_local,
         ):
+            # Setup database session mock
+            mock_session = Mock()
+            mock_session_local.return_value.__enter__ = Mock(return_value=mock_session)
+            mock_session_local.return_value.__exit__ = Mock(return_value=False)
+            mock_session.get.return_value = mock_transcription
+            mock_transcription.date_of_recording = None
+            file_created_at = datetime(2026, 8, 18, 10, 30, tzinfo=UTC)
+            fallback_created_datetime = datetime(2026, 8, 17, 10, 30, tzinfo=UTC)
+            mock_recording.file_created_at = file_created_at
+            mock_recording.created_datetime = fallback_created_datetime
+
             # Setup mocks
             mock_duration = 1500.0
             mock_get_recording.return_value = (mock_recording, Path(temp_file.name), mock_duration)
@@ -242,6 +258,7 @@ class TestTranscriptionServiceManager:
                 assert result.job_name == "test_job"
                 assert result.transcript is not None
                 mock_start.assert_called_once()
+                assert mock_transcription.date_of_recording == file_created_at
 
     @pytest.mark.asyncio
     async def test_perform_transcription_steps_asynchronous(
@@ -256,7 +273,18 @@ class TestTranscriptionServiceManager:
             tempfile.NamedTemporaryFile(suffix=".mp3") as temp_file,
             patch.object(manager, "get_recording_to_process") as mock_get_recording,
             patch.object(manager, "check_transcription") as mock_check_transcription,
+            patch("common.services.transcription_services.transcription_manager.SessionLocal") as mock_session_local,
         ):
+            # Setup database session mock
+            mock_session = Mock()
+            mock_session_local.return_value.__enter__ = Mock(return_value=mock_session)
+            mock_session_local.return_value.__exit__ = Mock(return_value=False)
+            mock_session.get.return_value = mock_transcription
+            mock_transcription.date_of_recording = None
+            fallback_created_datetime = datetime(2026, 8, 17, 10, 30, tzinfo=UTC)
+            mock_recording.file_created_at = None
+            mock_recording.created_datetime = fallback_created_datetime
+
             # Setup mocks
             mock_duration = 3500.0  # Should trigger async adapter
             mock_get_recording.return_value = (mock_recording, Path(temp_file.name), mock_duration)
@@ -280,6 +308,7 @@ class TestTranscriptionServiceManager:
                 assert result.transcript is not None
                 mock_start.assert_called_once_with(audio_file_path_or_recording=mock_recording)
                 mock_check_transcription.assert_called_once()
+                assert mock_transcription.date_of_recording == fallback_created_datetime
 
     @pytest.mark.asyncio
     async def test_perform_transcription_steps_unknown_adapter_type(
@@ -294,7 +323,14 @@ class TestTranscriptionServiceManager:
             tempfile.NamedTemporaryFile(suffix=".mp3") as temp_file,
             patch.object(manager, "get_recording_to_process") as mock_get_recording,
             patch.object(manager, "select_adaptor") as mock_select_adaptor,
+            patch("common.services.transcription_services.transcription_manager.SessionLocal") as mock_session_local,
         ):
+            # Setup database session mock
+            mock_session = Mock()
+            mock_session_local.return_value.__enter__ = Mock(return_value=mock_session)
+            mock_session_local.return_value.__exit__ = Mock(return_value=False)
+            mock_session.get.return_value = mock_transcription
+
             # Setup mocks
             mock_get_recording.return_value = (mock_recording, Path(temp_file.name), 1500)
 
@@ -305,3 +341,42 @@ class TestTranscriptionServiceManager:
 
             with pytest.raises(RuntimeError, match="adapter not recognised"):
                 await manager.perform_transcription_steps(mock_transcription)
+
+    @pytest.mark.asyncio
+    async def test_perform_transcription_steps_does_not_overwrite_existing_recording_date(
+        self,
+        mock_storage_service,  # noqa: ARG002
+        manager,
+        mock_recording,
+        mock_transcription,
+    ):
+        with (
+            tempfile.NamedTemporaryFile(suffix=".mp3") as temp_file,
+            patch.object(manager, "get_recording_to_process") as mock_get_recording,
+            patch("common.services.transcription_services.transcription_manager.SessionLocal") as mock_session_local,
+        ):
+            mock_session = Mock()
+            mock_session_local.return_value.__enter__ = Mock(return_value=mock_session)
+            mock_session_local.return_value.__exit__ = Mock(return_value=False)
+            mock_session.get.return_value = mock_transcription
+
+            existing_date = datetime(2026, 8, 1, 10, 30, tzinfo=UTC)
+            fallback_created_datetime = datetime(2026, 8, 24, 10, 30, tzinfo=UTC)
+            mock_transcription.date_of_recording = existing_date
+            mock_recording.file_created_at = None
+            mock_recording.created_datetime = fallback_created_datetime
+
+            mock_duration = 1500.0
+            mock_get_recording.return_value = (mock_recording, Path(temp_file.name), mock_duration)
+            mock_adapter = manager.select_adaptor(int(mock_duration))
+
+            with patch.object(mock_adapter, "start") as mock_start:
+                mock_start.return_value = TranscriptionJobMessageData(
+                    job_name="test_job",
+                    transcript=[{"text": "Test transcript", "speaker": "Speaker1", "start_time": 0.0, "end_time": 1.0}],
+                    transcription_service=mock_adapter.name,
+                )
+
+                await manager.perform_transcription_steps(mock_transcription)
+
+                assert mock_transcription.date_of_recording == existing_date

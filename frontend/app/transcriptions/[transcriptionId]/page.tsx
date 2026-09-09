@@ -1,21 +1,32 @@
 'use client'
-import { use } from 'react'
+
+import { use, useCallback, useEffect, useRef, useState } from 'react'
 import ChatTab from '@/app/transcriptions/[transcriptionId]/ChatTab/ChatTab'
 import { MinuteTab } from '@/app/transcriptions/[transcriptionId]/MinuteTab/MinuteTab'
+import { DocumentTab } from '@/app/transcriptions/[transcriptionId]/NewDocumentTab/DocumentTab'
+import { NewDocumentTab } from '@/app/transcriptions/[transcriptionId]/NewDocumentTab/NewDocumentTab'
 import { TranscriptionTab } from '@/app/transcriptions/[transcriptionId]/TranscriptionTab/TranscriptionTab'
-import { DownloadButton } from '@/components/download-button'
-import { AudioWav } from '@/components/icons/AudioWav'
-import { TranscriptionTitleEditor } from '@/components/transcription-title-editor'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { RecordingDetails } from '@/app/transcriptions/[transcriptionId]/RecordingDetails'
+import { isTranscriptionProcessing } from '@/app/transcriptions/[transcriptionId]/TranscriptionStatus'
+import { StatusNotificationPage } from '@/app/transcriptions/[transcriptionId]/TranscriptionHeader'
 import {
-  getRecordingsForTranscriptionTranscriptionsTranscriptionIdRecordingsGetOptions,
+  GovukButton,
+  GovukErrorSummary,
+  GovukHeading,
+  GovukTabs,
+} from '@/components/govuk'
+import {
   getTranscriptionTranscriptionsTranscriptionIdGetOptions,
+  listMinutesForTranscriptionTranscriptionTranscriptionIdMinutesGetOptions,
 } from '@/lib/client/@tanstack/react-query.gen'
 import { FeatureFlags } from '@/lib/feature-flags'
 import { useQuery } from '@tanstack/react-query'
-import { Clock, Frown, LoaderCircle, SearchX } from 'lucide-react'
+import { LoaderCircle } from 'lucide-react'
 import { useFeatureFlagEnabled } from 'posthog-js/react'
-import { redirect } from 'next/navigation'
+import { redirect, useSearchParams } from 'next/navigation'
+import { BannerNotification } from '@/components/banner-notification'
+import { useBannerStore } from '@/stores/use-banner-store'
+import type { ErrorItem } from '@/components/govuk/error-summary'
 
 export default function TranscriptionPage(props: {
   params: Promise<{ transcriptionId: string }>
@@ -24,18 +35,52 @@ export default function TranscriptionPage(props: {
 
   const { transcriptionId } = params
 
+  const searchParams = useSearchParams()
+  const shouldOpenDetails = searchParams.get('details') === 'open'
+
   const isChatEnabled = useFeatureFlagEnabled(FeatureFlags.ChatEnabled)
+  const [lineEditError, setLineEditError] = useState<string | null>(null)
+  const [recordingDetailsErrors, setRecordingDetailsErrors] = useState<
+    ErrorItem[]
+  >([])
+  const errorSummaryRef = useRef<HTMLDivElement | null>(null)
+  const { clearBanner } = useBannerStore()
+
+  const [isTranscriptEditing, setIsTranscriptEditing] = useState(false)
+
+  const [activeTab, setActiveTab] = useState('transcript')
+  const [draftTabs, setDraftTabs] = useState<
+    { id: string; label: string; minuteId: string | null }[]
+  >([])
+  const documentCounter = useRef(0)
+
+  const handleLineEditError = useCallback((error: string | null) => {
+    setLineEditError(error)
+  }, [])
+
+  useEffect(() => {
+    if (lineEditError && errorSummaryRef.current) {
+      errorSummaryRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      })
+    }
+  }, [lineEditError])
 
   const { data: transcription, isLoading } = useQuery({
     ...getTranscriptionTranscriptionsTranscriptionIdGetOptions({
       path: { transcription_id: transcriptionId },
     }),
     refetchInterval: (query) =>
-      query.state.data?.status &&
-      ['awaiting_start', 'in_progress'].includes(query.state.data.status)
-        ? 2000
-        : false,
+      isTranscriptionProcessing(query.state.data?.status) ? 2000 : false,
+    refetchOnWindowFocus: false,
   })
+
+  const { data: documents = [] } = useQuery(
+    listMinutesForTranscriptionTranscriptionTranscriptionIdMinutesGetOptions({
+      path: { transcription_id: transcriptionId },
+    })
+  )
 
   if (!transcription && !isLoading) {
     redirect('/')
@@ -44,134 +89,165 @@ export default function TranscriptionPage(props: {
   if (isLoading) {
     return (
       <div className="flex h-72 flex-col items-center justify-center">
-        <LoaderCircle size={80} className="animate-spin" />
+        <LoaderCircle size={80} className="animate-spin" aria-hidden="true" />
       </div>
     )
   }
 
   if (!transcription) {
     return (
-      <div className="flex flex-col items-center justify-center">
-        <SearchX size={100} />
-        <p>404 - Transcription not found</p>
+      <div className="govuk-grid-row">
+        <div className="govuk-grid-column-two-thirds">
+          <GovukHeading>Transcription not found</GovukHeading>
+          <p className="govuk-body">
+            We could not find that transcription. It may have been deleted.
+          </p>
+        </div>
       </div>
     )
   }
 
-  const date = new Date(transcription.created_datetime)
+  const dateString =
+    transcription.date_of_recording ?? transcription.created_datetime
+  const date = new Date(dateString)
   const dateLabel = `${date.toDateString()} at ${date.toLocaleTimeString()}`
+  const recordingDate = date.toLocaleDateString('en-GB')
+  const dateTimeLabel = `${date.toLocaleDateString('en-GB')} at ${date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`
+  const isProcessing = isTranscriptionProcessing(transcription.status)
 
-  if (
-    transcription.status &&
-    ['awaiting_start', 'in_progress'].includes(transcription.status)
-  ) {
+  if (isProcessing) {
     return (
-      <div>
-        <TranscriptionTitleEditor
-          title={transcription.title}
-          transcriptionId={transcription.id}
-          status={transcription.status}
-        />
-        <div className="flex items-center gap-1 text-xs text-slate-500">
-          <Clock size="0.8rem" />
-          {dateLabel}
-        </div>
-        <div className="flex flex-col items-center justify-center">
-          <AudioWav />
-          <p className="mb-4">
-            Transcription being processed, you can close the tab.
-          </p>
-          <AudioPlayer transcriptionId={transcription.id} />
-        </div>
-      </div>
+      <StatusNotificationPage
+        transcription={transcription}
+        dateLabel={dateLabel}
+        title="Processing"
+      >
+        Your transcription is being processed. You can close the tab and come
+        back later.
+      </StatusNotificationPage>
     )
   }
 
   if (transcription.status == 'failed') {
     return (
-      <div>
-        <TranscriptionTitleEditor
-          title={transcription.title}
-          transcriptionId={transcription.id}
-          status={transcription.status}
-        />
-        <div className="flex items-center gap-1 text-xs text-slate-500">
-          <Clock size="0.8rem" />
-          {dateLabel}
-        </div>
-        <div className="flex flex-col items-center justify-center gap-2">
-          <Frown size={100} />
-          <p>
-            Something went wrong with your transcription. You may need to try
-            again.
-          </p>
-          <AudioPlayer transcriptionId={transcription.id} />
-        </div>
-      </div>
+      <StatusNotificationPage
+        transcription={transcription}
+        dateLabel={dateLabel}
+        title="Transcription failed"
+      >
+        Something went wrong with your transcription. You may need to try again.
+      </StatusNotificationPage>
     )
   }
+
+  const handleCreateDocument = () => {
+    const id = `new-document-${documentCounter.current++}`
+    setDraftTabs((prev) => [
+      ...prev,
+      { id, label: 'New document', minuteId: null },
+    ])
+    setActiveTab(id)
+  }
+
+  const removeDraftTab = (id: string) => {
+    setDraftTabs((prev) => prev.filter((tab) => tab.id !== id))
+    setActiveTab('transcript')
+  }
+
+  const handleMinuteCreated = (id: string, minuteId: string) => {
+    setDraftTabs((prev) =>
+      prev.map((tab) => (tab.id === id ? { ...tab, minuteId } : tab))
+    )
+  }
+
+  const handleDocumentCreated = (id: string, templateName: string) => {
+    setDraftTabs((prev) =>
+      prev.map((tab) => (tab.id === id ? { ...tab, label: templateName } : tab))
+    )
+  }
+
+  // Persisted document tabs, minus any doc still shown by its in-session draft tab.
+  const draftMinuteIds = new Set(
+    draftTabs.flatMap((tab) => (tab.minuteId ? [tab.minuteId] : []))
+  )
+  const documentTabs = documents.filter((doc) => !draftMinuteIds.has(doc.id!))
+
   return (
     <div className="flex w-full flex-col">
-      <TranscriptionTitleEditor
-        title={transcription.title}
-        transcriptionId={transcription.id}
-        status={transcription.status}
+      <BannerNotification />
+      {(lineEditError || recordingDetailsErrors.length > 0) && (
+        <GovukErrorSummary
+          ref={errorSummaryRef}
+          errorList={[
+            ...(lineEditError
+              ? [{ href: '#line-edit-actions', text: lineEditError }]
+              : []),
+            ...recordingDetailsErrors,
+          ]}
+        />
+      )}
+      <GovukHeading as="h1" size="xl" className="govuk-!-margin-bottom-2">
+        {recordingDate}
+      </GovukHeading>
+      <hr className="govuk-section-break govuk-section-break--visible govuk-!-margin-top-2 govuk-!-margin-bottom-2" />
+      <RecordingDetails
+        dateTimeLabel={dateTimeLabel}
+        defaultOpen={shouldOpenDetails}
+        transcription={transcription}
+        onErrorListChange={setRecordingDetailsErrors}
       />
-      <div className="mb-4 flex items-center gap-1 text-xs text-slate-500">
-        <Clock size="0.8rem" />
-        {dateLabel}
+      <hr className="govuk-section-break govuk-section-break--visible govuk-!-margin-top-2 govuk-!-margin-bottom-2" />
+      <div>
+        <GovukButton
+          type="button"
+          disabled={isTranscriptEditing}
+          onClick={handleCreateDocument}
+        >
+          Create document
+        </GovukButton>
       </div>
-      <Tabs defaultValue="summary" className="w-full">
-        <TabsList className="h-12 w-full">
-          <TabsTrigger
-            value="summary"
-            className="data-[state=active]:shadow-lg"
-          >
-            Meeting summary
-          </TabsTrigger>
-          <TabsTrigger
-            value="transcript"
-            className="data-[state=active]:shadow-lg"
-          >
-            Transcript
-          </TabsTrigger>
-          {isChatEnabled && (
-            <TabsTrigger value="chat" className="data-[state=active]:shadow-lg">
-              Chat with your meeting
-            </TabsTrigger>
-          )}
-        </TabsList>
-        <TabsContent value="summary">
+      <GovukTabs
+        id="transcription-tabs"
+        className="govuk-!-margin-top-4"
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+      >
+        <GovukTabs.Panel id="transcript" label="Transcript">
+          <TranscriptionTab
+            transcription={transcription}
+            onLineEditError={handleLineEditError}
+            onEditModeChange={setIsTranscriptEditing}
+            onDismissBanner={clearBanner}
+          />
+        </GovukTabs.Panel>
+        <GovukTabs.Panel id="meeting-summary" label="Meeting summary">
           <MinuteTab transcription={transcription} />
-        </TabsContent>
-        <TabsContent value="transcript">
-          <TranscriptionTab transcription={transcription} />
-        </TabsContent>
+        </GovukTabs.Panel>
         {isChatEnabled && (
-          <TabsContent value="chat">
+          <GovukTabs.Panel id="chat" label="Chat with your meeting">
             <ChatTab transcription={transcription} />
-          </TabsContent>
+          </GovukTabs.Panel>
         )}
-      </Tabs>
-    </div>
-  )
-}
-
-const AudioPlayer = ({ transcriptionId }: { transcriptionId: string }) => {
-  const { data: recordings } = useQuery({
-    ...getRecordingsForTranscriptionTranscriptionsTranscriptionIdRecordingsGetOptions(
-      { path: { transcription_id: transcriptionId } }
-    ),
-  })
-  if (!recordings || recordings.length == 0) {
-    return null
-  }
-  return (
-    <div className="mb-2 flex w-full max-w-3xl flex-col gap-2 rounded border bg-white p-2">
-      <audio controls src={recordings[0].url} className="w-full" />
-      <div className="flex justify-end">
-        <DownloadButton recordings={recordings} />
-      </div>
+        {documentTabs.map((doc) => (
+          <GovukTabs.Panel key={doc.id} id={doc.id!} label={doc.template_name}>
+            <DocumentTab transcription={transcription} minute={doc} />
+          </GovukTabs.Panel>
+        ))}
+        {draftTabs.map((tab) => (
+          <GovukTabs.Panel key={tab.id} id={tab.id} label={tab.label}>
+            <NewDocumentTab
+              transcription={transcription}
+              onCancel={() => removeDraftTab(tab.id)}
+              onMinuteCreated={(minuteId) =>
+                handleMinuteCreated(tab.id, minuteId)
+              }
+              onCreated={(templateName) =>
+                handleDocumentCreated(tab.id, templateName)
+              }
+            />
+          </GovukTabs.Panel>
+        ))}
+      </GovukTabs>
     </div>
   )
 }

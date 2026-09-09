@@ -1,29 +1,35 @@
 'use client'
 
 import { DialogueEntryForm } from '@/app/transcriptions/[transcriptionId]/TranscriptionTab/TranscriptionTab'
-import { Button } from '@/components/ui/button'
+import { GovukButton } from '@/components/govuk'
 import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
+  GovukModalDialogue,
+  GovukModalDialogueActions,
+} from '@/components/govuk/modal-dialogue'
 import { DialogueEntry } from '@/lib/client'
-import { Edit2, Pause, Play } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { FormProvider, useFormContext, useWatch } from 'react-hook-form'
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  RefObject,
+  useCallback,
+} from 'react'
+import { useFormContext, useWatch } from 'react-hook-form'
+import { PlayButton } from '@/components/icons/play-button'
+import { PauseButton } from '@/components/icons/pause-button'
+import { InLineEditForm } from '@/components/govuk/inline-edit-form'
+import { ModalConfirmationInterstitial } from '@/components/govuk/modal-confirmation-interstitial'
+import { useBannerStore } from '@/stores/use-banner-store'
 
 export const SpeakerEditor = ({
   src,
   onSaveSpeaker,
+  disabled = false,
 }: {
   src?: string
   onSaveSpeaker: (originalSpeaker: string, newSpeaker: string) => Promise<void>
+  disabled?: boolean
 }) => {
   const form = useFormContext<DialogueEntryForm>()
   const entries = useWatch({ control: form.control, name: 'entries' })
@@ -42,136 +48,258 @@ export const SpeakerEditor = ({
     return speakerMap
   }, [entries])
 
-  const [selected, setSelected] = useState<string | undefined>()
-  const onSave = useCallback(
-    (originalSpeaker: string) => async (newSpeaker: string) => {
-      await onSaveSpeaker(originalSpeaker, newSpeaker)
-    },
-    [onSaveSpeaker]
-  )
+  const [open, setOpen] = useState(false)
+  const closeModal = useCallback(() => {
+    setOpen(false)
+  }, [])
 
   return (
-    <Dialog>
-      <DialogTrigger asChild className="mb-4">
-        <Button className="active:bg-yellow-400">
-          <Edit2 />
-          View/Edit Speaker Names
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="scroll max-h-screen overflow-y-auto sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Edit speaker names</DialogTitle>
-          <DialogDescription>
-            You can edit speaker names here or on the transcript. Click on the
-            speaker&apos;s name to edit
-          </DialogDescription>
-        </DialogHeader>
-        <FormProvider {...form}>
-          <form className="flex flex-col gap-2">
-            {Array.from(speakers.entries()).map(([speaker, entries]) => (
-              <div key={speaker} className="flex w-full justify-between gap-1">
-                <SpeakerNameEditor
-                  speaker={speaker}
-                  onSave={onSave(speaker)}
-                  selected={selected == speaker}
-                  setSelected={setSelected}
-                />
-                <div className="flex gap-1">
-                  {src &&
-                    entries
-                      .slice(0, 3)
-                      .map((entry) => (
-                        <PlayClipButton
-                          key={entry.start_time}
-                          src={src}
-                          startTime={entry.start_time}
-                          endTime={entry.end_time}
-                        />
-                      ))}
-                </div>
-              </div>
-            ))}
-          </form>
-        </FormProvider>
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button variant="outline">Done</Button>
-          </DialogClose>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <>
+      <GovukButton
+        type="button"
+        variant="secondary"
+        className="govuk-!-margin-bottom-0"
+        onClick={() => setOpen(true)}
+        disabled={disabled}
+      >
+        Edit speaker names
+      </GovukButton>
+      <SpeakerEditorModal
+        open={open}
+        onClose={closeModal}
+        speakers={speakers}
+        src={src}
+        onSaveSpeaker={onSaveSpeaker}
+      />
+    </>
   )
 }
 
-const SpeakerNameEditor = ({
-  speaker,
-  onSave,
-  selected,
-  setSelected,
-}: {
-  speaker: string
-  onSave: (name: string) => Promise<void>
-  selected: boolean
-  setSelected: (n: string | undefined) => void
-}) => {
-  const [value, setValue] = useState(speaker)
-  const inputRef = useRef<HTMLInputElement | null>(null)
-  const [isSaving, setIsSaving] = useState(false)
+type SpeakerEditorModalProps = {
+  open: boolean
+  onClose: () => void
+  speakers: Map<string, DialogueEntry[]>
+  src?: string
+  onSaveSpeaker: (originalSpeaker: string, newSpeaker: string) => Promise<void>
+}
 
-  useEffect(() => {
-    if (selected && inputRef.current) {
-      inputRef.current.focus()
+const SpeakerEditorModal = ({
+  open,
+  onClose,
+  speakers,
+  src,
+  onSaveSpeaker,
+}: SpeakerEditorModalProps) => {
+  const { setBanner } = useBannerStore()
+
+  const [view, setView] = useState<'list' | 'edit' | 'confirm-discard'>('list')
+  const [editingSpeaker, setEditingSpeaker] = useState<string | undefined>()
+  const [editInitialValue, setEditInitialValue] = useState('')
+  const [pendingChanges, setPendingChanges] = useState<Map<string, string>>(
+    new Map()
+  )
+  const [inFlightRequest, setInFlightRequest] = useState(false)
+
+  const activeAudioRef = useRef<HTMLAudioElement | null>(null)
+
+  const tableHeaders: React.ReactNode[] = [
+    'Name',
+    "Hear speaker's voice",
+    <span key="actions" className="govuk-visually-hidden">
+      Actions
+    </span>,
+  ]
+
+  const handleEdit = useCallback(
+    (speaker: string) => {
+      const initialValue = pendingChanges.get(speaker) ?? speaker
+      setEditingSpeaker(speaker)
+      setEditInitialValue(initialValue)
+      setView('edit')
+    },
+    [pendingChanges]
+  )
+
+  const handleUpdate = useCallback(
+    (newName: string) => {
+      if (!editingSpeaker) return
+      setPendingChanges((prev) => {
+        const next = new Map(prev)
+        if (newName === editingSpeaker) {
+          next.delete(editingSpeaker)
+        } else {
+          next.set(editingSpeaker, newName)
+        }
+        return next
+      })
+      setEditingSpeaker(undefined)
+      setView('list')
+    },
+    [editingSpeaker]
+  )
+
+  const handleDone = async () => {
+    setInFlightRequest(true)
+    for (const [original, updated] of pendingChanges.entries()) {
+      try {
+        await onSaveSpeaker(original, updated)
+      } catch {
+        setBanner({
+          message: `One or more speaker names could not be updated, please try again.`,
+          variant: 'important',
+          title: 'Error',
+        })
+        setInFlightRequest(false)
+        return
+      }
     }
-  }, [selected])
+    setInFlightRequest(false)
+    setPendingChanges(new Map())
+    setView('list')
+    setBanner({
+      message: 'Speaker names updated',
+      variant: 'success',
+      title: 'Success',
+    })
+    onClose()
+  }
 
-  if (!selected) {
-    return (
-      <Button
-        onClick={() => {
-          setSelected(speaker)
-        }}
-        variant="link"
-        type="button"
-      >
-        <Edit2 /> {speaker}
-      </Button>
-    )
+  const handleClose = () => {
+    setPendingChanges(new Map())
+    setEditingSpeaker(undefined)
+    setView('list')
+    onClose()
   }
 
   return (
-    <div className="flex flex-1 gap-1">
-      <Input
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        ref={inputRef}
-      />
-      <Button
-        type="button"
-        variant="secondary"
-        disabled={isSaving}
-        onClick={() => {
-          setValue(speaker)
-          setSelected(undefined)
-        }}
-      >
-        Cancel
-      </Button>
-      <Button
-        type="button"
-        disabled={isSaving}
-        onClick={async () => {
-          setIsSaving(true)
-          try {
-            await onSave(value)
-            setSelected(undefined)
-          } finally {
-            setIsSaving(false)
+    <GovukModalDialogue
+      open={open}
+      onClose={
+        view === 'confirm-discard'
+          ? () => setView('list')
+          : view === 'edit'
+            ? () => {
+                setEditingSpeaker(undefined)
+                setView('list')
+              }
+            : pendingChanges.size > 0
+              ? () => setView('confirm-discard')
+              : handleClose
+      }
+      title={
+        view === 'edit'
+          ? `Edit ${editInitialValue}`
+          : view === 'confirm-discard'
+            ? ''
+            : 'Edit speaker names'
+      }
+    >
+      {view === 'list' ? (
+        <>
+          <p className="govuk-body">
+            You can check the speaker&apos;s voice to confirm who it is
+          </p>
+          <table className="govuk-table">
+            <thead className="govuk-table__head">
+              <tr className="govuk-table__row">
+                {tableHeaders.map((header, index) => (
+                  <th key={index} scope="col" className="govuk-table__header">
+                    {header}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="govuk-table__body">
+              {Array.from(speakers.entries()).map(([speaker, entries]) => (
+                <tr className="govuk-table__row" key={speaker}>
+                  <th scope="row" className="govuk-table__header">
+                    {pendingChanges.get(speaker) ?? speaker}
+                  </th>
+                  <td className="govuk-table__cell">
+                    <div className="govuk-button-group">
+                      {src &&
+                        entries
+                          .slice(0, 3)
+                          .map((entry) => (
+                            <PlayClipButton
+                              key={entry.start_time}
+                              src={src}
+                              startTime={entry.start_time}
+                              endTime={entry.end_time}
+                              className="govuk-!-margin-right-3"
+                              activeAudioRef={activeAudioRef}
+                            />
+                          ))}
+                    </div>
+                  </td>
+                  <td className="govuk-table__cell">
+                    <GovukButton
+                      variant="link"
+                      onClick={() => handleEdit(speaker)}
+                    >
+                      Edit
+                    </GovukButton>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <GovukModalDialogueActions>
+            <GovukButton
+              type="button"
+              onClick={handleDone}
+              disabled={pendingChanges.size === 0 || inFlightRequest}
+            >
+              Done
+            </GovukButton>
+
+            <GovukButton
+              type="button"
+              variant="link"
+              onClick={
+                pendingChanges.size > 0
+                  ? () => setView('confirm-discard')
+                  : handleClose
+              }
+            >
+              Cancel
+            </GovukButton>
+          </GovukModalDialogueActions>
+        </>
+      ) : view === 'edit' ? (
+        <InLineEditForm
+          key={editInitialValue}
+          name={editInitialValue}
+          onUpdate={handleUpdate}
+          onCancel={() => {
+            setEditingSpeaker(undefined)
+            setView('list')
+          }}
+        />
+      ) : (
+        <ModalConfirmationInterstitial
+          title="Discard changes?"
+          body={
+            <div className="govuk-warning-text">
+              <span className="govuk-warning-text__icon" aria-hidden="true">
+                !
+              </span>
+              <strong className="govuk-warning-text__text">
+                <span className="govuk-visually-hidden">Warning</span>
+                If you continue, your changes will not be saved.
+              </strong>
+            </div>
           }
-        }}
-      >
-        Save
-      </Button>
-    </div>
+          confirmLabel="Discard changes"
+          onConfirm={() => {
+            setPendingChanges(new Map())
+            setView('list')
+            handleClose()
+          }}
+          onCancel={() => setView('list')}
+        />
+      )}
+    </GovukModalDialogue>
   )
 }
 
@@ -179,10 +307,14 @@ const PlayClipButton = ({
   src,
   startTime,
   endTime,
+  className,
+  activeAudioRef,
 }: {
   src: string
   startTime: number
   endTime: number
+  className?: string
+  activeAudioRef: RefObject<HTMLAudioElement | null>
 }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const [isPlaying, setPlaying] = useState(false)
@@ -219,12 +351,20 @@ const PlayClipButton = ({
   }, [endTime, src, startTime])
 
   return (
-    <Button
+    <button
       type="button"
-      className="size-8 rounded-full bg-blue-500 text-xs text-white hover:bg-blue-800 hover:text-white"
+      aria-label={isPlaying ? 'Pause clip' : 'Play clip'}
+      className={className ?? ''}
       onClick={() => {
         if (audioRef.current) {
           if (audioRef.current.paused) {
+            if (
+              activeAudioRef.current &&
+              activeAudioRef.current !== audioRef.current
+            ) {
+              activeAudioRef.current.pause()
+            }
+            activeAudioRef.current = audioRef.current
             audioRef.current.play()
           } else {
             audioRef.current.pause()
@@ -232,7 +372,7 @@ const PlayClipButton = ({
         }
       }}
     >
-      {isPlaying ? <Pause /> : <Play />}
-    </Button>
+      {isPlaying ? <PauseButton /> : <PlayButton />}
+    </button>
   )
 }

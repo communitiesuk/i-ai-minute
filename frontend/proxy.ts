@@ -17,7 +17,10 @@ const PUBLIC_PATHS = [
   '/privacy',
   '/support',
   '/signout',
+  '/assets', // Bypass middleware for static asset files
 ]
+
+const TOU_PATH = '/terms-of-use'
 
 export async function proxy(req: NextRequest) {
   try {
@@ -47,7 +50,7 @@ export async function proxy(req: NextRequest) {
         console.error(
           `No auth token found in headers when accessing ${pathname}`
         )
-        return redirectToUnauthorised(req)
+        return redirectTo(req, '/unauthorised')
       }
 
       if (verifier) {
@@ -55,12 +58,8 @@ export async function proxy(req: NextRequest) {
 
         if (authResult?.isAuthorised !== true) {
           console.error(`User is not authorised to access ${pathname}`)
-          return redirectToUnauthorised(req)
+          return redirectTo(req, '/unauthorised')
         }
-
-        console.info(
-          `User ${authResult.email} authorisation result: ${authResult.isAuthorised}`
-        )
       }
       backendAuthResponse = await fetch(
         `${process.env.BACKEND_HOST}/users/me`,
@@ -78,27 +77,28 @@ export async function proxy(req: NextRequest) {
     }
 
     if (backendAuthResponse.status === 401) {
-      return redirectToUnauthorised(req)
+      return redirectTo(req, '/unauthorised')
+    }
+
+    const user = await backendAuthResponse.json()
+    if (!user.accepted_tou && !pathname.startsWith(TOU_PATH)) {
+      return redirectTo(req, TOU_PATH)
     }
 
     return NextResponse.next()
   } catch (error) {
     console.error('Error authorising token:', error)
-    return redirectToUnauthorised(req)
+    return redirectTo(req, '/unauthorised')
   }
 }
 
-function redirectToUnauthorised(req: NextRequest) {
+function redirectTo(req: NextRequest, page: string) {
   const url = req.nextUrl.clone()
-  url.pathname = '/unauthorised'
+  url.pathname = page
   return NextResponse.redirect(url)
 }
 
 // Configure which paths this middleware should run on
 export const config = {
-  matcher: [
-    // Match all paths except those starting with excluded paths
-    // You can customize this as needed
-    '/((?!_next/static|_next/image|favicon.ico|api/health).*)',
-  ],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/health).*)'],
 }

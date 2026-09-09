@@ -29,7 +29,7 @@ locals {
       value = tostring(var.database_port)
       }, {
       name  = "POSTGRES_USER"
-      value = var.database_user
+      value = tostring(var.database_username)
       }, {
       name  = "POSTGRES_DB"
       value = var.database_name
@@ -83,17 +83,13 @@ locals {
       value = "client_secret"
       }, {
       name  = "AZURE_APIM_URL"
-      value = "https://api.azc.test.communities.gov.uk/localtranscribe/"
+      value = var.azure_apim_url
       }, {
       name  = "AZURE_APIM_API_VERSION"
       value = "2024-10-21"
     },
   ]
   shared_worker_backend_secrets = [
-    {
-      name      = "POSTGRES_PASSWORD"
-      valueFrom = var.database_password_secret_arn
-    },
     {
       name      = "AZURE_APIM_TENANT_ID"
       valueFrom = var.azure_apim_tenant_id_arn
@@ -124,6 +120,19 @@ locals {
     },
     # AZURE_BLOB_CONNECTION_STRING and AZURE_TRANSCRIPTION_CONTAINER_NAME needed here for batch adapter - see AIILG-528
   ]
+  backend_secrets = concat(
+    local.shared_worker_backend_secrets,
+    [
+      {
+        name      = "GOVNOTIFY_API_KEY"
+        valueFrom = var.govnotify_api_key_arn
+      },
+      {
+        name      = "GOVNOTIFY_INVITE_TEMPLATE_ID"
+        valueFrom = var.govnotify_invite_template_id_arn
+      },
+    ]
+  )
   frontend_environment_variables = [
     {
       name  = "ENVIRONMENT"
@@ -253,12 +262,16 @@ resource "aws_ecs_task_definition" "backend" {
 
       environment = concat(local.shared_worker_backend_environment_variables, [
         {
+          name  = "EMAIL_SERVICE"
+          value = "gov_notify"
+        },
+        {
           name  = "APP_NAME"
           value = "local-transcribe-backend"
         }
       ])
 
-      secrets = local.shared_worker_backend_secrets
+      secrets = local.backend_secrets
 
       healthCheck = {
         command     = ["CMD-SHELL", "curl --fail http://localhost:${var.backend_port}/healthcheck"]

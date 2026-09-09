@@ -1,25 +1,29 @@
+import datetime
 import logging
 import math
 import uuid
 from pathlib import Path
+from typing import Annotated, Any
 
 from fastapi import APIRouter, HTTPException, Query
+from sqlalchemy import ColumnElement, not_, or_
 from sqlmodel import col, func, select
 
 from backend.api.dependencies import SQLSessionDep, UserDep
 from backend.utils.get_file_s3_key import get_file_s3_key
+from backend.utils.transcription_search_filters import _transcription_search_filters
 from common.database.postgres_models import (
     DialogueEntry,
-    Minute,
-    MinuteVersion,
     Recording,
     Transcription,
 )
 from common.services.queue_services import get_queue_service
 from common.services.storage_services import get_storage_service
+from common.services.storage_services.audio_deletion import delete_recording_file_and_row
 from common.settings import get_settings
 from common.types import (
-    PaginatedTranscriptionsResponse,
+    LabelledTranscriptionMetadata,
+    LabelledTranscriptionsResponse,
     RecordingCreateRequest,
     RecordingCreateResponse,
     RenameSpeakerRequest,
@@ -28,9 +32,12 @@ from common.types import (
     TranscriptionCreateRequest,
     TranscriptionCreateResponse,
     TranscriptionGetResponse,
-    TranscriptionMetadata,
+    TranscriptionSortOrder,
+    UnlabelledTranscriptionMetadata,
+    UnlabelledTranscriptionsResponse,
     UpdateDialogueEntrySpeakerRequest,
     UpdateDialogueEntryTextRequest,
+    UpdateTranscriptionMetadataRequest,
     UpdateTranscriptionTitleRequest,
     WorkerMessage,
 )
@@ -87,15 +94,53 @@ def _validate_dialogue_entry(
         raise HTTPException(status_code=409, detail="Dialogue entry text has changed")
 
 
-@transcriptions_router.get("/transcriptions", response_model=PaginatedTranscriptionsResponse)
-async def list_transcriptions(
+def _created_datetime_order(sort: TranscriptionSortOrder) -> ColumnElement[Any]:
+    column = col(Transcription.created_datetime)
+    return column.asc() if sort == TranscriptionSortOrder.oldest else column.desc()
+
+
+@transcriptions_router.get("/transcriptions/labelled", response_model=LabelledTranscriptionsResponse)
+async def list_labelled_transcriptions(
     session: SQLSessionDep,
     current_user: UserDep,
     page: int = Query(1, ge=1, description="Page number (starts from 1)"),
     page_size: int = Query(20, ge=1, le=100, description="Number of items per page"),
-) -> PaginatedTranscriptionsResponse:
-    """Get paginated metadata for transcriptions for the current user."""
-    count_statement = select(func.count(col(Transcription.id))).where(Transcription.user_id == current_user.id)
+    sort: Annotated[
+        TranscriptionSortOrder, Query(description="Sort order for date recorded")
+    ] = TranscriptionSortOrder.newest,
+    client_name: Annotated[str | None, Query(description="Filter by client name")] = None,
+    case_id: Annotated[str | None, Query(description="Filter by case ID")] = None,
+    subject: Annotated[str | None, Query(description="Filter by subject")] = None,
+    date_of_recording: Annotated[datetime.date | None, Query(description="Filter by date recorded")] = None,
+    date_of_recording_day: Annotated[int | None, Query(ge=1, le=31, description="Filter by recorded day")] = None,
+    date_of_recording_month: Annotated[int | None, Query(ge=1, le=12, description="Filter by recorded month")] = None,
+    date_of_recording_year: Annotated[int | None, Query(ge=1, description="Filter by recorded year")] = None,
+    client_date_of_birth: Annotated[datetime.date | None, Query(description="Filter by client date of birth")] = None,
+) -> LabelledTranscriptionsResponse:
+    """Get paginated metadata for labelled transcriptions for the current user."""
+    labelled_filter = or_(
+        col(Transcription.title).is_not(None),
+        col(Transcription.client_date_of_birth).is_not(None),
+        col(Transcription.client_name).is_not(None),
+        col(Transcription.case_id).is_not(None),
+    )
+    search_filters = _transcription_search_filters(
+        client_name=client_name,
+        case_id=case_id,
+        subject=subject,
+        date_of_recording=date_of_recording,
+        date_of_recording_day=date_of_recording_day,
+        date_of_recording_month=date_of_recording_month,
+        date_of_recording_year=date_of_recording_year,
+        client_date_of_birth=client_date_of_birth,
+    )
+
+    count_statement = (
+        select(func.count(col(Transcription.id)))
+        .where(Transcription.user_id == current_user.id)
+        .where(labelled_filter)
+        .where(*search_filters)
+    )
     count_result = await session.exec(count_statement)
     total_count = count_result.one()
 
@@ -103,7 +148,9 @@ async def list_transcriptions(
     statement = (
         select(Transcription)
         .where(Transcription.user_id == current_user.id)
-        .order_by(col(Transcription.created_datetime).desc())
+        .where(labelled_filter)
+        .where(*search_filters)
+        .order_by(_created_datetime_order(sort))
         .offset(offset)
         .limit(page_size)
     )
@@ -111,9 +158,88 @@ async def list_transcriptions(
     transcriptions = result.all()
 
     items = [
-        TranscriptionMetadata(
+        LabelledTranscriptionMetadata(
             id=t.id,
             created_datetime=t.created_datetime,
+            title=t.title,
+            text=t.dialogue_entries[0]["text"][:100] if t.dialogue_entries else "",
+            status=t.status,
+            date_of_recording=t.date_of_recording,
+            client_date_of_birth=t.client_date_of_birth,
+            client_name=t.client_name,
+            case_id=t.case_id,
+        )
+        for t in transcriptions
+    ]
+
+    total_pages = math.ceil(total_count / page_size) or 1
+
+    return LabelledTranscriptionsResponse(
+        items=items,
+        total_count=total_count,
+        page=page,
+        page_size=page_size,
+        total_pages=total_pages,
+    )
+
+
+@transcriptions_router.get("/transcriptions/unlabelled", response_model=UnlabelledTranscriptionsResponse)
+async def list_unlabelled_transcriptions(
+    session: SQLSessionDep,
+    current_user: UserDep,
+    sort: Annotated[
+        TranscriptionSortOrder, Query(description="Sort order for date recorded")
+    ] = TranscriptionSortOrder.newest,
+    client_name: Annotated[str | None, Query(description="Filter by client name")] = None,
+    case_id: Annotated[str | None, Query(description="Filter by case ID")] = None,
+    subject: Annotated[str | None, Query(description="Filter by subject")] = None,
+    date_of_recording: Annotated[datetime.date | None, Query(description="Filter by date recorded")] = None,
+    date_of_recording_day: Annotated[int | None, Query(ge=1, le=31, description="Filter by recorded day")] = None,
+    date_of_recording_month: Annotated[int | None, Query(ge=1, le=12, description="Filter by recorded month")] = None,
+    date_of_recording_year: Annotated[int | None, Query(ge=1, description="Filter by recorded year")] = None,
+    client_date_of_birth: Annotated[datetime.date | None, Query(description="Filter by client date of birth")] = None,
+) -> UnlabelledTranscriptionsResponse:
+    """Get metadata for unlabelled transcriptions for the current user."""
+    labelled_filter = or_(
+        col(Transcription.title).is_not(None),
+        col(Transcription.client_date_of_birth).is_not(None),
+        col(Transcription.client_name).is_not(None),
+        col(Transcription.case_id).is_not(None),
+    )
+    search_filters = _transcription_search_filters(
+        client_name=client_name,
+        case_id=case_id,
+        subject=subject,
+        date_of_recording=date_of_recording,
+        date_of_recording_day=date_of_recording_day,
+        date_of_recording_month=date_of_recording_month,
+        date_of_recording_year=date_of_recording_year,
+        client_date_of_birth=client_date_of_birth,
+    )
+
+    count_statement = (
+        select(func.count(col(Transcription.id)))
+        .where(Transcription.user_id == current_user.id)
+        .where(not_(labelled_filter))
+        .where(*search_filters)
+    )
+    count_result = await session.exec(count_statement)
+    total_count = count_result.one()
+
+    statement = (
+        select(Transcription)
+        .where(Transcription.user_id == current_user.id)
+        .where(not_(labelled_filter))
+        .where(*search_filters)
+        .order_by(_created_datetime_order(sort))
+    )
+    result = await session.exec(statement)
+    transcriptions = result.all()
+
+    items = [
+        UnlabelledTranscriptionMetadata(
+            id=t.id,
+            date_of_recording=t.date_of_recording,
             title=t.title,
             text=t.dialogue_entries[0]["text"][:100] if t.dialogue_entries else "",
             status=t.status,
@@ -121,14 +247,9 @@ async def list_transcriptions(
         for t in transcriptions
     ]
 
-    total_pages = math.ceil(total_count / page_size) or 1
-
-    return PaginatedTranscriptionsResponse(
+    return UnlabelledTranscriptionsResponse(
         items=items,
         total_count=total_count,
-        page=page,
-        page_size=page_size,
-        total_pages=total_pages,
     )
 
 
@@ -139,7 +260,7 @@ async def create_recording(
     recording_id = uuid.uuid4()
     file_name = f"{recording_id}.{request.file_extension}"
     user_upload_s3_file_key = get_file_s3_key(user.email, file_name)
-    recording = Recording(user_id=user.id, s3_file_key=user_upload_s3_file_key)
+    recording = Recording(user_id=user.id, s3_file_key=user_upload_s3_file_key, file_created_at=request.file_created_at)
     session.add(recording)
     await session.commit()
     presigned_url = await storage_service.generate_presigned_url_put_object(user_upload_s3_file_key, 3600)
@@ -157,7 +278,15 @@ async def create_transcription(
     recording = await session.get(Recording, request.recording_id)
     if not recording or recording.user_id != current_user.id:
         raise HTTPException(404, detail="Recording not found")
-    transcription = Transcription(user_id=current_user.id, title=request.title)
+    transcription = Transcription(
+        user_id=current_user.id,
+        title=request.title,
+        date_of_recording=(
+            recording.file_created_at.astimezone(datetime.UTC).replace(tzinfo=None)
+            if recording.file_created_at is not None
+            else None
+        ),
+    )
 
     if not await storage_service.check_object_exists(recording.s3_file_key):
         raise HTTPException(
@@ -165,19 +294,10 @@ async def create_transcription(
             detail=f"Recording file not found in S3: {recording.s3_file_key}",
         )
 
-    minute = Minute(
-        template_name=request.template_name,
-        user_template_id=request.template_id,
-        agenda=request.agenda,
-        transcription_id=transcription.id,
-    )
-    minute_version = MinuteVersion(minute_id=minute.id)
     session.add(transcription)
-    session.add(minute)
-    session.add(minute_version)
     recording.transcription_id = transcription.id
     await session.commit()
-    transcription_queue_service.publish_message(WorkerMessage(id=minute.id, type=TaskType.TRANSCRIPTION))
+    transcription_queue_service.publish_message(WorkerMessage(id=transcription.id, type=TaskType.TRANSCRIPTION))
 
     return TranscriptionCreateResponse(id=transcription.id)
 
@@ -190,12 +310,19 @@ async def get_transcription(
 ) -> TranscriptionGetResponse:
     """Get a specific transcription by ID."""
     transcription = await _get_owned_transcription_or_404(session, transcription_id, current_user)
+    result = await session.exec(select(Recording.file_created_at).where(Recording.transcription_id == transcription.id))
+    is_upload = any(file_created_at is not None for file_created_at in result.all())
     return TranscriptionGetResponse(
         id=transcription.id,
         status=transcription.status,
         dialogue_entries=transcription.dialogue_entries,
         title=transcription.title,
         created_datetime=transcription.created_datetime,
+        date_of_recording=transcription.date_of_recording,
+        is_upload=is_upload,
+        client_name=transcription.client_name,
+        case_id=transcription.case_id,
+        client_date_of_birth=transcription.client_date_of_birth,
     )
 
 
@@ -225,7 +352,14 @@ async def get_recordings_for_transcription(
         presigned_url = await storage_service.generate_presigned_url_get_object(
             recording.s3_file_key, filename, 60 * 60 * 12
         )
-        signed_recordings.append(SingleRecording(id=recording.id, url=presigned_url, extension=key_path.suffix))
+        signed_recordings.append(
+            SingleRecording(
+                id=recording.id,
+                url=presigned_url,
+                extension=key_path.suffix,
+                created_datetime=recording.created_datetime,
+            )
+        )
 
     return signed_recordings
 
@@ -242,6 +376,29 @@ async def update_transcription_title(
     if request.title is not None:
         transcription.title = request.title
         await session.commit()
+
+
+@transcriptions_router.put("/transcriptions/{transcription_id}/details", status_code=204)
+async def update_transcription_metadata(
+    transcription_id: uuid.UUID,
+    request: UpdateTranscriptionMetadataRequest,
+    session: SQLSessionDep,
+    current_user: UserDep,
+) -> None:
+    """Update a transcription's metadata."""
+    transcription = await _get_owned_transcription_or_404(session, transcription_id, current_user)
+    transcription.case_id = request.case_id
+    transcription.client_name = request.client_name
+    transcription.client_date_of_birth = (
+        request.client_date_of_birth.replace(tzinfo=None) if request.client_date_of_birth is not None else None
+    )
+    transcription.date_of_recording = (
+        request.date_of_recording.replace(tzinfo=None) if request.date_of_recording is not None else None
+    )
+    transcription.title = request.subject
+
+    transcription.updated_datetime = datetime.datetime.now(tz=datetime.UTC)
+    await session.commit()
 
 
 @transcriptions_router.patch("/transcriptions/{transcription_id}/speakers", status_code=204)
@@ -335,6 +492,11 @@ async def delete_transcription(transcription_id: uuid.UUID, session: SQLSessionD
     # First check if the transcription exists and belongs to the user
     transcription = await _get_owned_transcription_or_404(session, transcription_id, current_user)
 
-    # Delete the transcription
+    recordings = (await session.exec(select(Recording).where(Recording.transcription_id == transcription.id))).all()
+    for recording in recordings:
+        deleted = await delete_recording_file_and_row(session, recording)
+        if not deleted:
+            raise HTTPException(status_code=500, detail="Could not delete recording file")
+
     await session.delete(transcription)
     await session.commit()

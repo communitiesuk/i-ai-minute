@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
+import isFQDN from 'validator/lib/isFQDN'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -26,11 +27,19 @@ export function hasAnyRole(
   return userRolesList.some((role) => allowedRoles.includes(role))
 }
 
+export function conditionalPluralSuffix(count: number): string {
+  return count === 1 ? '' : 's'
+}
+
 export function parseDomains(value: string): string[] {
   return value
     .split('\n')
     .map((domain) => domain.trim())
     .filter(Boolean)
+}
+
+export function isValidFQDN(domain: string): boolean {
+  return isFQDN(domain)
 }
 
 export function formatCurrentDateTime() {
@@ -49,4 +58,37 @@ export function formatCurrentDateTime() {
   })
 
   return `${time} on ${date}`
+}
+
+/**
+ *
+ * @param date - The date to be formatted to string
+ * @returns Returns the date using "dd-mm-yyyy" format
+ */
+export function formatDate(date: string): string {
+  return new Date(date).toLocaleDateString('en-GB').replaceAll('/', '-')
+}
+
+function stripHtmlTags(html: string) {
+  const tmp = document.createElement('DIV')
+  tmp.innerHTML = html
+  return tmp.textContent || tmp.innerText || ''
+}
+
+export async function copyHTML(textToCopy: string) {
+  try {
+    // Try to copy as rich text first
+    await navigator.clipboard.write([
+      new ClipboardItem({
+        'text/html': new Blob([textToCopy], { type: 'text/html' }),
+        'text/plain': new Blob([stripHtmlTags(textToCopy)], {
+          type: 'text/plain',
+        }),
+      }),
+    ])
+  } catch {
+    // Fallback for browsers that don't support clipboard.write
+    await navigator.clipboard.writeText(stripHtmlTags(textToCopy))
+  }
+  return true
 }

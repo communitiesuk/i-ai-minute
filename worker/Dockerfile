@@ -40,7 +40,9 @@ RUN find /opt/site-packages -name "*.so" -exec strip --strip-unneeded {} + && \
            /opt/site-packages/wheel* \
 # 3. Clean up pycaches and test directories
     && find /opt/site-packages -type d -name "__pycache__" -prune -exec rm -rf {} + \
-    && find /opt/site-packages -type d -name "tests" -prune -exec rm -rf {} +
+    && find /opt/site-packages -type d -name "tests" -prune -exec rm -rf {} + \
+# 4. Remove Ray's Java runtime. This worker only creates Python actors; removing the jars prevents unnecessary vuln detections
+    && rm -rf /opt/site-packages/ray/jars
 
 # ==========================================
 # Stage 2: Runner
@@ -68,6 +70,10 @@ WORKDIR /app
 # (no /app/logs - logs go to CloudWatch, nothing writes locally, same as backend)
 RUN mkdir -p /app/config && \
     chown -R appuser:appuser /app
+
+ADD --chown=appuser:appuser --chmod=0444 \
+    https://truststore.pki.rds.amazonaws.com/eu-west-2/eu-west-2-bundle.pem \
+    /app/config/rds-ca-bundle.pem
 
 # Copy built site-packages from builder (already pre-cleaned & stripped)
 COPY --from=builder /opt/site-packages /usr/local/lib/python3.12/site-packages

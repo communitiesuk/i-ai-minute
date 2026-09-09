@@ -7,7 +7,7 @@ import aioboto3
 import aiofiles
 from botocore.exceptions import ClientError
 
-from common.services.storage_services.base import StorageService
+from common.services.storage_services.base import StorageService, build_content_disposition
 from common.settings import get_settings
 
 settings = get_settings()
@@ -60,7 +60,7 @@ class S3StorageService(StorageService):
                 Params={
                     "Bucket": settings.DATA_S3_BUCKET,
                     "Key": key,
-                    "ResponseContentDisposition": f"attachment; filename={filename}",
+                    "ResponseContentDisposition": build_content_disposition(filename),
                 },
                 ExpiresIn=expiry_seconds,
             )
@@ -77,6 +77,6 @@ class S3StorageService(StorageService):
                 return True
 
     @classmethod
-    async def delete_object(cls, key: str) -> None:
+    async def delete(cls, key: str) -> None:
         async with _create_boto3_s3_client() as session:
-            session.delete_object(Bucket=settings.DATA_S3_BUCKET, Key=key)
+            await session.delete_object(Bucket=settings.DATA_S3_BUCKET, Key=key)

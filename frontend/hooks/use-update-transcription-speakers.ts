@@ -3,7 +3,8 @@ import { useCallback } from 'react'
 
 import {
   getTranscriptionTranscriptionsTranscriptionIdGetQueryKey,
-  listTranscriptionsTranscriptionsGetQueryKey,
+  listLabelledTranscriptionsTranscriptionsLabelledGetQueryKey,
+  listUnlabelledTranscriptionsTranscriptionsUnlabelledGetQueryKey,
 } from '@/lib/client/@tanstack/react-query.gen'
 import {
   renameSpeakerEverywhereTranscriptionsTranscriptionIdSpeakersPatch,
@@ -97,7 +98,12 @@ export const useUpdateTranscription = (transcriptionId: string) => {
       await Promise.all([
         invalidateTranscription(),
         queryClient.invalidateQueries({
-          queryKey: listTranscriptionsTranscriptionsGetQueryKey(),
+          queryKey:
+            listLabelledTranscriptionsTranscriptionsLabelledGetQueryKey(),
+        }),
+        queryClient.invalidateQueries({
+          queryKey:
+            listUnlabelledTranscriptionsTranscriptionsUnlabelledGetQueryKey(),
         }),
       ])
     },

@@ -1,16 +1,15 @@
 'use client'
 
 import SimpleEditor from '@/app/transcriptions/[transcriptionId]/MinuteTab/components/editor/tiptap-editor'
-import { RatingButton } from '@/app/transcriptions/[transcriptionId]/MinuteTab/components/rating-dialog/rating-dialog'
-import { AiEditPopover } from '@/app/transcriptions/[transcriptionId]/MinuteTab/minute-editor/ai-edit-popover'
 import { GuardrailResponseComponent } from '@/app/transcriptions/[transcriptionId]/MinuteTab/components/editor/guardrail-response-component'
 import { MinuteVersionSelect } from '@/app/transcriptions/[transcriptionId]/MinuteTab/minute-editor/minute-version-select'
 import { NewMinuteDialog } from '@/app/transcriptions/[transcriptionId]/MinuteTab/NewMinuteDialog'
 import { Button } from '@/components/ui/button'
-import CopyButton from '@/components/ui/copy-button'
+import { useBannerStore } from '@/stores/use-banner-store'
+import { ReviewGuardButton } from '@/components/review-guard/review-guard-button'
 import { citationRegex, citationRegexWithSpace } from '@/lib/citationRegex'
 import {
-  MinuteListItem,
+  Minute,
   MinuteVersionResponse,
   TranscriptionGetResponse,
 } from '@/lib/client'
@@ -22,21 +21,17 @@ import {
 } from '@/lib/client/@tanstack/react-query.gen'
 import convertAIMinutesToWordDoc from '@/lib/download-word-doc'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import {
-  Download,
-  Edit,
-  Eye,
-  EyeOff,
-  FilePenLine,
-  FileQuestion,
-  FileX2,
-  Loader2,
-  Save,
-  Undo,
-} from 'lucide-react'
+import { AiEditPopover } from '@/app/transcriptions/[transcriptionId]/MinuteTab/minute-editor/ai-edit-popover'
+import { FilePenLine, FileX2, Loader2, Undo } from 'lucide-react'
 import posthog from 'posthog-js'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Controller, useForm, useWatch } from 'react-hook-form'
+import {
+  GovukButton,
+  GovukButtonGroup,
+  GovukNotificationBanner,
+} from '@/components/govuk'
+import { copyHTML, formatDate } from '@/lib/utils'
 
 type MinuteEditorForm = {
   html: string
@@ -47,11 +42,17 @@ export function MinuteEditor({
   minute,
 }: {
   transcription: TranscriptionGetResponse
-  minute: MinuteListItem
+  minute: Minute
 }) {
-  const [version, setVersion] = useState(0)
+  const [version, setVersion] = useState<string | undefined>(undefined)
   const [hideCitations, setHideCitations] = useState(false)
-  const { data: minuteVersions = [], isLoading } = useQuery({
+  const { setBanner } = useBannerStore()
+  const {
+    data: minuteVersions = [],
+    isLoading,
+    isError: isErrorFetchingVersions,
+    refetch,
+  } = useQuery({
     ...listMinuteVersionsMinutesMinuteIdVersionsGetOptions({
       path: { minute_id: minute.id! },
     }),
@@ -59,15 +60,18 @@ export function MinuteEditor({
       query.state.data &&
       query.state.data.length > 0 &&
       ['awaiting_start', 'in_progress'].includes(
-        query.state.data[version].status
+        query.state.data.find((v) => v.id === version)?.status ??
+          query.state.data[0].status
       )
         ? 1000
         : false,
   })
-  const minuteVersion = useMemo(
-    () => (minuteVersions.length > 0 ? minuteVersions[version] : undefined),
-    [minuteVersions, version]
-  )
+
+  const minuteVersion =
+    minuteVersions.length > 0
+      ? (minuteVersions.find((v) => v.id === version) ?? minuteVersions[0])
+      : undefined
+
   const isGenerating = useMemo(
     () =>
       ['awaiting_start', 'in_progress'].includes(minuteVersion?.status || ''),
@@ -100,7 +104,7 @@ export function MinuteEditor({
 
   const onSuccess = useCallback(() => {
     setIsEditable(false)
-    setVersion(0)
+    setVersion(undefined)
     queryClient.invalidateQueries({
       queryKey: listMinuteVersionsMinutesMinuteIdVersionsGetQueryKey({
         path: { minute_id: minute.id! },
@@ -127,23 +131,18 @@ export function MinuteEditor({
     },
     [minute.id, minuteVersion?.html_content, onSuccess, saveEdit]
   )
-  const handleWordDocDownload = useCallback(() => {
-    posthog.capture('minutes_downloaded', {
-      format: 'word',
-      version_id: minuteVersion?.id,
-    })
 
-    convertAIMinutesToWordDoc(
+  const handleWordDocDownload = async () => {
+    const fileName = transcription.date_of_recording
+      ? `${minute.template_name} ${formatDate(transcription.date_of_recording)}.docx`
+      : 'minutes.docx'
+
+    return await convertAIMinutesToWordDoc(
       htmlContent,
       transcription.dialogue_entries || [],
-      transcription.title || 'minutes.docx'
+      fileName
     )
-  }, [
-    htmlContent,
-    minuteVersion?.id,
-    transcription.dialogue_entries,
-    transcription.title,
-  ])
+  }
 
   if (isLoading) {
     return (
@@ -153,19 +152,20 @@ export function MinuteEditor({
     )
   }
 
-  if (!minuteVersion) {
+  if (!minuteVersion || isErrorFetchingVersions) {
     return (
-      <div className="flex flex-col items-center gap-2">
-        <FileQuestion />
-        <p>
-          Nothing has been generated for this &quot;{minute.template_name}&quot;
-          minute yet. Click below to generate a minute.
-        </p>
-        <NewMinuteDialog
-          transcriptionId={transcription.id!}
-          agenda={minute.agenda ?? undefined}
-        />
-      </div>
+      <>
+        <GovukNotificationBanner
+          variant="important"
+          title="There is a problem"
+          className="govuk-!-margin-bottom-2"
+        >
+          There has been an error loading this document.
+        </GovukNotificationBanner>
+        <GovukButton variant="secondary" onClick={() => refetch()}>
+          Retry
+        </GovukButton>
+      </>
     )
   }
   if (isGenerating) {
@@ -223,78 +223,76 @@ export function MinuteEditor({
 
   return (
     <div className="pt-2">
-      <div className="mb-2 flex flex-wrap justify-between gap-y-2">
-        <div className="flex flex-wrap gap-2">
-          <MinuteVersionSelect
-            minuteVersions={minuteVersions}
-            version={version}
-            setVersion={setVersion}
-          />
-          <AiEditPopover
-            disabled={isEditable}
-            minuteId={minute.id!}
-            minuteVersionId={minuteVersion.id}
-            onSuccess={onSuccess}
-          />
-          {isEditable ? (
-            <Button
-              className="bg-blue-600 hover:bg-blue-800 active:bg-yellow-500"
-              onClick={form.handleSubmit(onSubmit)}
-            >
-              <Save /> Save Changes
-            </Button>
-          ) : (
-            <Button
-              className="bg-blue-600 hover:bg-blue-800 active:bg-yellow-500"
-              onClick={() => setIsEditable(true)}
-              type="button"
-            >
-              <Edit />
-              Edit Manually
-            </Button>
-          )}
-          <Button
-            type="button"
-            className="bg-green-600 text-white hover:bg-green-700 active:bg-yellow-500"
-            onClick={handleWordDocDownload}
+      <GovukButtonGroup>
+        <AiEditPopover
+          disabled={isEditable}
+          minuteId={minute.id!}
+          minuteVersionId={minuteVersion.id}
+          onSuccess={onSuccess}
+        />
+        {isEditable ? (
+          <GovukButton
+            onClick={form.handleSubmit(onSubmit)}
+            variant="secondary"
           >
-            <Download />
-            Download
-          </Button>
-          <CopyButton
-            textToCopy={contentToCopy}
-            posthogEvent="editor_content_copied"
-          />
-          {hasCitations && (
-            <Button
-              variant="outline"
-              onClick={() => setHideCitations((h) => !h)}
-              disabled={isEditable}
-            >
-              {isEditable ? (
-                'Citations shown when editing'
-              ) : hideCitations ? (
-                <>
-                  <Eye /> Show Citations
-                </>
-              ) : (
-                <>
-                  <EyeOff />
-                  Hide Citations
-                </>
-              )}
-            </Button>
-          )}
-        </div>
-        <div className="flex gap-2">
-          <RatingButton
-            minuteVersionId={minuteVersion.id}
-            minutes={minuteVersion.html_content}
-            transcript={transcription.dialogue_entries!}
-          />
-        </div>
-      </div>
-
+            Save Changes
+          </GovukButton>
+        ) : (
+          <GovukButton variant="secondary" onClick={() => setIsEditable(true)}>
+            Manual edit
+          </GovukButton>
+        )}
+        <ReviewGuardButton
+          onConfirm={async () => await copyHTML(contentToCopy)}
+          onSuccess={() => {
+            setBanner({
+              variant: 'success',
+              title: 'Success',
+              message: `'${minute.template_name}' copied to clipboard`,
+            })
+            posthog.capture('editor_content_copied', {
+              contentLength: contentToCopy.length,
+            })
+          }}
+          action="copy"
+          subject="document"
+        />
+        <ReviewGuardButton
+          onConfirm={handleWordDocDownload}
+          onSuccess={() => {
+            setBanner({
+              variant: 'success',
+              title: 'Success',
+              message: `'${minute.template_name}' downloaded`,
+            })
+            posthog.capture('minutes_downloaded', {
+              format: 'word',
+              version_id: minuteVersion?.id,
+            })
+          }}
+          action="download"
+          subject="document"
+        />
+        {hasCitations && (
+          <GovukButton
+            variant="secondary"
+            onClick={() => setHideCitations((h) => !h)}
+            disabled={isEditable}
+          >
+            {isEditable
+              ? 'Quotes shown when editing'
+              : hideCitations
+                ? 'Show quotes'
+                : 'Hide quotes'}
+          </GovukButton>
+        )}
+      </GovukButtonGroup>
+      <MinuteVersionSelect
+        version={minuteVersion.id}
+        setVersion={setVersion}
+        minuteVersions={minuteVersions}
+      />
+      <hr className="govuk-section-break govuk-section-break--visible govuk-!-margin-top-6 govuk-!-margin-bottom-6" />
       {!minuteVersion.too_short && minuteVersion.guardrail_results && (
         <GuardrailResponseComponent
           guardrailResults={minuteVersion.guardrail_results}

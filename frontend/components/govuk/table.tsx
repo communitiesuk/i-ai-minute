@@ -10,11 +10,12 @@ type Props = {
 export function GovukTable({
   caption,
   captionSize = 'm',
+  className,
   children,
   ...rest
 }: Props) {
   return (
-    <table className="govuk-table" {...rest}>
+    <table className={cn('govuk-table', className)} {...rest}>
       {caption && (
         <caption
           className={cn(
@@ -32,55 +33,84 @@ export function GovukTable({
 }
 
 export function GovukTableHead({
+  className,
   children,
   ...rest
 }: React.HTMLAttributes<HTMLTableSectionElement>) {
   return (
-    <thead className="govuk-table__head" {...rest}>
+    <thead className={cn('govuk-table__head', className)} {...rest}>
       {children}
     </thead>
   )
 }
 
 export function GovukTableBody({
+  className,
   children,
   ...rest
 }: React.HTMLAttributes<HTMLTableSectionElement>) {
   return (
-    <tbody className="govuk-table__body" {...rest}>
+    <tbody className={cn('govuk-table__body', className)} {...rest}>
       {children}
     </tbody>
   )
 }
 
 export function GovukTableRow({
+  className,
   children,
   ...rest
 }: React.HTMLAttributes<HTMLTableRowElement>) {
   return (
-    <tr className="govuk-table__row" {...rest}>
+    <tr className={cn('govuk-table__row', className)} {...rest}>
       {children}
     </tr>
   )
 }
 
+type GovukTableHeaderCellProps = {
+  isNumeric?: boolean
+} & React.ThHTMLAttributes<HTMLTableCellElement>
+
 export function GovukTableHeaderCell({
+  isNumeric,
+  className,
   children,
   ...rest
-}: React.ThHTMLAttributes<HTMLTableCellElement>) {
+}: GovukTableHeaderCellProps) {
   return (
-    <th className="govuk-table__header" {...rest}>
+    <th
+      className={cn(
+        'govuk-table__header',
+        isNumeric && 'govuk-table__header--numeric',
+        className
+      )}
+      {...rest}
+    >
       {children}
     </th>
   )
 }
 
+type GovukTableCellProps = {
+  isNumeric?: boolean
+} & React.TdHTMLAttributes<HTMLTableCellElement>
+
 export function GovukTableCell({
+  isNumeric,
+  className,
   children,
   ...rest
-}: React.TdHTMLAttributes<HTMLTableCellElement>) {
+}: GovukTableCellProps) {
   return (
-    <td className="govuk-table__cell" {...rest}>
+    <td
+      className={cn(
+        'govuk-table__cell',
+        isNumeric && 'govuk-table__cell--numeric',
+        className
+      )}
+      {...rest}
+    >
       {children}
     </td>
   )

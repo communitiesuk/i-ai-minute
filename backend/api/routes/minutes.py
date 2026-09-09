@@ -6,6 +6,7 @@ from sqlalchemy.orm import selectinload
 from sqlmodel import col, select
 
 from backend.api.dependencies import SQLSessionDep, UserDep
+from backend.utils.queries import has_pending_minute_version_for_transcription
 from common.database.postgres_models import JobStatus, Minute, MinuteVersion, Transcription
 from common.services.queue_services import get_queue_service
 from common.settings import get_settings
@@ -58,10 +59,18 @@ async def list_minutes_for_transcription(
 @minutes_router.post("/transcription/{transcription_id}/minutes")
 async def create_minute(
     transcription_id: uuid.UUID, request: MinutesCreateRequest, session: SQLSessionDep, user: UserDep
-) -> None:
+) -> MinuteVersionResponse:
     transcription = await session.get(Transcription, transcription_id)
     if not transcription or transcription.user_id != user.id:
         raise HTTPException(404, "Not found")
+
+    pending_minute_version = await has_pending_minute_version_for_transcription(session, transcription_id)
+    if pending_minute_version:
+        raise HTTPException(
+            status_code=409,
+            detail="A document is already being created for this transcript",
+        )
+
     minute = Minute(
         transcription_id=transcription_id,
         template_name=request.template_name,
@@ -74,6 +83,18 @@ async def create_minute(
     await session.commit()
     await session.refresh(minute_version)
     llm_queue_service.publish_message(WorkerMessage(id=minute_version.id, type=TaskType.MINUTE))
+
+    return MinuteVersionResponse(
+        id=minute_version.id,
+        minute_id=minute.id,
+        status=minute_version.status,
+        created_datetime=minute_version.created_datetime,
+        error=minute_version.error,
+        ai_edit_instructions=minute_version.ai_edit_instructions,
+        html_content=minute_version.html_content,
+        content_source=minute_version.content_source,
+        guardrail_results=[],
+    )
 
 
 @minutes_router.get("/minutes/{minutes_id}")

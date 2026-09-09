@@ -1,7 +1,16 @@
 'use client'
 
-import { GovukButton } from '@/components/govuk'
-import React, { useEffect, useRef, useState } from 'react'
+import {
+  GovukButton,
+  GovukButtonGroup,
+  GovukWarningText,
+} from '@/components/govuk'
+import { useEffect, useRef, useState } from 'react'
+import {
+  useRecordingUIStore,
+  type RecordingState,
+} from '@/stores/use-recording-ui-store'
+import { useRecordingTimer } from '@/hooks/use-recording-timer'
 
 interface RecordingControlProps {
   stream: MediaStream | null
@@ -12,6 +21,17 @@ interface RecordingControlProps {
     isPaused?: boolean
   }
   onPauseStateChange?: (isPaused: boolean) => void
+}
+
+const formatDuration = (durationMs: number) => {
+  const totalSeconds = Math.floor(durationMs / 1000)
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+
+  return [hours, minutes, seconds]
+    .map((value) => value.toString().padStart(2, '0'))
+    .join(':')
 }
 
 export default function RecordingControl({
@@ -27,14 +47,37 @@ export default function RecordingControl({
   const analyserRef = useRef<AnalyserNode | null>(null)
   const dataArrayRef = useRef<Uint8Array<ArrayBuffer> | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
-  const [showStopConfirm, setShowStopConfirm] = useState(false)
+  const preStopConfirmState = useRef<RecordingState>('idle')
   const [localIsPaused, setLocalIsPaused] = useState(false)
+  const [meetingDuration, setMeetingDuration] = useState(0)
+
+  const { recordingUIState, setRecordingUIState } = useRecordingUIStore()
+  const showStopConfirm =
+    recordingUIState === 'stopConfirm' || recordingUIState === 'stopping'
+  const isStopping = recordingUIState === 'stopping'
 
   const mediaTracks = stream ? stream.getAudioTracks() : []
   const isPaused =
     recorderControls?.isPaused !== undefined
       ? recorderControls.isPaused
       : localIsPaused
+
+  const formattedRecordingDuration = formatDuration(meetingDuration)
+  useRecordingTimer(1000, (elapsedMs) => {
+    if (!isRecording || isPaused) return
+    setMeetingDuration((meetingDuration) => meetingDuration + elapsedMs)
+  })
+
+  useEffect(() => {
+    if (
+      !isRecording ||
+      recordingUIState === 'stopConfirm' ||
+      recordingUIState === 'stopping'
+    )
+      return
+
+    setRecordingUIState(isPaused ? 'paused' : 'recording')
+  }, [isRecording, isPaused, recordingUIState, setRecordingUIState])
 
   useEffect(() => {
     const isValidStream =
@@ -103,7 +146,10 @@ export default function RecordingControl({
         if (!ctx) return
 
         const { width, height } = canvas
-        if (width === 0 || height === 0) return
+        if (width === 0 || height === 0) {
+          animationRef.current = requestAnimationFrame(draw)
+          return
+        }
 
         if (!isRecording || !analyserRef.current || !dataArrayRef.current) {
           ctx.clearRect(0, 0, width, height)
@@ -282,67 +328,81 @@ export default function RecordingControl({
   }
 
   const handleStopRecording = () => {
-    setShowStopConfirm(true)
+    preStopConfirmState.current = recordingUIState
+    setRecordingUIState('stopConfirm')
   }
 
-  const confirmStop = () => {
+  const handleConfirmStop = () => {
+    setRecordingUIState('stopping')
     onStopRecording()
-    setShowStopConfirm(false)
+  }
+
+  const handleCancelStop = () => {
+    setRecordingUIState(preStopConfirmState.current)
   }
 
   return (
     <div className="space-y-4">
-      <div
-        ref={containerRef}
-        className="relative h-20 w-full overflow-hidden rounded-md border-2 border-blue-200 bg-transparent dark:border-blue-800"
-      >
-        <canvas ref={canvasRef} className="size-full" />
-        {!isRecording && (
-          <div className="absolute inset-0 flex items-center justify-center text-sm text-gray-500 dark:text-gray-400">
-            Audio visualization will appear here when recording
-          </div>
-        )}
-        {isRecording && !stream && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-100/80 text-sm text-gray-500 dark:bg-gray-800/80 dark:text-gray-400">
-            Connecting to audio stream...
-          </div>
-        )}
-      </div>
+      {/* css to toggle canvas visibility when not on stop confimration page
+      so canvas never unmounts and can resume if user cancels stop */}
+      <div className={!showStopConfirm ? 'block' : 'hidden'}>
+        <p>Recording length: {formattedRecordingDuration}</p>
 
-      {isRecording && !showStopConfirm && (
-        <div className="flex justify-between gap-2">
-          <GovukButton type="button" onClick={togglePause} variant="secondary">
-            {isPaused ? 'Resume Recording' : 'Pause Recording'}
+        <div
+          ref={containerRef}
+          className="relative h-20 w-full overflow-hidden rounded-md border-2 border-blue-200 bg-transparent dark:border-blue-800"
+        >
+          <canvas ref={canvasRef} className="size-full" />
+          {isRecording && !stream && (
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-100/80 text-sm text-gray-500 dark:bg-gray-800/80 dark:text-gray-400">
+              Connecting to audio stream...
+            </div>
+          )}
+        </div>
+
+        <GovukButtonGroup className="mt-7">
+          <GovukButton
+            type="button"
+            onClick={togglePause}
+            variant="secondary"
+            className="min-w-36"
+          >
+            {isPaused ? 'Resume' : 'Pause'}
           </GovukButton>
           <GovukButton
             type="button"
             onClick={handleStopRecording}
             variant="warning"
+            className="min-w-36"
           >
-            Stop Recording
+            Stop
           </GovukButton>
-        </div>
-      )}
-
+        </GovukButtonGroup>
+      </div>
       {showStopConfirm && (
-        <div className="govuk-inset-text">
-          <p className="govuk-body">
-            Are you sure you want to stop recording? You won&apos;t be able to
-            resume recording after stopping.
-          </p>
-          <div className="flex gap-2">
-            <GovukButton type="button" onClick={confirmStop} variant="warning">
+        <>
+          <GovukWarningText>
+            You will not be able to resume recording if you proceed.
+          </GovukWarningText>
+          <GovukButtonGroup>
+            <GovukButton
+              type="button"
+              onClick={handleConfirmStop}
+              variant="warning"
+              disabled={isStopping}
+            >
               Stop Recording
             </GovukButton>
             <GovukButton
+              onClick={handleCancelStop}
+              variant="link"
               type="button"
-              onClick={() => setShowStopConfirm(false)}
-              variant="secondary"
+              disabled={isStopping}
             >
               Cancel
             </GovukButton>
-          </div>
-        </div>
+          </GovukButtonGroup>
+        </>
       )}
     </div>
   )
