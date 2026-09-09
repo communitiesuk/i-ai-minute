@@ -204,7 +204,7 @@ describe('<MinuteEditor /> AI edit flow', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('displays the previously-selected version (not the latest) when a later AI edit fails', async () => {
+  it('displays the previously-selected version (not the latest) when a later AI edit fails and shows error banner', async () => {
     mutateMock.mockImplementation((_, opts) => opts.onSuccess())
     vi.mocked(useMutation).mockImplementation((() => {
       return {
@@ -231,6 +231,21 @@ describe('<MinuteEditor /> AI edit flow', () => {
     configureQuery([
       makeVersion({
         id: 'v3',
+        status: 'in_progress',
+        content_source: 'ai_edit',
+        html_content: '<p>failed content</p>',
+      }),
+      makeVersion({ id: 'v2', html_content: '<p>doc 2 content</p>' }),
+      makeVersion({ id: 'v1', html_content: '<p>doc 1 content</p>' }),
+    ])
+
+    await waitFor(() =>
+      screen.getByText(`Applying AI edits to ‘General summary’…`)
+    )
+
+    configureQuery([
+      makeVersion({
+        id: 'v3',
         status: 'failed',
         content_source: 'ai_edit',
         html_content: '<p>failed content</p>',
@@ -245,6 +260,13 @@ describe('<MinuteEditor /> AI edit flow', () => {
     expect(
       screen.getByRole('option', { name: '3. AI edit (01/01/24 00:00)' })
     ).toBeInTheDocument()
+
+    await expect.poll(() => setBannerMock).toHaveBeenCalled()
+    expect(setBannerMock).toHaveBeenCalledWith({
+      message: 'Something went wrong creating your AI Edit. Please try again.',
+      title: 'There is a problem',
+      variant: 'important',
+    })
     expect(screen.getByTestId('simple-editor')).toHaveTextContent(
       'doc 2 content'
     )

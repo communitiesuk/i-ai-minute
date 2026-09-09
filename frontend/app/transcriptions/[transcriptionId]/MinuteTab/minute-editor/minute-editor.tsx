@@ -47,6 +47,8 @@ export function MinuteEditor({
     string | undefined
   >(undefined)
   const [hideCitations, setHideCitations] = useState(false)
+  const { setBanner } = useBannerStore()
+  const previousMinuteVersionsRef = useRef<MinuteVersionResponse[]>([])
 
   const {
     data: minuteVersions = [],
@@ -98,21 +100,18 @@ export function MinuteEditor({
 
   const isError = displayedMinuteVersion?.status == 'failed'
 
-  const { setBanner } = useBannerStore()
-  const previousVersionRef = useRef<MinuteVersionResponse | null>(null)
-
   useEffect(() => {
-    if (!displayedMinuteVersion) return
-
     const banner = getTransitionBanner(
-      previousVersionRef.current,
-      displayedMinuteVersion,
+      previousMinuteVersionsRef.current,
+      minuteVersions,
       minute.template_name
     )
-    if (banner) setBanner(banner)
+    if (banner) {
+      setBanner(banner)
+    }
 
-    previousVersionRef.current = displayedMinuteVersion
-  }, [displayedMinuteVersion, minute.template_name, setBanner])
+    previousMinuteVersionsRef.current = minuteVersions
+  }, [minuteVersions, minute.template_name, setBanner])
 
   const queryClient = useQueryClient()
   const [isEditable, setIsEditable] = useState(false)
@@ -392,36 +391,46 @@ const MinuteVersionDeleteButton = ({
 
 /** Detects an AI-edit completing/failing between two polled version snapshots. Returns the matching banner, or null. */
 function getTransitionBanner(
-  previous: MinuteVersionResponse | null,
-  current: MinuteVersionResponse,
+  previousVersions: MinuteVersionResponse[],
+  currentVersions: MinuteVersionResponse[],
   templateName: string | undefined | null
 ): Banner | null {
-  const isSameVersion = previous?.id === current.id
+  const previousVersionsById = new Map(previousVersions.map((v) => [v.id, v]))
+  const currentVersionsById = new Map(currentVersions.map((v) => [v.id, v]))
 
-  const justCompletedAiEdit =
-    isSameVersion &&
-    previous?.status !== 'completed' &&
-    current.status === 'completed' &&
-    current.content_source === 'ai_edit'
+  for (const id of previousVersionsById.keys()) {
+    const previous = previousVersionsById.get(id)
+    const current = currentVersionsById.get(id)
 
-  if (justCompletedAiEdit) {
-    return {
-      variant: 'success',
-      title: 'Success',
-      message: `AI edits applied to ‘${templateName}’.`,
+    if (!previous || !current) {
+      continue
     }
-  }
 
-  const justFailed =
-    isSameVersion &&
-    previous?.status !== 'failed' &&
-    current.status === 'failed'
+    // we return the first as we can only display one banner at a time, and a
+    // user will normally only have one process at a time
+    const justCompletedAiEdit =
+      previous?.status !== 'completed' &&
+      current.status === 'completed' &&
+      current.content_source === 'ai_edit'
 
-  if (justFailed) {
-    return {
-      variant: 'important',
-      title: 'There is a problem',
-      message: 'Something went wrong creating your AI Edit. Please try again.',
+    if (justCompletedAiEdit) {
+      return {
+        variant: 'success',
+        title: 'Success',
+        message: `AI edits applied to ‘${templateName}’.`,
+      }
+    }
+
+    const justFailed =
+      previous?.status !== 'failed' && current.status === 'failed'
+
+    if (justFailed) {
+      return {
+        variant: 'important',
+        title: 'There is a problem',
+        message:
+          'Something went wrong creating your AI Edit. Please try again.',
+      }
     }
   }
 
