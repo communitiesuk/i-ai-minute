@@ -58,7 +58,7 @@ resource "aws_cloudfront_distribution" "main" {
   ordered_cache_behavior {
     allowed_methods        = ["GET", "HEAD"]
     cached_methods         = ["GET", "HEAD"]
-    cache_policy_id        = aws_cloudfront_cache_policy.static_assets.id
+    cache_policy_id        = aws_cloudfront_cache_policy.main.id
     path_pattern           = "/govuk-frontend-6.3.0.min.css"
     target_origin_id       = local.resilience_assets_origin_id
     viewer_protocol_policy = "redirect-to-https"
@@ -68,7 +68,7 @@ resource "aws_cloudfront_distribution" "main" {
   ordered_cache_behavior {
     allowed_methods        = ["GET", "HEAD"]
     cached_methods         = ["GET", "HEAD"]
-    cache_policy_id        = aws_cloudfront_cache_policy.static_assets.id
+    cache_policy_id        = aws_cloudfront_cache_policy.main.id
     path_pattern           = "/.well-known/security.txt"
     target_origin_id       = local.resilience_assets_origin_id
     viewer_protocol_policy = "redirect-to-https"
@@ -86,9 +86,9 @@ resource "aws_cloudfront_distribution" "main" {
   ordered_cache_behavior {
     allowed_methods            = ["GET", "HEAD"]
     cached_methods             = ["GET", "HEAD"]
-    cache_policy_id            = aws_cloudfront_cache_policy.static_assets.id
+    cache_policy_id            = aws_cloudfront_cache_policy.main.id
     compress                   = true
-    origin_request_policy_id   = aws_cloudfront_origin_request_policy.static_assets.id
+    origin_request_policy_id   = aws_cloudfront_origin_request_policy.main.id
     response_headers_policy_id = data.aws_cloudfront_response_headers_policy.main.id
     path_pattern               = "/_next/static/*"
     target_origin_id           = local.origin_id
@@ -146,19 +146,14 @@ resource "aws_cloudfront_distribution" "main" {
   }
 }
 
-moved {
-  from = aws_cloudfront_cache_policy.main
-  to   = aws_cloudfront_cache_policy.static_assets
-}
-
-resource "aws_cloudfront_cache_policy" "static_assets" {
+resource "aws_cloudfront_cache_policy" "main" {
   name        = var.environment_name
   min_ttl     = 0
   default_ttl = 0
 
   parameters_in_cache_key_and_forwarded_to_origin {
     cookies_config {
-      cookie_behavior = "none"
+      cookie_behavior = "all"
     }
 
     headers_config {
@@ -166,7 +161,7 @@ resource "aws_cloudfront_cache_policy" "static_assets" {
     }
 
     query_strings_config {
-      query_string_behavior = "none"
+      query_string_behavior = "all"
     }
 
     enable_accept_encoding_gzip   = true
@@ -176,30 +171,6 @@ resource "aws_cloudfront_cache_policy" "static_assets" {
 
 data "aws_cloudfront_cache_policy" "cf_caching_disabled" {
   name = "Managed-CachingDisabled"
-}
-
-# Static assets are cached across users, so origin responses must be independent of user sessions.
-# This policy ensures CloudFront does not forward cookies or any other viewer identity headers, but
-# still forwards the Host header to the origin (for any host-based routing). The ALB explicitly
-# bypasses OIDC for the static assets path, allowing a cache miss to fetch assets without auth or
-# ALB-generated session cookies.
-resource "aws_cloudfront_origin_request_policy" "static_assets" {
-  name = "${var.environment_name}-static-assets"
-
-  cookies_config {
-    cookie_behavior = "none"
-  }
-
-  headers_config {
-    header_behavior = "whitelist"
-    headers {
-      items = ["Host"]
-    }
-  }
-
-  query_strings_config {
-    query_string_behavior = "none"
-  }
 }
 
 data "aws_cloudfront_response_headers_policy" "main" {
