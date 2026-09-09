@@ -42,8 +42,12 @@ export function MinuteEditor({
   transcription: TranscriptionGetResponse
   minute: Minute
 }) {
-  const [version, setVersion] = useState<string | undefined>(undefined)
+  const [versionId, setVersionId] = useState<string | undefined>(undefined)
+  const [editSourceVersionId, setEditSourceVersionId] = useState<
+    string | undefined
+  >(undefined)
   const [hideCitations, setHideCitations] = useState(false)
+
   const {
     data: minuteVersions = [],
     isLoading,
@@ -56,31 +60,37 @@ export function MinuteEditor({
     refetchInterval: (query) => {
       const data = query.state.data
       if (!data || data.length === 0) return false
-      const currentVersion = data.find((v) => v.id === version) ?? data[0]
+      const currentVersion = data.find((v) => v.id === versionId) ?? data[0]
       return ['awaiting_start', 'in_progress'].includes(currentVersion.status)
         ? 1000
         : false
     },
   })
 
-  const minuteVersion =
-    minuteVersions.length > 0
-      ? (minuteVersions.find((v) => v.id === version) ?? minuteVersions[0])
-      : undefined
+  const determineMinuteVersionToShow = () => {
+    if (minuteVersions.length === 0) {
+      return undefined
+    }
 
-  const [editSourceVersionId, setEditSourceVersionId] = useState<
-    string | undefined
-  >(undefined)
+    const selectedVersion = minuteVersions.find((v) => v.id === versionId)
 
-  const fallbackAfterFailure =
-    version === undefined && minuteVersion?.status === 'failed'
-      ? (minuteVersions.find((v) => v.id === editSourceVersionId) ??
-        minuteVersions[
-          minuteVersions.findIndex((v) => v.id === minuteVersion.id) + 1
-        ])
-      : undefined
+    if (selectedVersion) {
+      return selectedVersion
+    }
 
-  const displayedMinuteVersion = fallbackAfterFailure ?? minuteVersion
+    const latestVersion = minuteVersions[0]
+    const editSourceVersion = minuteVersions.find(
+      (v) => v.id === editSourceVersionId
+    )
+
+    if (latestVersion.status === 'failed' && !!editSourceVersion) {
+      return editSourceVersion
+    }
+
+    return minuteVersions.find((v) => v.status !== 'failed') ?? latestVersion
+  }
+
+  const displayedMinuteVersion = determineMinuteVersionToShow()
 
   const isGenerating = ['awaiting_start', 'in_progress'].includes(
     displayedMinuteVersion?.status || ''
@@ -92,17 +102,17 @@ export function MinuteEditor({
   const previousVersionRef = useRef<MinuteVersionResponse | null>(null)
 
   useEffect(() => {
-    if (!minuteVersion) return
+    if (!displayedMinuteVersion) return
 
     const banner = getTransitionBanner(
       previousVersionRef.current,
-      minuteVersion,
+      displayedMinuteVersion,
       minute.template_name
     )
     if (banner) setBanner(banner)
 
-    previousVersionRef.current = minuteVersion
-  }, [minuteVersion, minute.template_name, setBanner])
+    previousVersionRef.current = displayedMinuteVersion
+  }, [displayedMinuteVersion, minute.template_name, setBanner])
 
   const queryClient = useQueryClient()
   const [isEditable, setIsEditable] = useState(false)
@@ -126,7 +136,7 @@ export function MinuteEditor({
 
   const onSuccess = useCallback(() => {
     setIsEditable(false)
-    setVersion(undefined)
+    setVersionId(undefined)
     queryClient.invalidateQueries({
       queryKey: listMinuteVersionsMinutesMinuteIdVersionsGetQueryKey({
         path: { minute_id: minute.id! },
@@ -203,8 +213,8 @@ export function MinuteEditor({
           <div className="flex flex-wrap gap-2">
             <MinuteVersionSelect
               minuteVersions={minuteVersions}
-              version={version}
-              setVersion={setVersion}
+              version={versionId}
+              setVersion={setVersionId}
             />
           </div>
         </div>
@@ -235,8 +245,8 @@ export function MinuteEditor({
           <div className="flex flex-wrap gap-2">
             <MinuteVersionSelect
               minuteVersions={minuteVersions}
-              version={version}
-              setVersion={setVersion}
+              version={versionId}
+              setVersion={setVersionId}
             />
           </div>
         </div>
@@ -313,7 +323,7 @@ export function MinuteEditor({
       </GovukButtonGroup>
       <MinuteVersionSelect
         version={displayedMinuteVersion.id}
-        setVersion={setVersion}
+        setVersion={setVersionId}
         minuteVersions={minuteVersions}
       />
       <hr className="govuk-section-break govuk-section-break--visible govuk-!-margin-top-6 govuk-!-margin-bottom-6" />
