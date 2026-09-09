@@ -12,10 +12,15 @@ Related eval docs:
 
 ```mermaid
 flowchart TD
+  RD[Real dialogue / diarised transcript + template]
+  SD[Synthetic dialogue / diarised transcript + template]
+  PI[Prompt-injection scenarios + template]
+  I1[Audio + reference transcript]
+  CF[Counterfactual transcript pairs]
+
   G1[Synthetic transcript generation]
   G2[Characteristic detection]
   G3[Counterfactual rewrite]
-  I2[Dialogue / diarised transcript + template]
   S[Standard summarisation eval*]
   J[LLM rubric judges]
   H[Hallucination / citation check]
@@ -23,20 +28,38 @@ flowchart TD
   B[Counterfactual bias eval*]
   RS[Regard + sentiment scoring]
   BT[4/5 + SPC thresholds]
-  I1[Audio + reference transcript]
   T[Transcription eval*]
-  R[Results + summary JSON]
 
-  G1 --> G2 --> G3 --> I2
-  I2 --> S
-  S --> J --> R
-  S --> H --> R
-  S --> P --> R
-  S --> B --> RS --> BT --> R
-  I1 --> T --> R
+  SR[Summarisation results + summary JSON]
+  HR[Hallucination / citation results]
+  PR[Prompt-injection results]
+  BR[Counterfactual bias results]
+  TR[Transcription results]
+
+  G1 --> SD
+  SD --> G2
+  RD --> G2
+  G2 --> G3
+  G3 --> CF
+
+  RD --> S
+  SD --> S
+  S --> J --> SR
+  S --> H --> HR
+
+  PI --> P --> PR
+  CF --> B --> RS --> BT --> BR
+  I1 --> T --> TR
+
+  classDef input fill:#e8f3ff,stroke:#1f77b4,color:#111;
+  classDef process fill:#fff4cc,stroke:#b7791f,color:#111;
+  classDef output fill:#e7f6e7,stroke:#2f855a,color:#111;
+  class RD,SD,PI,I1,CF input;
+  class G1,G2,G3,S,J,H,P,B,RS,BT,T process;
+  class SR,HR,PR,BR,TR output;
 ```
 
-There are two broad input types: audio with reference transcripts for transcription quality, and dialogue/diarised transcripts with a summary template for summarisation quality. Generated transcripts can be enriched with detected characteristics and counterfactual rewrites, then fed back through the summarisation path.
+There are three broad input types: real or synthetic dialogue/diarised transcripts with a summary template for summarisation quality, counterfactual transcript pairs for bias checks, and audio with reference transcripts for transcription quality. Standard summarisation, prompt-injection, counterfactual bias and transcription produce separate result outputs; standard summarisation can also emit hallucination/citation outputs when that check is enabled.
 
 ## What each eval measures
 
@@ -53,7 +76,7 @@ There are two broad input types: audio with reference transcripts for transcript
 
 ## Standard summarisation eval
 
-This is the main regression check for summary quality: generate a summary for each dialogue, then score it against selected judge dimensions. It is config-driven (`evals/summarisation/configs/test.yaml` by default) so prompt version, dataset split, limit, template and metrics are recorded with the run.
+This is the main regression check for summary quality: generate a summary for each dialogue, then score it against selected judge dimensions. It is config-driven (`evals/summarisation/configs/smoke-test.yaml` by default) so the selected dataset split and aggregate metrics are recorded in `summary.json`.
 
 Judges are rubric prompts run as separate single-dimension LLM calls. Each judge sees the transcript, candidate summary and one target dimension, returns a 1-5 score plus rationale, and the eval stores the score normalised to 0-1. Citation quality (`auditability`) is skipped when the selected summary template cannot produce citations.
 
