@@ -182,12 +182,6 @@ export default function TranscriptionPage(props: {
     setActiveTab(tab)
   }
 
-  const clearBannerOnButtonClick = (event: React.MouseEvent<HTMLElement>) => {
-    if ((event.target as HTMLElement).closest('button')) {
-      clearBanner()
-    }
-  }
-
   const removeDraftTab = (id: string) => {
     setDraftTabs((prev) => prev.filter((tab) => tab.id !== id))
     setActiveTab('transcript')
@@ -251,7 +245,7 @@ export default function TranscriptionPage(props: {
         onTabChange={handleTabChange}
       >
         <GovukTabs.Panel id="transcript" label="Transcript">
-          <div onClickCapture={clearBannerOnButtonClick}>
+          <div>
             <TranscriptionTab
               transcription={transcription}
               onTranscriptCopied={() =>
@@ -275,7 +269,7 @@ export default function TranscriptionPage(props: {
           </div>
         </GovukTabs.Panel>
         <GovukTabs.Panel id="meeting-summary" label="Meeting summary">
-          <div onClickCapture={clearBannerOnButtonClick}>
+          <div>
             <MinuteTab transcription={transcription} />
           </div>
         </GovukTabs.Panel>
