@@ -187,7 +187,12 @@ resource "aws_lb_listener_rule" "authentication" {
   }
 }
 
-resource "aws_lb_listener_rule" "signout" {
+moved {
+  from = aws_lb_listener_rule.signout
+  to   = aws_lb_listener_rule.auth_bypass
+}
+
+resource "aws_lb_listener_rule" "auth_bypass" {
   count        = var.ssl_certs_created && var.enable_oidc_auth ? 1 : 0
   listener_arn = aws_lb_listener.https[0].arn
   priority     = local.listener_rule_base_priority
@@ -212,7 +217,7 @@ resource "aws_lb_listener_rule" "signout" {
 
   condition {
     path_pattern {
-      values = ["/signout", "/signout/"]
+      values = ["/signout", "/signout/", "/_next/static/*"]
     }
   }
 }
