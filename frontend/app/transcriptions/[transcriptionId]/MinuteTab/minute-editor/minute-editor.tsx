@@ -4,6 +4,7 @@ import SimpleEditor from '@/app/transcriptions/[transcriptionId]/MinuteTab/compo
 import { GuardrailResponseComponent } from '@/app/transcriptions/[transcriptionId]/MinuteTab/components/editor/guardrail-response-component'
 import { MinuteVersionSelect } from '@/app/transcriptions/[transcriptionId]/MinuteTab/minute-editor/minute-version-select'
 import { NewMinuteDialog } from '@/app/transcriptions/[transcriptionId]/MinuteTab/NewMinuteDialog'
+import { ReviewGuardButton } from '@/components/review-guard/review-guard-button'
 import { citationRegex, citationRegexWithSpace } from '@/lib/citationRegex'
 import {
   Minute,
@@ -28,8 +29,8 @@ import {
   GovukNotificationBanner,
 } from '@/components/govuk'
 import { AiEditPopover } from '@/app/transcriptions/[transcriptionId]/MinuteTab/minute-editor/ai-edit-popover'
-import CopyButton from '@/components/ui/copy-button'
 import { Banner, useBannerStore } from '@/stores/use-banner-store'
+import { copyHTML, formatDate } from '@/lib/utils'
 
 type MinuteEditorForm = {
   html: string
@@ -162,23 +163,18 @@ export function MinuteEditor({
     },
     [minute.id, displayedMinuteVersion?.html_content, onSuccess, saveEdit]
   )
-  const handleWordDocDownload = useCallback(() => {
-    posthog.capture('minutes_downloaded', {
-      format: 'word',
-      version_id: displayedMinuteVersion?.id,
-    })
 
-    convertAIMinutesToWordDoc(
+  const handleWordDocDownload = async () => {
+    const fileName = transcription.date_of_recording
+      ? `${minute.template_name} ${formatDate(transcription.date_of_recording)}.docx`
+      : 'minutes.docx'
+
+    return await convertAIMinutesToWordDoc(
       htmlContent,
       transcription.dialogue_entries || [],
-      transcription.title || 'minutes.docx'
+      fileName
     )
-  }, [
-    htmlContent,
-    displayedMinuteVersion?.id,
-    transcription.dialogue_entries,
-    transcription.title,
-  ])
+  }
 
   if (isLoading) {
     return (
@@ -298,13 +294,36 @@ export function MinuteEditor({
             Manual edit
           </GovukButton>
         )}
-        <GovukButton onClick={handleWordDocDownload} variant="secondary">
-          Download document
-        </GovukButton>
-        <CopyButton
-          textToCopy={contentToCopy}
-          posthogEvent={'editor_content_copied'}
-          label="Copy document"
+        <ReviewGuardButton
+          onConfirm={async () => await copyHTML(contentToCopy)}
+          onSuccess={() => {
+            setBanner({
+              variant: 'success',
+              title: 'Success',
+              message: `'${minute.template_name}' copied to clipboard`,
+            })
+            posthog.capture('editor_content_copied', {
+              contentLength: contentToCopy.length,
+            })
+          }}
+          action="copy"
+          subject="document"
+        />
+        <ReviewGuardButton
+          onConfirm={handleWordDocDownload}
+          onSuccess={() => {
+            setBanner({
+              variant: 'success',
+              title: 'Success',
+              message: `'${minute.template_name}' downloaded`,
+            })
+            posthog.capture('minutes_downloaded', {
+              format: 'word',
+              version_id: displayedMinuteVersion?.id,
+            })
+          }}
+          action="download"
+          subject="document"
         />
         {hasCitations && (
           <GovukButton
