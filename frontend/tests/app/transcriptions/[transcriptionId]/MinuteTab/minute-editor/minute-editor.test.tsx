@@ -94,8 +94,11 @@ const configureQuery = (data: MinuteVersionResponse[], isLoading = false) => {
   } as unknown as ReturnType<typeof useQuery>)
 }
 
-const renderEditor = () =>
-  render(<MinuteEditor transcription={transcription} minute={minute} />)
+const editorElement = () => (
+  <MinuteEditor transcription={transcription} minute={minute} />
+)
+
+const renderEditor = () => render(editorElement())
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -219,7 +222,7 @@ describe('<MinuteEditor /> AI edit flow', () => {
       makeVersion({ id: 'v1', html_content: '<p>doc 1 content</p>' }),
     ])
 
-    renderEditor()
+    const { rerender } = renderEditor()
 
     fireEvent.click(screen.getByRole('button', { name: /AI Edit/ }))
     fireEvent.change(screen.getByRole('textbox'), {
@@ -227,6 +230,8 @@ describe('<MinuteEditor /> AI edit flow', () => {
     })
     expect(screen.getByRole('button', { name: /Apply Edit/ })).toBeEnabled()
     fireEvent.click(screen.getByRole('button', { name: /Apply Edit/ }))
+
+    await waitFor(() => expect(mutateMock).toHaveBeenCalled())
 
     configureQuery([
       makeVersion({
@@ -238,10 +243,11 @@ describe('<MinuteEditor /> AI edit flow', () => {
       makeVersion({ id: 'v2', html_content: '<p>doc 2 content</p>' }),
       makeVersion({ id: 'v1', html_content: '<p>doc 1 content</p>' }),
     ])
+    rerender(editorElement())
 
-    await waitFor(() =>
+    expect(
       screen.getByText(`Applying AI edits to ‘General summary’…`)
-    )
+    ).toBeInTheDocument()
 
     configureQuery([
       makeVersion({
@@ -253,15 +259,12 @@ describe('<MinuteEditor /> AI edit flow', () => {
       makeVersion({ id: 'v2', html_content: '<p>doc 2 content</p>' }),
       makeVersion({ id: 'v1', html_content: '<p>doc 1 content</p>' }),
     ])
+    rerender(editorElement())
 
-    await waitFor(() =>
-      screen.getByRole('option', { name: '3. AI edit (01/01/24 00:00)' })
-    )
     expect(
       screen.getByRole('option', { name: '3. AI edit (01/01/24 00:00)' })
     ).toBeInTheDocument()
 
-    await expect.poll(() => setBannerMock).toHaveBeenCalled()
     expect(setBannerMock).toHaveBeenCalledWith({
       message: 'Something went wrong creating your AI Edit. Please try again.',
       title: 'There is a problem',
