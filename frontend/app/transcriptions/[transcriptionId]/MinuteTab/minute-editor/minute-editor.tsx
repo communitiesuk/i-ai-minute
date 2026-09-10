@@ -20,7 +20,7 @@ import {
 } from '@/lib/client/@tanstack/react-query.gen'
 import convertAIMinutesToWordDoc from '@/lib/download-word-doc'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { FilePenLine, Loader2, LoaderCircle } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import posthog from 'posthog-js'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Controller, useForm, useWatch } from 'react-hook-form'
@@ -51,7 +51,7 @@ export function MinuteEditor({
   const [hideCitations, setHideCitations] = useState(false)
   const wasDocumentGenerating = useRef(false)
   const { setBanner } = useBannerStore()
-  const previousMinuteVersionsRef = useRef<MinuteVersionResponse[]>([])
+  const bannerPendingStates = ['awaiting_start', 'in_progress']
 
   const {
     data: minuteVersions = [],
@@ -66,9 +66,7 @@ export function MinuteEditor({
       const data = query.state.data
       if (!data || data.length === 0) return false
       const currentVersion = data.find((v) => v.id === versionId) ?? data[0]
-      return ['awaiting_start', 'in_progress'].includes(currentVersion.status)
-        ? 1000
-        : false
+      return bannerPendingStates.includes(currentVersion.status) ? 1000 : false
     },
   })
 
@@ -97,53 +95,52 @@ export function MinuteEditor({
 
   const displayedMinuteVersion = determineMinuteVersionToShow()
 
-  const isGenerating = ['awaiting_start', 'in_progress'].includes(
+  const isGenerating = bannerPendingStates.includes(
     displayedMinuteVersion?.status || ''
   )
 
-  // useEffect(() => {
-  //   if (isGenerating) {
-  //     wasDocumentGenerating.current = true
-  //   }
-
-  //   if (
-  //     minuteVersion?.status === 'completed' &&
-  //     wasDocumentGenerating.current
-  //   ) {
-  //     wasDocumentGenerating.current = false
-
-  //     const bannerText =
-  //       minuteVersion.content_source === 'initial_generation'
-  //         ? `'${minute.template_name}' created`
-  //         : `AI edits to '${minute.template_name}' saved`
-  //     setBanner({
-  //       variant: 'success',
-  //       title: 'Success',
-  //       message: bannerText,
-  //     })
-  //   }
-  // }, [
-  //   isGenerating,
-  //   minuteVersion?.status,
-  //   minuteVersion?.content_source,
-  //   minute.template_name,
-  //   setBanner,
-  // ])
-
   const isError = displayedMinuteVersion?.status == 'failed'
 
-  useEffect(() => {
-    const banner = getTransitionBanner(
-      previousMinuteVersionsRef.current,
-      minuteVersions,
-      minute.template_name
-    )
-    if (banner) {
-      setBanner(banner)
+  const createBanner = (): Banner | null => {
+    if (!displayedMinuteVersion) return null
+
+    if (isError) {
+      const bannerText =
+        displayedMinuteVersion.content_source === 'initial_generation'
+          ? 'Something went wrong creating your document creation. Please try again.'
+          : 'Something went wrong creating your AI Edit. Please try again.'
+      return {
+        variant: 'important',
+        title: 'There is a problem',
+        message: bannerText,
+      }
     }
 
-    previousMinuteVersionsRef.current = minuteVersions
-  }, [minuteVersions, minute.template_name, setBanner])
+    const bannerText =
+      displayedMinuteVersion.content_source === 'initial_generation'
+        ? `'${minute.template_name}' created`
+        : `AI edits to '${minute.template_name}' saved`
+    return {
+      variant: 'success',
+      title: 'Success',
+      message: bannerText,
+    }
+  }
+
+  useEffect(() => {
+    if (
+      displayedMinuteVersion?.status &&
+      !bannerPendingStates.includes(displayedMinuteVersion.status) &&
+      wasDocumentGenerating.current
+    ) {
+      const banner = createBanner()
+      if (banner) {
+        setBanner(banner)
+      }
+    }
+
+    wasDocumentGenerating.current = isGenerating
+  }, [isGenerating, displayedMinuteVersion?.status, setBanner])
 
   const queryClient = useQueryClient()
   const [isEditable, setIsEditable] = useState(false)
@@ -234,11 +231,6 @@ export function MinuteEditor({
   if (isGenerating) {
     const isAiEdit = displayedMinuteVersion?.content_source === 'ai_edit'
     return (
-      // <ProcessingSpinner
-      //   label="Creating document"
-      //   message={`Creating '${minute.template_name}'...`}
-      // />
-
       <div className="pt-2">
         <div className="mb-2 flex flex-wrap justify-between gap-y-2">
           <div className="flex flex-wrap gap-2">
@@ -250,21 +242,15 @@ export function MinuteEditor({
           </div>
         </div>
         {isAiEdit ? (
-          <div className="flex flex-col items-center justify-center gap-4 py-16">
-            <LoaderCircle
-              size={64}
-              className="animate-spin"
-              aria-hidden="true"
-            />
-            <p className="govuk-body" role="status">
-              Applying AI edits to ‘{minute.template_name}’…
-            </p>
-          </div>
+          <ProcessingSpinner
+            label="Creating document"
+            message={`Applying AI edits to '${minute.template_name}'...`}
+          />
         ) : (
-          <div className="flex h-36 animate-pulse flex-col items-center justify-center pt-12">
-            <FilePenLine />
-            Minute generating...
-          </div>
+          <ProcessingSpinner
+            label="Creating document"
+            message={`Creating '${minute.template_name}'...`}
+          />
         )}
       </div>
     )
@@ -442,52 +428,4 @@ const MinuteVersionDeleteButton = ({
       )}
     </GovukButton>
   )
-}
-
-/** Detects an AI-edit completing/failing between two polled version snapshots. Returns the matching banner, or null. */
-function getTransitionBanner(
-  previousVersions: MinuteVersionResponse[],
-  currentVersions: MinuteVersionResponse[],
-  templateName: string | undefined | null
-): Banner | null {
-  const previousVersionsById = new Map(previousVersions.map((v) => [v.id, v]))
-  const currentVersionsById = new Map(currentVersions.map((v) => [v.id, v]))
-
-  for (const id of previousVersionsById.keys()) {
-    const previous = previousVersionsById.get(id)
-    const current = currentVersionsById.get(id)
-
-    if (!previous || !current) {
-      continue
-    }
-
-    // we return the first as we can only display one banner at a time, and a
-    // user will normally only have one process at a time
-    const justCompletedAiEdit =
-      previous?.status !== 'completed' &&
-      current.status === 'completed' &&
-      current.content_source === 'ai_edit'
-
-    if (justCompletedAiEdit) {
-      return {
-        variant: 'success',
-        title: 'Success',
-        message: `AI edits applied to ‘${templateName}’.`,
-      }
-    }
-
-    const justFailed =
-      previous?.status !== 'failed' && current.status === 'failed'
-
-    if (justFailed) {
-      return {
-        variant: 'important',
-        title: 'There is a problem',
-        message:
-          'Something went wrong creating your AI Edit. Please try again.',
-      }
-    }
-  }
-
-  return null
 }
