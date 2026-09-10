@@ -31,25 +31,37 @@ vi.mock('@/lib/client/@tanstack/react-query.gen', () => ({
   }),
 }))
 
-// Stub the rich text editor so we can drive a content change.
+// Stub the rich text editor; like the real one it only reads initialContent on mount.
 vi.mock(
   '@/app/transcriptions/[transcriptionId]/MinuteTab/components/editor/tiptap-editor',
-  () => ({
-    default: ({
-      initialContent,
-      onContentChange,
-    }: {
-      initialContent: string
-      onContentChange: (content: string) => void
-    }) => (
-      <div>
-        <div>{initialContent}</div>
-        <button type="button" onClick={() => onContentChange('edited content')}>
-          stub-change-content
-        </button>
-      </div>
-    ),
-  })
+  async () => {
+    const { useState } = await vi.importActual<typeof import('react')>('react')
+    return {
+      default: function StubEditor({
+        initialContent,
+        onContentChange,
+      }: {
+        initialContent: string
+        onContentChange: (content: string) => void
+      }) {
+        const [content, setContent] = useState(initialContent)
+        return (
+          <div>
+            <div>{content}</div>
+            <button
+              type="button"
+              onClick={() => {
+                setContent('edited content')
+                onContentChange('edited content')
+              }}
+            >
+              stub-change-content
+            </button>
+          </div>
+        )
+      },
+    }
+  }
 )
 
 // Stub the AI edit popover to keep this test focused on the toolbar.
@@ -145,6 +157,21 @@ describe('<MinuteEditor /> manual edit mode', () => {
     expect(
       screen.queryByText('Are you sure you want to discard your changes?')
     ).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Manual edit' })).toBeEnabled()
+  })
+
+  it('restores the original content when changes are discarded', () => {
+    renderEditor()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Manual edit' }))
+    fireEvent.click(screen.getByRole('button', { name: 'stub-change-content' }))
+    expect(screen.getByText('edited content')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel edits' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Discard' }))
+
+    expect(screen.getByText('Generated version content')).toBeInTheDocument()
+    expect(screen.queryByText('edited content')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Manual edit' })).toBeEnabled()
   })
 })

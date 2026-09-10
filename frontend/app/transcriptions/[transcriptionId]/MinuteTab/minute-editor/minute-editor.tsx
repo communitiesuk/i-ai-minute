@@ -87,6 +87,8 @@ export function MinuteEditor({
   const queryClient = useQueryClient()
   const [isEditable, setIsEditable] = useState(false)
   const [showDiscardModal, setShowDiscardModal] = useState(false)
+  // The editor only reads initialContent on mount, so bumping this key discards its edits.
+  const [editorResetKey, setEditorResetKey] = useState(0)
   const form = useForm<MinuteEditorForm>()
   useEffect(() => {
     if (minuteVersion) {
@@ -346,6 +348,7 @@ export function MinuteEditor({
           name="html"
           render={({ field: { onChange } }) => (
             <SimpleEditor
+              key={editorResetKey}
               currentTranscription={transcription}
               initialContent={minuteVersion.html_content || ''}
               isEditing={isEditable}
@@ -368,6 +371,7 @@ export function MinuteEditor({
               setShowDiscardModal(false)
               setIsEditable(false)
               form.setValue('html', minuteVersion.html_content)
+              setEditorResetKey((key) => key + 1)
             }}
           >
             Discard
