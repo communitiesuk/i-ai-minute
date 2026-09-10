@@ -4,8 +4,6 @@ import SimpleEditor from '@/app/transcriptions/[transcriptionId]/MinuteTab/compo
 import { GuardrailResponseComponent } from '@/app/transcriptions/[transcriptionId]/MinuteTab/components/editor/guardrail-response-component'
 import { MinuteVersionSelect } from '@/app/transcriptions/[transcriptionId]/MinuteTab/minute-editor/minute-version-select'
 import { NewMinuteDialog } from '@/app/transcriptions/[transcriptionId]/MinuteTab/NewMinuteDialog'
-import { Button } from '@/components/ui/button'
-import { useBannerStore } from '@/stores/use-banner-store'
 import { ReviewGuardButton } from '@/components/review-guard/review-guard-button'
 import { ProcessingSpinner } from '@/components/processing-spinner'
 import { citationRegex, citationRegexWithSpace } from '@/lib/citationRegex'
@@ -22,8 +20,7 @@ import {
 } from '@/lib/client/@tanstack/react-query.gen'
 import convertAIMinutesToWordDoc from '@/lib/download-word-doc'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { AiEditPopover } from '@/app/transcriptions/[transcriptionId]/MinuteTab/minute-editor/ai-edit-popover'
-import { FileX2, Loader2, Undo } from 'lucide-react'
+import { FilePenLine, Loader2, LoaderCircle } from 'lucide-react'
 import posthog from 'posthog-js'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Controller, useForm, useWatch } from 'react-hook-form'
@@ -32,6 +29,8 @@ import {
   GovukButtonGroup,
   GovukNotificationBanner,
 } from '@/components/govuk'
+import { AiEditPopover } from '@/app/transcriptions/[transcriptionId]/MinuteTab/minute-editor/ai-edit-popover'
+import { Banner, useBannerStore } from '@/stores/use-banner-store'
 import { copyHTML, formatDate } from '@/lib/utils'
 
 type MinuteEditorForm = {
@@ -45,10 +44,15 @@ export function MinuteEditor({
   transcription: TranscriptionGetResponse
   minute: Minute
 }) {
-  const [version, setVersion] = useState<string | undefined>(undefined)
+  const [versionId, setVersionId] = useState<string | undefined>(undefined)
+  const [editSourceVersionId, setEditSourceVersionId] = useState<
+    string | undefined
+  >(undefined)
   const [hideCitations, setHideCitations] = useState(false)
   const wasDocumentGenerating = useRef(false)
   const { setBanner } = useBannerStore()
+  const previousMinuteVersionsRef = useRef<MinuteVersionResponse[]>([])
+
   const {
     data: minuteVersions = [],
     isLoading,
@@ -58,69 +62,97 @@ export function MinuteEditor({
     ...listMinuteVersionsMinutesMinuteIdVersionsGetOptions({
       path: { minute_id: minute.id! },
     }),
-    refetchInterval: (query) =>
-      query.state.data &&
-      query.state.data.length > 0 &&
-      ['awaiting_start', 'in_progress'].includes(
-        query.state.data.find((v) => v.id === version)?.status ??
-          query.state.data[0].status
-      )
+    refetchInterval: (query) => {
+      const data = query.state.data
+      if (!data || data.length === 0) return false
+      const currentVersion = data.find((v) => v.id === versionId) ?? data[0]
+      return ['awaiting_start', 'in_progress'].includes(currentVersion.status)
         ? 1000
-        : false,
+        : false
+    },
   })
 
-  const minuteVersion =
-    minuteVersions.length > 0
-      ? (minuteVersions.find((v) => v.id === version) ?? minuteVersions[0])
-      : undefined
+  const determineMinuteVersionToShow = () => {
+    if (minuteVersions.length === 0) {
+      return undefined
+    }
 
-  const isGenerating = useMemo(
-    () =>
-      ['awaiting_start', 'in_progress'].includes(minuteVersion?.status || ''),
-    [minuteVersion?.status]
+    const selectedVersion = minuteVersions.find((v) => v.id === versionId)
+
+    if (selectedVersion) {
+      return selectedVersion
+    }
+
+    const latestVersion = minuteVersions[0]
+    const editSourceVersion = minuteVersions.find(
+      (v) => v.id === editSourceVersionId
+    )
+
+    if (latestVersion.status === 'failed' && !!editSourceVersion) {
+      return editSourceVersion
+    }
+
+    return minuteVersions.find((v) => v.status !== 'failed') ?? latestVersion
+  }
+
+  const displayedMinuteVersion = determineMinuteVersionToShow()
+
+  const isGenerating = ['awaiting_start', 'in_progress'].includes(
+    displayedMinuteVersion?.status || ''
   )
-  const isError = useMemo(
-    () => minuteVersion?.status == 'failed',
-    [minuteVersion?.status]
-  )
+
+  // useEffect(() => {
+  //   if (isGenerating) {
+  //     wasDocumentGenerating.current = true
+  //   }
+
+  //   if (
+  //     minuteVersion?.status === 'completed' &&
+  //     wasDocumentGenerating.current
+  //   ) {
+  //     wasDocumentGenerating.current = false
+
+  //     const bannerText =
+  //       minuteVersion.content_source === 'initial_generation'
+  //         ? `'${minute.template_name}' created`
+  //         : `AI edits to '${minute.template_name}' saved`
+  //     setBanner({
+  //       variant: 'success',
+  //       title: 'Success',
+  //       message: bannerText,
+  //     })
+  //   }
+  // }, [
+  //   isGenerating,
+  //   minuteVersion?.status,
+  //   minuteVersion?.content_source,
+  //   minute.template_name,
+  //   setBanner,
+  // ])
+
+  const isError = displayedMinuteVersion?.status == 'failed'
 
   useEffect(() => {
-    if (isGenerating) {
-      wasDocumentGenerating.current = true
+    const banner = getTransitionBanner(
+      previousMinuteVersionsRef.current,
+      minuteVersions,
+      minute.template_name
+    )
+    if (banner) {
+      setBanner(banner)
     }
 
-    if (
-      minuteVersion?.status === 'completed' &&
-      wasDocumentGenerating.current
-    ) {
-      wasDocumentGenerating.current = false
-
-      const bannerText =
-        minuteVersion.content_source === 'initial_generation'
-          ? `'${minute.template_name}' created`
-          : `AI edits to '${minute.template_name}' saved`
-      setBanner({
-        variant: 'success',
-        title: 'Success',
-        message: bannerText,
-      })
-    }
-  }, [
-    isGenerating,
-    minuteVersion?.status,
-    minuteVersion?.content_source,
-    minute.template_name,
-    setBanner,
-  ])
+    previousMinuteVersionsRef.current = minuteVersions
+  }, [minuteVersions, minute.template_name, setBanner])
 
   const queryClient = useQueryClient()
   const [isEditable, setIsEditable] = useState(false)
   const form = useForm<MinuteEditorForm>()
   useEffect(() => {
-    if (minuteVersion) {
-      form.setValue('html', minuteVersion.html_content)
+    if (displayedMinuteVersion) {
+      form.setValue('html', displayedMinuteVersion.html_content)
     }
-  }, [form, minuteVersion])
+  }, [form, displayedMinuteVersion])
   const htmlContent = useWatch({ name: 'html', control: form.control })
   const contentToCopy = useMemo(() => {
     return htmlContent?.replaceAll(citationRegexWithSpace, '') || ''
@@ -135,7 +167,7 @@ export function MinuteEditor({
 
   const onSuccess = useCallback(() => {
     setIsEditable(false)
-    setVersion(undefined)
+    setVersionId(undefined)
     queryClient.invalidateQueries({
       queryKey: listMinuteVersionsMinutesMinuteIdVersionsGetQueryKey({
         path: { minute_id: minute.id! },
@@ -145,7 +177,7 @@ export function MinuteEditor({
 
   const onSubmit = useCallback(
     (data: MinuteEditorForm) => {
-      if (data.html != minuteVersion?.html_content) {
+      if (data.html != displayedMinuteVersion?.html_content) {
         saveEdit(
           {
             path: { minute_id: minute.id! },
@@ -160,7 +192,7 @@ export function MinuteEditor({
         setIsEditable(false)
       }
     },
-    [minute.id, minuteVersion?.html_content, onSuccess, saveEdit]
+    [minute.id, displayedMinuteVersion?.html_content, onSuccess, saveEdit]
   )
 
   const handleWordDocDownload = async () => {
@@ -183,7 +215,7 @@ export function MinuteEditor({
     )
   }
 
-  if (!minuteVersion || isErrorFetchingVersions) {
+  if (!displayedMinuteVersion || isErrorFetchingVersions) {
     return (
       <>
         <GovukNotificationBanner
@@ -200,11 +232,41 @@ export function MinuteEditor({
     )
   }
   if (isGenerating) {
+    const isAiEdit = displayedMinuteVersion?.content_source === 'ai_edit'
     return (
-      <ProcessingSpinner
-        label="Creating document"
-        message={`Creating '${minute.template_name}'...`}
-      />
+      // <ProcessingSpinner
+      //   label="Creating document"
+      //   message={`Creating '${minute.template_name}'...`}
+      // />
+
+      <div className="pt-2">
+        <div className="mb-2 flex flex-wrap justify-between gap-y-2">
+          <div className="flex flex-wrap gap-2">
+            <MinuteVersionSelect
+              minuteVersions={minuteVersions}
+              version={versionId}
+              setVersion={setVersionId}
+            />
+          </div>
+        </div>
+        {isAiEdit ? (
+          <div className="flex flex-col items-center justify-center gap-4 py-16">
+            <LoaderCircle
+              size={64}
+              className="animate-spin"
+              aria-hidden="true"
+            />
+            <p className="govuk-body" role="status">
+              Applying AI edits to ‘{minute.template_name}’…
+            </p>
+          </div>
+        ) : (
+          <div className="flex h-36 animate-pulse flex-col items-center justify-center pt-12">
+            <FilePenLine />
+            Minute generating...
+          </div>
+        )}
+      </div>
     )
   }
   if (isError) {
@@ -214,27 +276,30 @@ export function MinuteEditor({
           <div className="flex flex-wrap gap-2">
             <MinuteVersionSelect
               minuteVersions={minuteVersions}
-              version={version}
-              setVersion={setVersion}
+              version={versionId}
+              setVersion={setVersionId}
             />
           </div>
         </div>
-        <div className="mx-auto flex flex-col items-center justify-center pt-12 text-center">
-          <FileX2 />
-          <p>There was a problem processing your request.</p>
+        <div className="mx-auto pt-12">
+          <GovukNotificationBanner
+            variant="important"
+            title="There is a problem"
+            className="mb-[15px]!"
+          >
+            <p className="govuk-notification-banner__heading">
+              {minuteVersions.length > 1
+                ? 'There was a problem processing your request. Click undo to go back to the previous version.'
+                : 'There was a problem processing your request. Try generating a new Minute.'}
+            </p>
+          </GovukNotificationBanner>
           {minuteVersions.length > 1 ? (
-            <>
-              <p>Click undo to go back to the previous version.</p>
-              <MinuteVersionDeleteButton minuteVersion={minuteVersion} />
-            </>
+            <MinuteVersionDeleteButton minuteVersion={displayedMinuteVersion} />
           ) : (
-            <>
-              <p>Try generating a new Minute</p>
-              <NewMinuteDialog
-                transcriptionId={transcription.id!}
-                agenda={minute.agenda ?? undefined}
-              />
-            </>
+            <NewMinuteDialog
+              transcriptionId={transcription.id!}
+              agenda={minute.agenda ?? undefined}
+            />
           )}
         </div>
       </div>
@@ -247,8 +312,11 @@ export function MinuteEditor({
         <AiEditPopover
           disabled={isEditable}
           minuteId={minute.id!}
-          minuteVersionId={minuteVersion.id}
+          minuteVersionId={displayedMinuteVersion.id}
           onSuccess={onSuccess}
+          onEditStart={() => {
+            setEditSourceVersionId(displayedMinuteVersion.id)
+          }}
         />
         {isEditable ? (
           <GovukButton
@@ -287,7 +355,7 @@ export function MinuteEditor({
             })
             posthog.capture('minutes_downloaded', {
               format: 'word',
-              version_id: minuteVersion?.id,
+              version_id: displayedMinuteVersion?.id,
             })
           }}
           action="download"
@@ -308,16 +376,17 @@ export function MinuteEditor({
         )}
       </GovukButtonGroup>
       <MinuteVersionSelect
-        version={minuteVersion.id}
-        setVersion={setVersion}
+        version={displayedMinuteVersion.id}
+        setVersion={setVersionId}
         minuteVersions={minuteVersions}
       />
       <hr className="govuk-section-break govuk-section-break--visible govuk-!-margin-top-6 govuk-!-margin-bottom-6" />
-      {!minuteVersion.too_short && minuteVersion.guardrail_results && (
-        <GuardrailResponseComponent
-          guardrailResults={minuteVersion.guardrail_results}
-        />
-      )}
+      {!displayedMinuteVersion.too_short &&
+        displayedMinuteVersion.guardrail_results && (
+          <GuardrailResponseComponent
+            guardrailResults={displayedMinuteVersion.guardrail_results}
+          />
+        )}
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <Controller
           control={form.control}
@@ -325,7 +394,7 @@ export function MinuteEditor({
           render={({ field: { onChange } }) => (
             <SimpleEditor
               currentTranscription={transcription}
-              initialContent={minuteVersion.html_content || ''}
+              initialContent={displayedMinuteVersion.html_content || ''}
               isEditing={isEditable}
               onContentChange={onChange}
               hideCitations={hideCitations && !isEditable}
@@ -359,8 +428,8 @@ const MinuteVersionDeleteButton = ({
     },
   })
   return (
-    <Button
-      variant="outline"
+    <GovukButton
+      variant="secondary"
       onClick={() => mutate({ path: { minute_version_id: minuteVersion.id } })}
       className={className}
     >
@@ -369,10 +438,56 @@ const MinuteVersionDeleteButton = ({
           <Loader2 className="animate-spin" /> Deleting
         </>
       ) : (
-        <>
-          <Undo /> Undo
-        </>
+        <>Undo</>
       )}
-    </Button>
+    </GovukButton>
   )
+}
+
+/** Detects an AI-edit completing/failing between two polled version snapshots. Returns the matching banner, or null. */
+function getTransitionBanner(
+  previousVersions: MinuteVersionResponse[],
+  currentVersions: MinuteVersionResponse[],
+  templateName: string | undefined | null
+): Banner | null {
+  const previousVersionsById = new Map(previousVersions.map((v) => [v.id, v]))
+  const currentVersionsById = new Map(currentVersions.map((v) => [v.id, v]))
+
+  for (const id of previousVersionsById.keys()) {
+    const previous = previousVersionsById.get(id)
+    const current = currentVersionsById.get(id)
+
+    if (!previous || !current) {
+      continue
+    }
+
+    // we return the first as we can only display one banner at a time, and a
+    // user will normally only have one process at a time
+    const justCompletedAiEdit =
+      previous?.status !== 'completed' &&
+      current.status === 'completed' &&
+      current.content_source === 'ai_edit'
+
+    if (justCompletedAiEdit) {
+      return {
+        variant: 'success',
+        title: 'Success',
+        message: `AI edits applied to ‘${templateName}’.`,
+      }
+    }
+
+    const justFailed =
+      previous?.status !== 'failed' && current.status === 'failed'
+
+    if (justFailed) {
+      return {
+        variant: 'important',
+        title: 'There is a problem',
+        message:
+          'Something went wrong creating your AI Edit. Please try again.',
+      }
+    }
+  }
+
+  return null
 }
