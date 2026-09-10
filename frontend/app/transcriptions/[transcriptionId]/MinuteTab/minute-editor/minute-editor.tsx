@@ -127,6 +127,7 @@ export function MinuteEditor({
     }
   }
 
+  // show banner when document generated/AI edit complete
   useEffect(() => {
     if (
       displayedMinuteVersion?.status &&
