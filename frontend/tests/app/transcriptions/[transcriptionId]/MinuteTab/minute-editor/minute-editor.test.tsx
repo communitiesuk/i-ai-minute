@@ -165,7 +165,7 @@ describe('<MinuteEditor /> AI edit flow', () => {
     renderEditor()
 
     expect(screen.getByTestId('simple-editor')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'AI Edit' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'AI edit' })).toBeInTheDocument()
   })
 
   it('renders an inline error banner with an Undo action when explicitly viewing a failed version', () => {
@@ -224,12 +224,12 @@ describe('<MinuteEditor /> AI edit flow', () => {
 
     const { rerender } = renderEditor()
 
-    fireEvent.click(screen.getByRole('button', { name: /AI Edit/ }))
+    fireEvent.click(screen.getByRole('button', { name: /AI edit/ }))
     fireEvent.change(screen.getByRole('textbox'), {
       target: { value: 'ai edit instructions' },
     })
-    expect(screen.getByRole('button', { name: /Apply Edit/ })).toBeEnabled()
-    fireEvent.click(screen.getByRole('button', { name: /Apply Edit/ }))
+    expect(screen.getByRole('button', { name: /Apply edit/ })).toBeEnabled()
+    fireEvent.click(screen.getByRole('button', { name: /Apply edit/ }))
 
     await waitFor(() => expect(mutateMock).toHaveBeenCalled())
 

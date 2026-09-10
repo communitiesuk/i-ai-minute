@@ -46,12 +46,12 @@ beforeEach(() => {
 describe('<AiEditPopover />', () => {
   it('renders the AI Edit trigger button, disabled when instructed', () => {
     renderPopover({ disabled: true })
-    expect(screen.getByRole('button', { name: 'AI Edit' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'AI edit' })).toBeDisabled()
   })
 
   it('opens the modal on click and shows the instruction form', () => {
     renderPopover()
-    fireEvent.click(screen.getByRole('button', { name: 'AI Edit' }))
+    fireEvent.click(screen.getByRole('button', { name: 'AI edit' }))
 
     expect(screen.getByRole('heading', { name: 'AI edit' })).toBeInTheDocument()
     expect(
@@ -64,9 +64,9 @@ describe('<AiEditPopover />', () => {
 
   it('disables Apply Edit until an instruction has been entered', () => {
     renderPopover()
-    fireEvent.click(screen.getByRole('button', { name: 'AI Edit' }))
+    fireEvent.click(screen.getByRole('button', { name: 'AI edit' }))
 
-    const applyButton = screen.getByRole('button', { name: 'Apply Edit' })
+    const applyButton = screen.getByRole('button', { name: 'Apply edit' })
     expect(applyButton).toBeDisabled()
 
     fireEvent.change(document.getElementById('ai-edit-instruction')!, {
@@ -80,7 +80,7 @@ describe('<AiEditPopover />', () => {
     const onSuccess = vi.fn()
     renderPopover({ onEditStart, onSuccess })
 
-    fireEvent.click(screen.getByRole('button', { name: 'AI Edit' }))
+    fireEvent.click(screen.getByRole('button', { name: 'AI edit' }))
     fireEvent.change(document.getElementById('ai-edit-instruction')!, {
       target: { value: 'Make it more formal' },
     })
@@ -108,7 +108,7 @@ describe('<AiEditPopover />', () => {
 
   it('closes the modal when Cancel is clicked and resets any error state', () => {
     renderPopover()
-    fireEvent.click(screen.getByRole('button', { name: 'AI Edit' }))
+    fireEvent.click(screen.getByRole('button', { name: 'AI edit' }))
     expect(screen.getByRole('heading', { name: 'AI edit' })).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
@@ -128,7 +128,7 @@ describe('<AiEditPopover />', () => {
     } as unknown as ReturnType<typeof useMutation>)
 
     renderPopover()
-    fireEvent.click(screen.getByRole('button', { name: 'AI Edit' }))
+    fireEvent.click(screen.getByRole('button', { name: 'AI edit' }))
     fireEvent.change(document.getElementById('ai-edit-instruction')!, {
       target: { value: 'Make it more formal' },
     })
@@ -151,21 +151,21 @@ describe('<AiEditPopover />', () => {
     } as unknown as ReturnType<typeof useMutation>)
 
     renderPopover()
-    fireEvent.click(screen.getByRole('button', { name: 'AI Edit' }))
+    fireEvent.click(screen.getByRole('button', { name: 'AI edit' }))
     fireEvent.change(document.getElementById('ai-edit-instruction')!, {
       target: { value: 'Make it more formal' },
     })
 
-    expect(screen.getByRole('button', { name: 'Apply Edit' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Apply edit' })).toBeDisabled()
   })
 
   it('resets the error state when the modal is reopened', () => {
     renderPopover()
-    fireEvent.click(screen.getByRole('button', { name: 'AI Edit' }))
+    fireEvent.click(screen.getByRole('button', { name: 'AI edit' }))
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
     resetMock.mockClear()
 
-    fireEvent.click(screen.getByRole('button', { name: 'AI Edit' }))
+    fireEvent.click(screen.getByRole('button', { name: 'AI edit' }))
     expect(resetMock).toHaveBeenCalled()
   })
 })

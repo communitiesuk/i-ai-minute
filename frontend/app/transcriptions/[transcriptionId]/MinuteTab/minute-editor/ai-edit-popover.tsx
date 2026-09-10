@@ -76,7 +76,7 @@ export const AiEditPopover = ({
           setOpen(true)
         }}
       >
-        AI Edit
+        AI edit
       </GovukButton>
       <GovukModalDialogue open={open} onClose={closeModal} title="AI edit">
         <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -112,7 +112,7 @@ export const AiEditPopover = ({
               type="submit"
               disabled={!instructionValue?.trim() || isPending}
             >
-              Apply Edit
+              Apply edit
             </GovukButton>
             <GovukButton type="button" variant="link" onClick={closeModal}>
               Cancel
