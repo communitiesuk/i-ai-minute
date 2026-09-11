@@ -5,6 +5,7 @@ import { GuardrailResponseComponent } from '@/app/transcriptions/[transcriptionI
 import { MinuteVersionSelect } from '@/app/transcriptions/[transcriptionId]/MinuteTab/minute-editor/minute-version-select'
 import { NewMinuteDialog } from '@/app/transcriptions/[transcriptionId]/MinuteTab/NewMinuteDialog'
 import { ReviewGuardButton } from '@/components/review-guard/review-guard-button'
+import { ProcessingSpinner } from '@/components/processing-spinner'
 import { citationRegex, citationRegexWithSpace } from '@/lib/citationRegex'
 import {
   Minute,
@@ -19,7 +20,7 @@ import {
 } from '@/lib/client/@tanstack/react-query.gen'
 import convertAIMinutesToWordDoc from '@/lib/download-word-doc'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { FilePenLine, Loader2, LoaderCircle } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import posthog from 'posthog-js'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Controller, useForm, useWatch } from 'react-hook-form'
@@ -248,21 +249,15 @@ export function MinuteEditor({
           </div>
         </div>
         {isAiEdit ? (
-          <div className="flex flex-col items-center justify-center gap-4 py-16">
-            <LoaderCircle
-              size={64}
-              className="animate-spin"
-              aria-hidden="true"
-            />
-            <p className="govuk-body" role="status">
-              Applying AI edits to ‘{minute.template_name}’…
-            </p>
-          </div>
+          <ProcessingSpinner
+            label="Creating document"
+            message={`Applying AI edits to '${minute.template_name}'...`}
+          />
         ) : (
-          <div className="flex h-36 animate-pulse flex-col items-center justify-center pt-12">
-            <FilePenLine />
-            Minute generating...
-          </div>
+          <ProcessingSpinner
+            label="Creating document"
+            message={`Creating '${minute.template_name}'...`}
+          />
         )}
       </div>
     )
@@ -503,28 +498,43 @@ function getTransitionBanner(
 
     // we return the first as we can only display one banner at a time, and a
     // user will normally only have one process at a time
-    const justCompletedAiEdit =
-      previous?.status !== 'completed' &&
-      current.status === 'completed' &&
-      current.content_source === 'ai_edit'
-
-    if (justCompletedAiEdit) {
-      return {
-        variant: 'success',
-        title: 'Success',
-        message: `AI edits applied to ‘${templateName}’.`,
+    const justCompleted =
+      previous.status !== 'completed' && current.status === 'completed'
+    if (justCompleted) {
+      if (current.content_source === 'ai_edit') {
+        return {
+          variant: 'success',
+          title: 'Success',
+          message: `AI edits to '${templateName}' saved`,
+        }
+      }
+      if (current.content_source === 'initial_generation') {
+        return {
+          variant: 'success',
+          title: 'Success',
+          message: `'${templateName}' created.`,
+        }
       }
     }
 
     const justFailed =
       previous?.status !== 'failed' && current.status === 'failed'
-
     if (justFailed) {
-      return {
-        variant: 'important',
-        title: 'There is a problem',
-        message:
-          'Something went wrong creating your AI Edit. Please try again.',
+      if (current.content_source === 'ai_edit') {
+        return {
+          variant: 'important',
+          title: 'There is a problem',
+          message:
+            'Something went wrong creating your AI Edit. Please try again.',
+        }
+      }
+      if (current.content_source === 'initial_generation') {
+        return {
+          variant: 'important',
+          title: 'There is a problem',
+          message:
+            'Something went wrong creating your document. Please try again.',
+        }
       }
     }
   }
