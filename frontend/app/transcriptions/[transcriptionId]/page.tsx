@@ -141,12 +141,18 @@ export default function TranscriptionPage(props: {
   }
 
   const handleCreateDocument = () => {
+    clearBanner()
     const id = `new-document-${documentCounter.current++}`
     setDraftTabs((prev) => [
       ...prev,
       { id, label: 'New document', minuteId: null },
     ])
     setActiveTab(id)
+  }
+
+  const handleTabChange = (tab: string) => {
+    clearBanner()
+    setActiveTab(tab)
   }
 
   const removeDraftTab = (id: string) => {
@@ -210,7 +216,7 @@ export default function TranscriptionPage(props: {
         id="transcription-tabs"
         className="govuk-!-margin-top-4"
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={handleTabChange}
       >
         <GovukTabs.Panel id="transcript" label="Transcript">
           <TranscriptionTab
@@ -221,7 +227,9 @@ export default function TranscriptionPage(props: {
           />
         </GovukTabs.Panel>
         <GovukTabs.Panel id="meeting-summary" label="Meeting summary">
-          <MinuteTab transcription={transcription} />
+          <div>
+            <MinuteTab transcription={transcription} />
+          </div>
         </GovukTabs.Panel>
         {isChatEnabled && (
           <GovukTabs.Panel id="chat" label="Chat with your meeting">
