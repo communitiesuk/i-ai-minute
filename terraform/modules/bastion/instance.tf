@@ -11,7 +11,7 @@ data "aws_ami" "amazon_linux_2023" {
 
 resource "aws_instance" "bastion" {
   count = length(var.bastion_subnet_ids)
-  ami   = data.aws_ami.amazon_linux_2023.id
+  ami   = coalesce(var.bastion_ami_id, data.aws_ami.amazon_linux_2023.id)
   # t4g (Graviton) rather than t2: t2 is previous generation and is prone to
   # InsufficientInstanceCapacity in some eu-west-2 availability zones.
   instance_type          = var.bastion_instance_type

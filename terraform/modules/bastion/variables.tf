@@ -26,6 +26,12 @@ variable "bastion_ssm_patch_cloudwatch_log_expiration_days" {
   type        = number
   description = "Number of days to retain SSM bastion patch logs for"
 }
+variable "bastion_ami_id" {
+  type        = string
+  description = "Optional pinned bastion AMI ID. Must match the instance architecture (arm64); null selects the latest Amazon Linux 2023 AMI."
+  default     = null
+}
+
 variable "bastion_instance_type" {
   type        = string
   description = "EC2 instance type for the bastion hosts. Must match the AMI architecture (arm64)."

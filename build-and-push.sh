@@ -92,8 +92,8 @@ aws ecr get-login-password --region "$REGION" | docker login --username AWS --pa
 for SERVICE in "${SERVICES[@]}"; do
   REPO="${REGISTRY}/${ENVIRONMENT}-${SERVICE}"
   LOCAL_TAG="${ENVIRONMENT}-${SERVICE}:${TAG}"
-  BUILD_ARGS=()
-  SECRET_ARGS=()
+  # Keep the array non-empty for Bash 3.2 with nounset (macOS).
+  BUILD_ARGS=(-q)
   SENTRY_SECRET_FILE=""
 
   if [[ "$SERVICE" == "frontend" ]]; then
@@ -104,7 +104,7 @@ for SERVICE in "${SERVICES[@]}"; do
     if [[ -n "${SENTRY_AUTH_TOKEN:-}" ]]; then
       SENTRY_SECRET_FILE="$(mktemp)"
       printf '%s' "$SENTRY_AUTH_TOKEN" > "$SENTRY_SECRET_FILE"
-      SECRET_ARGS+=(--secret "id=sentry_auth_token,src=$SENTRY_SECRET_FILE")
+      BUILD_ARGS+=(--secret "id=sentry_auth_token,src=$SENTRY_SECRET_FILE")
     else
       echo "Warning: SENTRY_AUTH_TOKEN not set; Sentry source upload will be skipped."
     fi
@@ -112,7 +112,7 @@ for SERVICE in "${SERVICES[@]}"; do
 
   echo ""
   echo "Building ${SERVICE}..."
-  docker build -q "${BUILD_ARGS[@]}" "${SECRET_ARGS[@]}" -t "$LOCAL_TAG" -f "${REPO_ROOT}/${SERVICE}/Dockerfile" "$REPO_ROOT"
+  docker build "${BUILD_ARGS[@]}" -t "$LOCAL_TAG" -f "${REPO_ROOT}/${SERVICE}/Dockerfile" "$REPO_ROOT"
 
   # Best-effort cleanup; ignore failure if the file was already removed.
   if [[ -n "$SENTRY_SECRET_FILE" ]]; then

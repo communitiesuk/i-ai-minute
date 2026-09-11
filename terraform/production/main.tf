@@ -144,6 +144,9 @@ module "secrets" {
 module "bastion" {
   source = "../modules/bastion"
 
+  # Upgrade the bastion AMI separately from application deployments.
+  bastion_ami_id = "ami-0580b9fc36f0e51fc"
+
   bastion_subnet_ids = module.networking.private_subnets[*].id
   environment_name   = local.environment_name
   main_vpc_id        = module.networking.vpc.id
@@ -224,7 +227,7 @@ module "ecs" {
   # TEMPORARY: production intentionally points at the test APIM instance until the
   # production secrets are set up in Azure. Switch to the production APIM URL then,
   # and update the corresponding /local-transcribe/azure/* SSM parameters.
-  azure_apim_url                  = "https://api.azc.test.communities.gov.uk/localtranscribe/"
+  azure_apim_url                  = "https://api.azc.communities.gov.uk/localtranscribe/"
   azure_apim_client_id_arn        = module.secrets.azure_apim_client_id_arn
   azure_apim_client_secret_arn    = module.secrets.azure_apim_client_secret_arn
   azure_apim_scope_arn            = module.secrets.azure_apim_scope_arn
