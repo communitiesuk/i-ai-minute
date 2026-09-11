@@ -49,9 +49,8 @@ export function MinuteEditor({
     string | undefined
   >(undefined)
   const [hideCitations, setHideCitations] = useState(false)
-  const wasDocumentGenerating = useRef(false)
   const { setBanner } = useBannerStore()
-  const bannerPendingStates = ['awaiting_start', 'in_progress']
+  const previousMinuteVersionsRef = useRef<MinuteVersionResponse[]>([])
 
   const {
     data: minuteVersions = [],
@@ -66,7 +65,9 @@ export function MinuteEditor({
       const data = query.state.data
       if (!data || data.length === 0) return false
       const currentVersion = data.find((v) => v.id === versionId) ?? data[0]
-      return bannerPendingStates.includes(currentVersion.status) ? 1000 : false
+      return ['awaiting_start', 'in_progress'].includes(currentVersion.status)
+        ? 1000
+        : false
     },
   })
 
@@ -95,53 +96,24 @@ export function MinuteEditor({
 
   const displayedMinuteVersion = determineMinuteVersionToShow()
 
-  const isGenerating = bannerPendingStates.includes(
+  const isGenerating = ['awaiting_start', 'in_progress'].includes(
     displayedMinuteVersion?.status || ''
   )
 
   const isError = displayedMinuteVersion?.status == 'failed'
 
-  const createBanner = (): Banner | null => {
-    if (!displayedMinuteVersion) return null
-
-    if (isError) {
-      const bannerText =
-        displayedMinuteVersion.content_source === 'initial_generation'
-          ? 'Something went wrong creating your document creation. Please try again.'
-          : 'Something went wrong creating your AI Edit. Please try again.'
-      return {
-        variant: 'important',
-        title: 'There is a problem',
-        message: bannerText,
-      }
-    }
-
-    const bannerText =
-      displayedMinuteVersion.content_source === 'initial_generation'
-        ? `'${minute.template_name}' created`
-        : `AI edits to '${minute.template_name}' saved`
-    return {
-      variant: 'success',
-      title: 'Success',
-      message: bannerText,
-    }
-  }
-
-  // show banner when document generated/AI edit complete
   useEffect(() => {
-    if (
-      displayedMinuteVersion?.status &&
-      !bannerPendingStates.includes(displayedMinuteVersion.status) &&
-      wasDocumentGenerating.current
-    ) {
-      const banner = createBanner()
-      if (banner) {
-        setBanner(banner)
-      }
+    const banner = getTransitionBanner(
+      previousMinuteVersionsRef.current,
+      minuteVersions,
+      minute.template_name
+    )
+    if (banner) {
+      setBanner(banner)
     }
 
-    wasDocumentGenerating.current = isGenerating
-  }, [isGenerating, displayedMinuteVersion?.status, setBanner])
+    previousMinuteVersionsRef.current = minuteVersions
+  }, [minuteVersions, minute.template_name, setBanner])
 
   const queryClient = useQueryClient()
   const [isEditable, setIsEditable] = useState(false)
@@ -429,4 +401,67 @@ const MinuteVersionDeleteButton = ({
       )}
     </GovukButton>
   )
+}
+
+/** Detects an AI-edit completing/failing between two polled version snapshots. Returns the matching banner, or null. */
+function getTransitionBanner(
+  previousVersions: MinuteVersionResponse[],
+  currentVersions: MinuteVersionResponse[],
+  templateName: string | undefined | null
+): Banner | null {
+  const previousVersionsById = new Map(previousVersions.map((v) => [v.id, v]))
+  const currentVersionsById = new Map(currentVersions.map((v) => [v.id, v]))
+
+  for (const id of previousVersionsById.keys()) {
+    const previous = previousVersionsById.get(id)
+    const current = currentVersionsById.get(id)
+
+    if (!previous || !current) {
+      continue
+    }
+
+    // we return the first as we can only display one banner at a time, and a
+    // user will normally only have one process at a time
+    const justCompleted =
+      previous.status !== 'completed' && current.status === 'completed'
+    if (justCompleted) {
+      if (current.content_source === 'ai_edit') {
+        return {
+          variant: 'success',
+          title: 'Success',
+          message: `AI edits to '${templateName}' saved`,
+        }
+      }
+      if (current.content_source === 'initial_generation') {
+        return {
+          variant: 'success',
+          title: 'Success',
+          message: `'${templateName}' created.`,
+        }
+      }
+    }
+
+    const justFailed =
+      previous?.status !== 'failed' && current.status === 'failed'
+    if (justFailed) {
+      if (current.content_source === 'ai_edit') {
+        return {
+          variant: 'important',
+          title: 'There is a problem',
+          message:
+            'Something went wrong creating your AI Edit. Please try again.',
+        }
+      }
+      if (current.content_source === 'initial_generation') {
+        return {
+          variant: 'important',
+          title: 'There is a problem',
+          message:
+            'Something went wrong creating your document. Please try again.',
+        }
+      }
+    }
+  }
+
+  return null
 }
