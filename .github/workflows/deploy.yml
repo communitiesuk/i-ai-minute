@@ -40,9 +40,6 @@ jobs:
       sentry-dsn: ${{ secrets.STAGING_SENTRY_DSN }}
       sentry-auth-token: ${{ secrets.STAGING_SENTRY_AUTH_TOKEN }}
 
-  # Production deploys run from the default branch (development), matching the
-  # deployment_branch used by the github_actions_access module, since the IAM
-  # roles are only assumable from that branch.
   check-production-branch:
     if: github.event_name == 'workflow_dispatch' && inputs.environment == 'production'
     runs-on: ubuntu-latest
