@@ -9,12 +9,12 @@ import {
 import { TranscriptionGetResponse } from '@/lib/client'
 import {
   createMinuteTranscriptionTranscriptionIdMinutesPostMutation,
-  getUserTemplatesUserTemplatesGetOptions,
   listMinuteVersionsMinutesMinuteIdVersionsGetOptions,
   listMinutesForTranscriptionTranscriptionTranscriptionIdMinutesGetQueryKey,
   getMinuteMinutesMinutesIdGetOptions,
 } from '@/lib/client/@tanstack/react-query.gen'
 import { ProcessingSpinner } from '@/components/processing-spinner'
+import { templateValue, useTemplates } from '@/hooks/use-templates'
 import { useBannerStore } from '@/stores/use-banner-store'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { LoaderCircle } from 'lucide-react'
@@ -40,12 +40,8 @@ export const NewDocumentTab = ({
 
   const { setBanner } = useBannerStore()
 
-  const {
-    data: templates = [],
-    isLoading,
-    isError,
-    refetch,
-  } = useQuery(getUserTemplatesUserTemplatesGetOptions())
+  const { sortedTemplates, isLoading, isError, refetchTemplates } =
+    useTemplates()
 
   const { data: versions = [] } = useQuery({
     ...listMinuteVersionsMinutesMinuteIdVersionsGetOptions({
@@ -73,8 +69,8 @@ export const NewDocumentTab = ({
     ...createMinuteTranscriptionTranscriptionIdMinutesPostMutation(),
   })
 
-  const selectedTemplate = templates.find(
-    (t) => (t.id ?? t.name) === selectedValue
+  const selectedTemplate = sortedTemplates.find(
+    (t) => templateValue(t) === selectedValue
   )
 
   const isCompleted =
@@ -127,17 +123,13 @@ export const NewDocumentTab = ({
         <GovukButton
           type="button"
           variant="secondary"
-          onClick={() => refetch()}
+          onClick={refetchTemplates}
         >
           Try again
         </GovukButton>
       </div>
     )
   }
-
-  const sortedTemplates = [...templates].sort((a, b) =>
-    a.name.localeCompare(b.name)
-  )
 
   const handleCreate = () => {
     if (!selectedTemplate) return
@@ -194,7 +186,7 @@ export const NewDocumentTab = ({
         onChange={setSelectedValue}
         options={sortedTemplates.map((template) => ({
           label: template.name,
-          value: template.id ?? template.name,
+          value: templateValue(template),
           hint: template.description,
         }))}
       />
