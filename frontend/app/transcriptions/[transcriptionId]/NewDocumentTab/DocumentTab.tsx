@@ -4,9 +4,17 @@ import { MinuteEditor } from '@/app/transcriptions/[transcriptionId]/MinuteTab/m
 export const DocumentTab = ({
   transcription,
   minute,
+  onCitationClicked,
 }: {
   transcription: TranscriptionGetResponse
   minute: MinuteListItem
+  onCitationClicked?: (citationIndex: number) => void
 }) => {
-  return <MinuteEditor transcription={transcription} minute={minute} />
+  return (
+    <MinuteEditor
+      transcription={transcription}
+      minute={minute}
+      onCitationClicked={onCitationClicked}
+    />
+  )
 }

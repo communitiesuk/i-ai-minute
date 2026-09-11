@@ -41,9 +41,11 @@ type MinuteEditorForm = {
 export function MinuteEditor({
   transcription,
   minute,
+  onCitationClicked,
 }: {
   transcription: TranscriptionGetResponse
   minute: Minute
+  onCitationClicked?: (citationIndex: number) => void
 }) {
   const [versionId, setVersionId] = useState<string | undefined>(undefined)
   const [editSourceVersionId, setEditSourceVersionId] = useState<
@@ -411,6 +413,7 @@ export function MinuteEditor({
               isEditing={isEditable}
               onContentChange={onChange}
               hideCitations={hideCitations && !isEditable}
+              focusDialogEntry={onCitationClicked}
             />
           )}
         />

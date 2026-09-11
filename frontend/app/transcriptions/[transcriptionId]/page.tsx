@@ -54,6 +54,10 @@ export default function TranscriptionPage(props: {
   >([])
   const documentCounter = useRef(0)
 
+  const [citationIndexToFocus, setCitationIndexToFocus] = useState<
+    number | null
+  >(null)
+
   const handleLineEditError = useCallback((error: string | null) => {
     setLineEditError(error)
   }, [])
@@ -172,6 +176,11 @@ export default function TranscriptionPage(props: {
     )
   }
 
+  const handleCitationClicked = (citationIndex: number) => {
+    handleTabChange('transcript')
+    setCitationIndexToFocus(citationIndex)
+  }
+
   // Persisted document tabs, minus any doc still shown by its in-session draft tab.
   const draftMinuteIds = new Set(
     draftTabs.flatMap((tab) => (tab.minuteId ? [tab.minuteId] : []))
@@ -224,6 +233,7 @@ export default function TranscriptionPage(props: {
             onLineEditError={handleLineEditError}
             onEditModeChange={setIsTranscriptEditing}
             onDismissBanner={clearBanner}
+            citationIdToFocus={citationIndexToFocus ?? undefined}
           />
         </GovukTabs.Panel>
         <GovukTabs.Panel id="meeting-summary" label="Meeting summary">
@@ -238,7 +248,11 @@ export default function TranscriptionPage(props: {
         )}
         {documentTabs.map((doc) => (
           <GovukTabs.Panel key={doc.id} id={doc.id!} label={doc.template_name}>
-            <DocumentTab transcription={transcription} minute={doc} />
+            <DocumentTab
+              transcription={transcription}
+              minute={doc}
+              onCitationClicked={handleCitationClicked}
+            />
           </GovukTabs.Panel>
         ))}
         {draftTabs.map((tab) => (
@@ -252,6 +266,7 @@ export default function TranscriptionPage(props: {
               onCreated={(templateName) =>
                 handleDocumentCreated(tab.id, templateName)
               }
+              onCitationClicked={handleCitationClicked}
             />
           </GovukTabs.Panel>
         ))}
