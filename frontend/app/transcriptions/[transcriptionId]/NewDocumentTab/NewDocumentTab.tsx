@@ -9,6 +9,7 @@ import {
 import { TranscriptionGetResponse } from '@/lib/client'
 import {
   createMinuteTranscriptionTranscriptionIdMinutesPostMutation,
+  getTemplatesTemplatesGetOptions,
   getUserTemplatesUserTemplatesGetOptions,
   listMinuteVersionsMinutesMinuteIdVersionsGetOptions,
   listMinutesForTranscriptionTranscriptionTranscriptionIdMinutesGetQueryKey,
@@ -21,6 +22,9 @@ import { LoaderCircle } from 'lucide-react'
 import posthog from 'posthog-js'
 import { useEffect, useRef, useState } from 'react'
 import { MinuteEditor } from '@/app/transcriptions/[transcriptionId]/MinuteTab/minute-editor/minute-editor'
+
+const templateValue = (template: { id: string | null; name: string }) =>
+  template.id ?? `DEFAULT::${template.name}`
 
 export const NewDocumentTab = ({
   transcription,
@@ -40,12 +44,17 @@ export const NewDocumentTab = ({
 
   const { setBanner } = useBannerStore()
 
-  const {
-    data: templates = [],
-    isLoading,
-    isError,
-    refetch,
-  } = useQuery(getUserTemplatesUserTemplatesGetOptions())
+  const defaultTemplatesQuery = useQuery(getTemplatesTemplatesGetOptions())
+  const userTemplatesQuery = useQuery(getUserTemplatesUserTemplatesGetOptions())
+
+  const templates = [
+    ...(defaultTemplatesQuery.data ?? []).map((template) => ({
+      id: null,
+      name: template.name,
+      description: template.description,
+    })),
+    ...(userTemplatesQuery.data ?? []),
+  ]
 
   const { data: versions = [] } = useQuery({
     ...listMinuteVersionsMinutesMinuteIdVersionsGetOptions({
@@ -74,12 +83,15 @@ export const NewDocumentTab = ({
   })
 
   const selectedTemplate = templates.find(
-    (t) => (t.id ?? t.name) === selectedValue
+    (t) => templateValue(t) === selectedValue
   )
 
   const isCompleted =
     createdMinuteId !== null && versionStatus === 'completed' && minute
   const isFailed = createdMinuteId !== null && versionStatus === 'failed'
+  const isLoading =
+    defaultTemplatesQuery.isLoading || userTemplatesQuery.isLoading
+  const isError = defaultTemplatesQuery.isError || userTemplatesQuery.isError
   const isCreating =
     !isFailed && (isPending || (createdMinuteId !== null && !isCompleted))
 
@@ -127,7 +139,10 @@ export const NewDocumentTab = ({
         <GovukButton
           type="button"
           variant="secondary"
-          onClick={() => refetch()}
+          onClick={() => {
+            defaultTemplatesQuery.refetch()
+            userTemplatesQuery.refetch()
+          }}
         >
           Try again
         </GovukButton>
@@ -194,7 +209,7 @@ export const NewDocumentTab = ({
         onChange={setSelectedValue}
         options={sortedTemplates.map((template) => ({
           label: template.name,
-          value: template.id ?? template.name,
+          value: templateValue(template),
           hint: template.description,
         }))}
       />
