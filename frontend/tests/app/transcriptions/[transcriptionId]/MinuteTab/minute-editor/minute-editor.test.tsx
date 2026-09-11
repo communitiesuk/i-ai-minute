@@ -147,4 +147,38 @@ describe('<MinuteEditor /> manual edit mode', () => {
     ).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Manual edit' })).toBeEnabled()
   })
+
+  it('reports busy while any version is generating, even when viewing a completed one', () => {
+    const onActivityChange = vi.fn()
+    vi.mocked(useQuery).mockReturnValue({
+      data: [
+        versions[0],
+        {
+          id: 'v2',
+          status: 'in_progress',
+          content_source: 'ai_edit',
+          created_datetime: '2024-01-02T00:00:00Z',
+          html_content: '',
+        } as MinuteVersionResponse,
+      ],
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useQuery>)
+
+    render(
+      <MinuteEditor
+        transcription={
+          {
+            id: 't1',
+            dialogue_entries: [],
+          } as unknown as TranscriptionGetResponse
+        }
+        minute={{ id: 'm1' } as Minute}
+        onActivityChange={onActivityChange}
+      />
+    )
+
+    expect(onActivityChange).toHaveBeenLastCalledWith(true)
+  })
 })

@@ -83,6 +83,14 @@ export function MinuteEditor({
     () => minuteVersion?.status == 'failed',
     [minuteVersion?.status]
   )
+  // Busy if any version is generating, not just the viewed one, so a background AI edit still counts.
+  const isAnyVersionGenerating = useMemo(
+    () =>
+      minuteVersions.some((v) =>
+        ['awaiting_start', 'in_progress'].includes(v.status)
+      ),
+    [minuteVersions]
+  )
 
   const queryClient = useQueryClient()
   const [isEditable, setIsEditable] = useState(false)
@@ -95,8 +103,8 @@ export function MinuteEditor({
     }
   }, [form, minuteVersion])
   useEffect(() => {
-    onActivityChange?.(isGenerating || isEditable)
-  }, [isGenerating, isEditable, onActivityChange])
+    onActivityChange?.(isAnyVersionGenerating || isEditable)
+  }, [isAnyVersionGenerating, isEditable, onActivityChange])
   const htmlContent = useWatch({ name: 'html', control: form.control })
   const contentToCopy = useMemo(() => {
     return htmlContent?.replaceAll(citationRegexWithSpace, '') || ''
