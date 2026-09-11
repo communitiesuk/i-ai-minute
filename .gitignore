@@ -25,6 +25,8 @@ Brewfile.lock.json
 */.terraform.lock.hcl
 .terraform.lock.hcl
 *.terraform.lock.hcl 
+# Terraform plan files (may contain sensitive data - never commit)
+*.tfplan
 
 # Data
 *.csv
